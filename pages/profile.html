@@ -46,8 +46,7 @@
     <!-- Navigation will be updated by script.js -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
-            <!-- FIXED: Use absolute path to homepage -->
-            <a class="navbar-brand" href="/micro-donation-portal/">
+            <a class="navbar-brand" href="index.html">
                 <i class="fas fa-hand-holding-heart text-primary"></i>
                 <span class="ms-2">CommunityGive</span>
             </a>
@@ -125,8 +124,7 @@
                 </div>
                 
                 <div class="text-center mt-4">
-                    <!-- FIXED: Use absolute path to homepage -->
-                    <a href="/micro-donation-portal/" class="btn btn-primary me-2">
+                    <a href="index.html" class="btn btn-primary me-2">
                         <i class="fas fa-home me-1"></i>Back to Home
                     </a>
                     <button class="btn btn-outline-danger" id="logoutProfileBtn">
@@ -140,112 +138,67 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/auth.js"></script>
     <script>
-        // API Base URL - Make sure this matches your setup
-        const API_BASE_URL = 'http://localhost/micro-donation-portal/backend/api';
-        
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Profile page loaded');
+    
+         document.addEventListener('DOMContentLoaded', async function() {
+            // Check if user is logged in
+            if (!auth.isAuthenticated()) {
+                window.location.href = 'index.html';
+                return;
+            }
             
-            // Give auth.js time to initialize
-            setTimeout(async function() {
-                // Check if auth is loaded
-                if (typeof auth === 'undefined') {
-                    console.error('auth.js not loaded');
-                    showError('Authentication system not loaded');
-                    return;
+            const user = auth.getCurrentUser();
+            
+            // Show loading spinner
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            try {
+                // 1. Fetch user profile from backend
+                const profileResponse = await fetch(`${API_BASE_URL}/user/profile.php?id=${user.id}`);
+                const profileData = await profileResponse.json();
+                
+                if (!profileData.success) {
+                    throw new Error(profileData.message || 'Failed to load profile');
                 }
                 
-                // Check if user is logged in
-                if (!auth.isAuthenticated()) {
-                    console.log('User not authenticated, redirecting...');
-                    // FIXED: Use absolute path for redirect
-                    window.location.href = '/micro-donation-portal/';
-                    return;
-                }
+                // 2. Fetch user donations
+                const donationsResponse = await fetch(`${API_BASE_URL}/user/donations.php?user_id=${user.id}`);
+                const donationsData = await donationsResponse.json();
                 
-                const user = auth.getCurrentUser();
-                console.log('Current user:', user);
+                // Hide loading, show profile
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('profileContent').style.display = 'block';
                 
-                if (!user) {
-                    showError('User data not found');
-                    return;
-                }
+                // Populate profile data from backend
+                populateProfileData(profileData.user, donationsData);
                 
-                // Show loading spinner
-                document.getElementById('loadingSpinner').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading profile:', error);
                 
-                try {
-                    // Try to fetch from backend API
-                    const [profileResponse, donationsResponse] = await Promise.allSettled([
-                        fetch(`${API_BASE_URL}/user/profile.php?id=${user.id}`),
-                        fetch(`${API_BASE_URL}/user/donations.php?user_id=${user.id}`)
-                    ]);
-                    
-                    let profileData = null;
-                    let donationsData = null;
-                    
-                    // Process profile response
-                    if (profileResponse.status === 'fulfilled') {
-                        const response = await profileResponse.value.json();
-                        if (response.success) {
-                            profileData = response.user;
-                        }
-                    }
-                    
-                    // Process donations response
-                    if (donationsResponse.status === 'fulfilled') {
-                        donationsData = await donationsResponse.value.json();
-                    }
-                    
-                    // Hide loading, show profile
-                    document.getElementById('loadingSpinner').style.display = 'none';
-                    document.getElementById('profileContent').style.display = 'block';
-                    
-                    if (profileData) {
-                        // Use backend data
-                        populateProfileData(profileData, donationsData);
-                    } else {
-                        // Fallback to local storage data
-                        fallbackToLocalData(user);
-                    }
-                    
-                } catch (error) {
-                    console.error('Error loading profile:', error);
-                    
-                    // Hide loading, show profile with local data
-                    document.getElementById('loadingSpinner').style.display = 'none';
-                    document.getElementById('profileContent').style.display = 'block';
-                    
-                    // Use local storage data
-                    fallbackToLocalData(user);
-                }
+                // Hide loading, show error
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorText').textContent = error.message;
                 
-                // Logout button
-                document.getElementById('logoutProfileBtn').addEventListener('click', function() {
-                    if (typeof auth !== 'undefined' && auth.handleLogout) {
-                        auth.handleLogout();
-                    } else {
-                        // Fallback logout
-                        localStorage.removeItem('micro_donation_token');
-                        localStorage.removeItem('micro_donation_user');
-                        window.location.href = '/micro-donation-portal/';
-                    }
-                });
-                
-            }, 100); // Small delay to ensure auth.js is loaded
+                // Fallback: Use local storage data
+                fallbackToLocalData(user);
+            }
+            
+            // Logout button
+            document.getElementById('logoutProfileBtn').addEventListener('click', function() {
+                auth.handleLogout();
+            });
         });
         
         function populateProfileData(userData, donationsData) {
             // Basic user info
-            document.getElementById('userName').textContent = userData.name || 'User';
-            document.getElementById('userEmail').textContent = userData.email || 'No email';
+            document.getElementById('userName').textContent = userData.name;
+            document.getElementById('userEmail').textContent = userData.email;
             document.getElementById('joinDate').textContent = formatDate(userData.date_joined);
             
             // User role with badge
             const roleBadge = document.getElementById('userRole');
-            const role = userData.role || 'user';
-            roleBadge.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-            roleBadge.className = role === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
+            roleBadge.textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
+            roleBadge.className = userData.role === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
             
             // Financial info
             document.getElementById('totalDonated').textContent = 
@@ -255,13 +208,10 @@
             const tableBody = document.querySelector('#donationsTable tbody');
             const campaignsCount = document.getElementById('campaignsCount');
             
-            if (donationsData && donationsData.success && donationsData.donations && donationsData.donations.length > 0) {
+            if (donationsData.success && donationsData.donations && donationsData.donations.length > 0) {
                 // Count unique campaigns
-                const uniqueCampaigns = [...new Set(donationsData.donations.map(d => d.campaign_id).filter(id => id))];
+                const uniqueCampaigns = [...new Set(donationsData.donations.map(d => d.campaign_id))];
                 campaignsCount.textContent = uniqueCampaigns.length;
-                
-                // Clear existing rows
-                tableBody.innerHTML = '';
                 
                 // Populate donations table
                 donationsData.donations.forEach(donation => {
@@ -269,10 +219,10 @@
                     row.innerHTML = `
                         <td>${formatDate(donation.created_at)}</td>
                         <td>${donation.campaign_title || 'General Donation'}</td>
-                        <td class="text-success fw-bold">RM ${parseFloat(donation.amount || 0).toFixed(2)}</td>
+                        <td class="text-success fw-bold">RM ${parseFloat(donation.amount).toFixed(2)}</td>
                         <td>
                             <span class="badge ${getStatusBadgeClass(donation.status)}">
-                                ${(donation.status || 'completed').charAt(0).toUpperCase() + (donation.status || 'completed').slice(1)}
+                                ${donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
                             </span>
                         </td>
                     `;
@@ -285,7 +235,7 @@
                         <td colspan="4" class="text-center text-muted py-4">
                             <i class="fas fa-donate fa-2x mb-2 d-block"></i>
                             No donations yet. 
-                            <a href="/micro-donation-portal/pages/campaigns.html">Browse campaigns</a>
+                            <a href="pages/campaigns.html">Browse campaigns</a>
                         </td>
                     </tr>
                 `;
@@ -293,15 +243,18 @@
         }
         
         function fallbackToLocalData(user) {
+            // Hide error, show profile with local data
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('profileContent').style.display = 'block';
+            
             // Use local storage data
-            document.getElementById('userName').textContent = user.name || 'User';
-            document.getElementById('userEmail').textContent = user.email || 'No email';
-            document.getElementById('joinDate').textContent = formatDate(user.dateJoined);
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('joinDate').textContent = user.dateJoined || 'Unknown';
             
             const roleBadge = document.getElementById('userRole');
-            const role = user.role || 'user';
-            roleBadge.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-            roleBadge.className = role === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
+            roleBadge.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+            roleBadge.className = user.role === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
             
             document.getElementById('totalDonated').textContent = 
                 `RM ${parseFloat(user.totalDonated || 0).toFixed(2)}`;
@@ -312,15 +265,12 @@
             if (user.donations && user.donations.length > 0) {
                 campaignsCount.textContent = user.donations.length;
                 
-                // Clear existing rows
-                tableBody.innerHTML = '';
-                
                 user.donations.forEach(donation => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(donation.date)}</td>
                         <td>${donation.campaign || 'General Donation'}</td>
-                        <td class="text-success fw-bold">RM ${parseFloat(donation.amount || 0).toFixed(2)}</td>
+                        <td class="text-success fw-bold">RM ${parseFloat(donation.amount).toFixed(2)}</td>
                         <td><span class="badge bg-success">Completed</span></td>
                     `;
                     tableBody.appendChild(row);
@@ -332,7 +282,7 @@
                         <td colspan="4" class="text-center text-muted py-4">
                             <i class="fas fa-donate fa-2x mb-2 d-block"></i>
                             No donations yet. 
-                            <a href="/micro-donation-portal/pages/campaigns.html">Browse campaigns</a>
+                            <a href="pages/campaigns.html">Browse campaigns</a>
                         </td>
                     </tr>
                 `;
@@ -341,34 +291,22 @@
         
         function formatDate(dateString) {
             if (!dateString) return 'Unknown';
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-MY', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            } catch (e) {
-                return 'Unknown';
-            }
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-MY', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
         }
         
         function getStatusBadgeClass(status) {
-            if (!status) return 'bg-success';
-            
-            switch(status.toLowerCase()) {
+            switch(status) {
                 case 'completed': return 'bg-success';
                 case 'pending': return 'bg-warning';
                 case 'failed': return 'bg-danger';
                 case 'refunded': return 'bg-secondary';
                 default: return 'bg-info';
             }
-        }
-        
-        function showError(message) {
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('errorText').textContent = message;
         }
     </script>
 </body>
