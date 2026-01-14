@@ -138,11 +138,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // API Base URL - UPDATE THIS BASED ON YOUR SETUP
-        const API_BASE_URL = 'http://localhost/communitygive-api/api';
-        // OR if you put backend separately: 'http://localhost/communitygive-api/api'
-
-        document.addEventListener('DOMContentLoaded', async function() {
+        // API Base URL
+        const API_BASE_URL = 'http://localhost/micro-donation-portal/backend/api';
+    
+         document.addEventListener('DOMContentLoaded', async function() {
             // Check if user is logged in
             if (!auth.isAuthenticated()) {
                 window.location.href = 'index.html';

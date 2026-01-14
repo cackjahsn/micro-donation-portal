@@ -1,12 +1,12 @@
 // auth.js - Updated with Backend API Integration
-// Update in auth.js and other files
-const API_BASE_URL = 'http://localhost/communitygive-api/api';
+// auth.js - Updated with Backend API Integration
+const API_BASE_URL = 'http://localhost/micro-donation-portal/backend/api';
 
 class AuthManager {
     constructor() {
         this.currentUser = null;
-        this.tokenKey = 'communitygive_token';
-        this.userKey = 'communitygive_user';
+        this.tokenKey = 'micro_donation_token';
+        this.userKey = 'micro_donation_user';
         this.init();
     }
     
