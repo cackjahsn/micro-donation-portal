@@ -1,13 +1,12 @@
-// auth.js - Enhanced Authentication Module with localStorage persistence
-const AUTH_STORAGE_KEY = 'microDonationUsers';
-const CURRENT_USER_KEY = 'currentUser';
+// auth.js - Updated with Backend API Integration
+// Update in auth.js and other files
+const API_BASE_URL = 'http://localhost/communitygive-api/api';
 
 class AuthManager {
     constructor() {
         this.currentUser = null;
         this.tokenKey = 'communitygive_token';
         this.userKey = 'communitygive_user';
-        this.users = this.loadUsers();
         this.init();
     }
     
@@ -23,49 +22,9 @@ class AuthManager {
             } catch (error) {
                 this.clearSession();
             }
-        } else {
-            // Fallback to session storage
-            this.currentUser = this.loadCurrentUser();
         }
         
         this.setupEventListeners();
-    }
-    
-    loadUsers() {
-        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [
-            // Default admin user
-            {
-                id: 1,
-                email: 'admin@communitygive.com',
-                password: 'admin123',
-                name: 'System Admin',
-                role: 'admin',
-                avatar: 'assets/images/default-avatar.png',
-                dateJoined: '2025-01-01',
-                donations: [],
-                totalDonated: 0
-            }
-        ];
-    }
-    
-    saveUsers() {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.users));
-    }
-    
-    loadCurrentUser() {
-        const stored = sessionStorage.getItem(CURRENT_USER_KEY);
-        return stored ? JSON.parse(stored) : null;
-    }
-    
-    saveCurrentUser(user) {
-        if (user) {
-            // Don't store password in session
-            const { password, ...userWithoutPassword } = user;
-            sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-            localStorage.setItem(this.userKey, JSON.stringify(userWithoutPassword));
-            this.currentUser = userWithoutPassword;
-        }
     }
     
     setupEventListeners() {
@@ -82,7 +41,7 @@ class AuthManager {
             }
         });
         
-        // Check authentication status on page load
+        // Update UI based on auth status
         this.updateUI();
     }
     
@@ -90,8 +49,10 @@ class AuthManager {
         event.preventDefault();
         
         const form = event.target;
-        const email = form.querySelector('#loginEmail')?.value || form.querySelector('input[type="email"]')?.value;
-        const password = form.querySelector('#loginPassword')?.value || form.querySelector('input[type="password"]')?.value;
+        const email = form.querySelector('#loginEmail')?.value || 
+                     form.querySelector('input[type="email"]')?.value;
+        const password = form.querySelector('#loginPassword')?.value || 
+                        form.querySelector('input[type="password"]')?.value;
         
         try {
             // Show loading state
@@ -100,58 +61,113 @@ class AuthManager {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
             submitBtn.disabled = true;
             
-            // Use actual user validation from stored users
-            const user = this.getUserByEmail(email);
+            // API call to backend
+            const response = await fetch(`${API_BASE_URL}/auth/login.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password })
+            });
             
-            if (!user) {
-                throw new Error('User not found');
-            }
+            const data = await response.json();
             
-            if (user.password !== password) {
-                throw new Error('Incorrect password');
-            }
-            
-            // Generate token
-            const mockToken = 'mock_jwt_token_' + Date.now();
-            
-            // Set session
-            this.setSession(user, mockToken);
-            
-            // Show success message
-            this.showNotification('Login successful!', 'success');
-            
-            // Close modal if exists
-            const modalElement = form.closest('.modal');
-            if (modalElement) {
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) {
-                    modal.hide();
+            if (data.success) {
+                // Set session
+                this.setSession(data.user, data.token);
+                
+                // Show success message
+                this.showNotification('Login successful!', 'success');
+                
+                // Close modal if exists
+                const modalElement = form.closest('.modal');
+                if (modalElement) {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
                 }
+                
+                // Redirect based on role or stored redirect URL
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+                setTimeout(() => {
+                    if (redirectUrl) {
+                        sessionStorage.removeItem('redirectAfterLogin');
+                        window.location.href = redirectUrl;
+                    } else if (data.user.role === 'admin') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        window.location.reload();
+                    }
+                }, 1000);
+                
+            } else {
+                throw new Error(data.message || 'Login failed');
             }
-            
-            // Redirect based on role
-            setTimeout(() => {
-                if (user.role === 'admin') {
-                    window.location.href = 'admin-dashboard.html';
-                } else {
-                    window.location.reload(); // Reload to update UI
-                }
-            }, 1000);
             
         } catch (error) {
-            this.showNotification(error.message || 'Login failed. Please try again.', 'error');
+            this.showNotification(error.message, 'error');
             
             // Reset button
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
-                submitBtn.innerHTML = 'Login';
+                submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }
         }
     }
     
-    handleLogout(event) {
+    async handleRegister(userData) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/register.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Auto-login after successful registration
+                const loginResponse = await fetch(`${API_BASE_URL}/auth/login.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: userData.email,
+                        password: userData.password
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                
+                if (loginData.success) {
+                    this.setSession(loginData.user, loginData.token);
+                    return { success: true, user: loginData.user };
+                }
+            }
+            
+            return { success: false, message: data.message };
+            
+        } catch (error) {
+            return { 
+                success: false, 
+                message: 'Registration failed. Please try again.' 
+            };
+        }
+    }
+    
+    async handleLogout(event) {
         if (event) event.preventDefault();
+        
+        try {
+            await fetch(`${API_BASE_URL}/auth/logout.php`);
+        } catch (error) {
+            console.log('Logout API call failed, continuing with client-side logout');
+        }
         
         this.clearSession();
         this.showNotification('Logged out successfully', 'success');
@@ -169,9 +185,6 @@ class AuthManager {
         localStorage.setItem(this.tokenKey, token);
         localStorage.setItem(this.userKey, JSON.stringify(user));
         
-        // Save to session storage without password
-        this.saveCurrentUser(user);
-        
         // Setup auth header for API calls
         this.setupAuthHeader(token);
         
@@ -186,9 +199,6 @@ class AuthManager {
         localStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
         
-        // Remove from session storage
-        sessionStorage.removeItem(CURRENT_USER_KEY);
-        
         // Clear auth header
         this.clearAuthHeader();
         
@@ -197,7 +207,7 @@ class AuthManager {
     }
     
     setupAuthHeader(token) {
-        // This would be used for API calls
+        // This would be used for authenticated API calls
         // axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
     
@@ -312,10 +322,6 @@ class AuthManager {
         navbarNav.insertAdjacentHTML('afterbegin', adminMenuHTML);
     }
     
-    getUserByEmail(email) {
-        return this.users.find(user => user.email.toLowerCase() === email.toLowerCase());
-    }
-    
     isAuthenticated() {
         return this.currentUser !== null;
     }
@@ -332,53 +338,38 @@ class AuthManager {
         return this.currentUser;
     }
     
-    async register(userData) {
-        return new Promise((resolve, reject) => {
-            // Validation
-            if (!userData.email || !userData.password || !userData.name) {
-                reject(new Error('All fields are required'));
-                return;
-            }
-            
-            if (this.getUserByEmail(userData.email)) {
-                reject(new Error('Email already registered'));
-                return;
-            }
-            
-            if (userData.password.length < 6) {
-                reject(new Error('Password must be at least 6 characters'));
-                return;
-            }
-            
-            // Create new user
-            const newUser = {
-                id: Date.now(),
-                email: userData.email,
-                password: userData.password,
-                name: userData.name,
-                role: 'user',
-                avatar: 'assets/images/default-avatar.png',
-                dateJoined: new Date().toISOString().split('T')[0],
-                donations: [],
-                totalDonated: 0
-            };
-            
-            // Save user
-            this.users.push(newUser);
-            this.saveUsers();
-            
-            // Generate token
-            const token = 'mock_jwt_token_' + Date.now();
-            
-            // Auto-login after registration
-            this.setSession(newUser, token);
-            
-            resolve({
-                success: true,
-                user: newUser,
-                token: token
-            });
-        });
+    // Password strength checker
+    checkPasswordStrength(password) {
+        let strength = 0;
+        let feedback = [];
+        
+        if (password.length >= 8) strength++;
+        else feedback.push('Password should be at least 8 characters long');
+        
+        if (/[a-z]/.test(password)) strength++;
+        else feedback.push('Add lowercase letters');
+        
+        if (/[A-Z]/.test(password)) strength++;
+        else feedback.push('Add uppercase letters');
+        
+        if (/[0-9]/.test(password)) strength++;
+        else feedback.push('Add numbers');
+        
+        if (/[^a-zA-Z0-9]/.test(password)) strength++;
+        else feedback.push('Add special characters');
+        
+        return {
+            score: strength,
+            maxScore: 5,
+            feedback: feedback,
+            strength: strength <= 2 ? 'weak' : strength <= 4 ? 'medium' : 'strong'
+        };
+    }
+    
+    // Email validation
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     }
     
     showNotification(message, type = 'info') {
@@ -418,63 +409,6 @@ class AuthManager {
                 notification.remove();
             }
         }, 5000);
-    }
-    
-    // Password strength checker
-    checkPasswordStrength(password) {
-        let strength = 0;
-        let feedback = [];
-        
-        if (password.length >= 8) strength++;
-        else feedback.push('Password should be at least 8 characters long');
-        
-        if (/[a-z]/.test(password)) strength++;
-        else feedback.push('Add lowercase letters');
-        
-        if (/[A-Z]/.test(password)) strength++;
-        else feedback.push('Add uppercase letters');
-        
-        if (/[0-9]/.test(password)) strength++;
-        else feedback.push('Add numbers');
-        
-        if (/[^a-zA-Z0-9]/.test(password)) strength++;
-        else feedback.push('Add special characters');
-        
-        return {
-            score: strength,
-            maxScore: 5,
-            feedback: feedback,
-            strength: strength <= 2 ? 'weak' : strength <= 4 ? 'medium' : 'strong'
-        };
-    }
-    
-    // Email validation
-    isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-    
-    // Add donation to user
-    addDonation(userId, donationData) {
-        const user = this.users.find(u => u.id === userId);
-        if (user) {
-            user.donations.push({
-                ...donationData,
-                date: new Date().toISOString()
-            });
-            user.totalDonated = (user.totalDonated || 0) + donationData.amount;
-            this.saveUsers();
-            
-            // Update current user if it's the same user
-            if (this.currentUser && this.currentUser.id === userId) {
-                this.currentUser.donations = user.donations;
-                this.currentUser.totalDonated = user.totalDonated;
-                this.saveCurrentUser(this.currentUser);
-            }
-            
-            return true;
-        }
-        return false;
     }
 }
 
