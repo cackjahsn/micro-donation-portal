@@ -321,7 +321,7 @@ class CampaignManager {
                                 <small class="text-muted">raised of RM ${campaign.target.toLocaleString()}</small>
                             </div>
                             <div class="col-5 text-end">
-                                <a href="../donation-page.html?campaign=${campaign.id}" 
+                                <a href="donation-page.html?campaign=${campaign.id}" 
                                 class="btn btn-success btn-sm">
                                     <i class="fas fa-heart"></i> Donate
                                 </a>
