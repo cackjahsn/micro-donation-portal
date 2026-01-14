@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - CommunityGive</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="index.html">
+            <i class="fas fa-hand-holding-heart text-primary"></i>
+            <span class="ms-2">CommunityGive</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/campaigns.html">Campaigns</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/about.html">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/transparency.html">Transparency</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/contact.html">Contact</a></li>
+                
+                <!-- User menu will be inserted here by auth.js -->
+                
+                <!-- Login/Register buttons (hidden when logged in) -->
+                <li class="nav-item">
+                    <a class="btn btn-primary ms-2" href="#" id="loginBtn">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-outline-primary ms-2" href="#" id="registerBtn">
+                        <i class="fas fa-user-plus me-1"></i>Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+    <!-- Contact Section -->
+    <section class="contact-section py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h1 class="text-center mb-4">Contact Us</h1>
+                    
+                    <div class="row mb-5">
+                        <div class="col-md-4 text-center mb-4">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                                <h5>Location</h5>
+                                <p>Kolej Poly-Tech MARA<br>Batu Pahat Campus</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center mb-4">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope fa-3x text-success mb-3"></i>
+                                <h5>Email</h5>
+                                <p>support@communitygive.edu.my<br>admin@communitygive.edu.my</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center mb-4">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone fa-3x text-info mb-3"></i>
+                                <h5>Phone</h5>
+                                <p>+60 7-123 4567<br>+60 12-345 6789</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Form -->
+                    <div class="card shadow">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Send us a Message</h3>
+                            <form id="contactForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="name" class="form-label">Full Name</label>
+                                        <input type="text" class="form-control" id="name" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="email" class="form-label">Email Address</label>
+                                        <input type="email" class="form-control" id="email" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="subject" class="form-label">Subject</label>
+                                    <input type="text" class="form-control" id="subject" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="message" class="form-label">Message</label>
+                                    <textarea class="form-control" id="message" rows="5" required></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category</label>
+                                    <select class="form-select" id="category" required>
+                                        <option value="">Select a category</option>
+                                        <option value="general">General Inquiry</option>
+                                        <option value="technical">Technical Support</option>
+                                        <option value="donation">Donation Issues</option>
+                                        <option value="campaign">Campaign Information</option>
+                                        <option value="feedback">Feedback & Suggestions</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-paper-plane"></i> Send Message
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- FAQ Section -->
+                    <div class="card shadow mt-4">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Frequently Asked Questions</h3>
+                            <div class="accordion" id="faqAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                            How secure are the donations?
+                                        </button>
+                                    </h2>
+                                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            All donations are processed through secure payment gateways (ToyyibPay/FPX) with bank-level encryption. We never store your credit card information.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                            What is the minimum donation amount?
+                                        </button>
+                                    </h2>
+                                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            You can donate as little as RM1. The platform is specifically designed for micro-donations.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                            How are funds distributed?
+                                        </button>
+                                    </h2>
+                                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            Funds are transferred directly to the campaign organizers. We provide transparent tracking so you can see exactly how your donation is used.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>CommunityGive</h5>
+                    <p>Making micro-donations accessible for local communities</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p>&copy; 2025 Micro-Donation Portal. All rights reserved.</p>
+                    <p>BPJ241210141 - Khairil Aiman</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for your message! We will get back to you soon.');
+            this.reset();
+        });
+    </script>
+</body>
+</html>

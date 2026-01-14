@@ -1,0 +1,69 @@
+/* Main Styles */
+:root {
+    --primary-color: #4e73df;
+    --secondary-color: #858796;
+    --success-color: #1cc88a;
+    --info-color: #36b9cc;
+    --warning-color: #f6c23e;
+    --danger-color: #e74a3b;
+    --light-color: #f8f9fc;
+    --dark-color: #5a5c69;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--dark-color);
+}
+
+.hero-banner {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+                url('assets/images/banner.jpg');
+    background-size: cover;
+    background-position: center;
+    padding: 100px 0;
+    margin-bottom: 50px;
+}
+
+.campaign-card {
+    transition: transform 0.3s ease;
+    border: none;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    margin-bottom: 30px;
+}
+
+.campaign-card:hover {
+    transform: translateY(-5px);
+}
+
+.progress {
+    height: 20px;
+    border-radius: 10px;
+    margin: 15px 0;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+.btn-donate {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+    font-weight: bold;
+}
+
+.btn-donate:hover {
+    background: #17a673;
+    border-color: #17a673;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-banner h1 {
+        font-size: 2rem;
+    }
+    
+    .navbar-brand span {
+        display: none;
+    }
+}

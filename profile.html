@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - CommunityGive</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .profile-card {
+            max-width: 800px;
+            margin: 30px auto;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+            color: white;
+            padding: 30px;
+            border-radius: 10px 10px 0 0;
+        }
+        .avatar {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: var(--primary-color);
+            margin: 0 auto 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation will be updated by script.js -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-hand-holding-heart text-primary"></i>
+                <span class="ms-2">CommunityGive</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card profile-card shadow">
+            <div class="profile-header text-center">
+                <div class="avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h3 id="userName">Loading...</h3>
+                <p id="userEmail" class="mb-0"></p>
+            </div>
+            
+            <div class="card-body">
+                <h4 class="mb-4">Your Information</h4>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-calendar me-2"></i>Member Since:</strong>
+                        <span id="joinDate"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-user-tag me-2"></i>Account Type:</strong>
+                        <span id="userRole"></span>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-donate me-2"></i>Total Donated:</strong>
+                        <span id="totalDonated" class="text-success">RM 0</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-hands-helping me-2"></i>Campaigns Supported:</strong>
+                        <span id="campaignsCount">0</span>
+                    </div>
+                </div>
+                
+                <h4 class="mb-3">Recent Donations</h4>
+                <div class="table-responsive">
+                    <table class="table" id="donationsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Campaign</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Donations will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="index.html" class="btn btn-primary me-2">
+                        <i class="fas fa-home me-1"></i>Back to Home
+                    </a>
+                    <button class="btn btn-outline-danger" id="logoutProfileBtn">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            if (!auth.isAuthenticated()) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            const user = auth.getUserInfo();
+            
+            // Populate profile data
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('joinDate').textContent = user.dateJoined;
+            document.getElementById('userRole').textContent = 
+                user.role.charAt(0).toUpperCase() + user.role.slice(1);
+            document.getElementById('totalDonated').textContent = 
+                `RM ${(user.totalDonated || 0).toLocaleString()}`;
+            document.getElementById('campaignsCount').textContent = 
+                user.donations ? user.donations.length : 0;
+            
+            // Populate donations table
+            const tableBody = document.querySelector('#donationsTable tbody');
+            if (user.donations && user.donations.length > 0) {
+                user.donations.forEach(donation => {
+                    const row = `
+                        <tr>
+                            <td>${new Date(donation.date).toLocaleDateString()}</td>
+                            <td>${donation.campaign || 'General Donation'}</td>
+                            <td class="text-success">RM ${donation.amount.toFixed(2)}</td>
+                            <td><span class="badge bg-success">Completed</span></td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } else {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="fas fa-donate fa-2x mb-2 d-block"></i>
+                            No donations yet. 
+                            <a href="pages/campaigns.html">Browse campaigns</a>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // Logout button
+            document.getElementById('logoutProfileBtn').addEventListener('click', function() {
+                auth.logout();
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>

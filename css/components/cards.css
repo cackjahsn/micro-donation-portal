@@ -1,0 +1,200 @@
+/* Card Components */
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-footer {
+    background-color: transparent;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding: 1rem 1.5rem;
+}
+
+/* Campaign Card */
+.campaign-card .card-img-top {
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+}
+
+.campaign-card .progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+.campaign-card .progress-bar {
+    border-radius: 4px;
+}
+
+.campaign-stats {
+    display: flex;
+    justify-content: space-between;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.campaign-stats span {
+    color: var(--dark-color);
+    font-weight: 500;
+}
+
+.campaign-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.campaign-category {
+    background-color: rgba(78, 115, 223, 0.1);
+    color: var(--primary-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Stats Card */
+.stats-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+.stats-card.success {
+    border-left-color: var(--success-color);
+}
+
+.stats-card.info {
+    border-left-color: var(--info-color);
+}
+
+.stats-card.warning {
+    border-left-color: var(--warning-color);
+}
+
+.stats-card .stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+
+.stats-card .stats-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--dark-color);
+}
+
+.stats-card .stats-label {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+/* Donation Card */
+.donation-card {
+    border: 2px solid #f8f9fa;
+}
+
+.donation-card .donation-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--success-color);
+}
+
+.donation-card .donation-date {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+/* Testimonial Card */
+.testimonial-card {
+    background-color: #f8f9fa;
+    border: none;
+}
+
+.testimonial-card .testimonial-text {
+    font-style: italic;
+    color: var(--dark-color);
+    line-height: 1.6;
+}
+
+.testimonial-card .testimonial-author {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.testimonial-card .testimonial-role {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+/* Feature Card */
+.feature-card {
+    text-align: center;
+    padding: 2rem;
+    border: none;
+    background-color: #f8f9fa;
+}
+
+.feature-card .feature-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    color: var(--primary-color);
+    font-size: 2rem;
+}
+
+.feature-card .feature-title {
+    margin-bottom: 1rem;
+    color: var(--dark-color);
+}
+
+.feature-card .feature-description {
+    color: var(--secondary-color);
+    line-height: 1.6;
+}
+
+/* Responsive cards */
+@media (max-width: 767.98px) {
+    .card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .campaign-card .card-img-top {
+        height: 150px;
+    }
+    
+    .feature-card {
+        padding: 1.5rem;
+    }
+    
+    .feature-card .feature-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+}

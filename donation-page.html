@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make a Donation - CommunityGive</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="index.html">
+            <i class="fas fa-hand-holding-heart text-primary"></i>
+            <span class="ms-2">CommunityGive</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/campaigns.html">Campaigns</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/about.html">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/transparency.html">Transparency</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/contact.html">Contact</a></li>
+                
+                <!-- User menu will be inserted here by auth.js -->
+                
+                <!-- Login/Register buttons (hidden when logged in) -->
+                <li class="nav-item">
+                    <a class="btn btn-primary ms-2" href="#" id="loginBtn">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-outline-primary ms-2" href="#" id="registerBtn">
+                        <i class="fas fa-user-plus me-1"></i>Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+    <!-- Donation Process -->
+    <section class="donation-process py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <!-- Progress Steps -->
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <div class="progress-steps">
+                                <div class="step active">
+                                    <div class="step-circle">1</div>
+                                    <div class="step-label">Choose Amount</div>
+                                </div>
+                                <div class="step">
+                                    <div class="step-circle">2</div>
+                                    <div class="step-label">Payment Method</div>
+                                </div>
+                                <div class="step">
+                                    <div class="step-circle">3</div>
+                                    <div class="step-label">Confirmation</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campaign Info -->
+                    <div class="card shadow mb-4" id="campaignInfoCard">
+                        <!-- Campaign info will be loaded here -->
+                    </div>
+
+                    <!-- Donation Form -->
+                    <div class="card shadow">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Make Your Donation</h3>
+                            
+                            <!-- Step 1: Amount Selection -->
+                            <div id="step1">
+                                <h4 class="mb-3">Select Donation Amount</h4>
+                                <div class="row mb-4">
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <button class="btn amount-btn btn-outline-primary w-100" data-amount="1">
+                                            RM 1
+                                        </button>
+                                    </div>
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <button class="btn amount-btn btn-outline-primary w-100" data-amount="2">
+                                            RM 2
+                                        </button>
+                                    </div>
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <button class="btn amount-btn btn-outline-primary w-100" data-amount="5">
+                                            RM 5
+                                        </button>
+                                    </div>
+                                    <div class="col-6 col-md-3 mb-3">
+                                        <button class="btn amount-btn btn-outline-primary w-100" data-amount="10">
+                                            RM 10
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="customAmount" class="form-label">Or Enter Custom Amount (RM)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">RM</span>
+                                        <input type="number" class="form-control" id="customAmount" min="1" step="0.01" placeholder="Enter amount">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="coverFees">
+                                    <label class="form-check-label" for="coverFees">
+                                        Add RM 0.50 to cover payment processing fees
+                                    </label>
+                                </div>
+                                
+                                <button class="btn btn-primary btn-lg w-100" id="nextStep1">Continue to Payment</button>
+                            </div>
+
+                            <!-- Step 2: Payment Method -->
+                            <div id="step2" style="display: none;">
+                                <h4 class="mb-3">Choose Payment Method</h4>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="qrPayment" value="qr" checked>
+                                        <label class="form-check-label" for="qrPayment">
+                                            <i class="fas fa-qrcode fa-lg text-success me-2"></i>
+                                            <strong>QR Code Payment</strong>
+                                            <p class="text-muted mb-0">Scan QR code with your banking app</p>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="onlineBanking" value="fpx">
+                                        <label class="form-check-label" for="onlineBanking">
+                                            <i class="fas fa-university fa-lg text-primary me-2"></i>
+                                            <strong>Online Banking (FPX)</strong>
+                                            <p class="text-muted mb-0">Direct bank transfer</p>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="cardPayment" value="card" disabled>
+                                        <label class="form-check-label" for="cardPayment">
+                                            <i class="fas fa-credit-card fa-lg text-warning me-2"></i>
+                                            <strong>Credit/Debit Card</strong>
+                                            <p class="text-muted mb-0">(Coming Soon)</p>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- QR Code Display Area -->
+                                <div class="text-center mb-4" id="qrCodeArea" style="display: none;">
+                                    <h5>Scan QR Code to Pay</h5>
+                                    <div class="qr-container border p-3 d-inline-block mb-3">
+                                        <img src="assets/qr-codes/sample-qr.png" alt="QR Code" id="qrCodeImage" style="width: 200px; height: 200px;">
+                                    </div>
+                                    <p class="text-muted">Open your banking app and scan the QR code</p>
+                                </div>
+                                
+                                <!-- Bank Selection -->
+                                <div class="mb-4" id="bankSelection" style="display: none;">
+                                    <label for="bankSelect" class="form-label">Select Your Bank</label>
+                                    <select class="form-select" id="bankSelect">
+                                        <option value="">Choose bank</option>
+                                        <option value="maybank">Maybank</option>
+                                        <option value="cimb">CIMB Bank</option>
+                                        <option value="public">Public Bank</option>
+                                        <option value="rhb">RHB Bank</option>
+                                        <option value="hongleong">Hong Leong Bank</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary w-100" id="backStep2">Back</button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-primary w-100" id="nextStep2">Proceed to Payment</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Donor Details & Confirmation -->
+                            <div id="step3" style="display: none;">
+                                <h4 class="mb-3">Donor Information</h4>
+                                
+                                <div class="mb-3">
+                                    <label for="donorName" class="form-label">Name (Optional)</label>
+                                    <input type="text" class="form-control" id="donorName" placeholder="Enter your name">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="donorEmail" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="donorEmail" placeholder="Enter your email" required>
+                                    <div class="form-text">We'll send your donation receipt to this email</div>
+                                </div>
+                                
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="anonymousDonation">
+                                    <label class="form-check-label" for="anonymousDonation">
+                                        Make this donation anonymous
+                                    </label>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h5>Donation Summary</h5>
+                                    <div class="row">
+                                        <div class="col-6">Amount:</div>
+                                        <div class="col-6 text-end" id="summaryAmount">RM 0.00</div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">Processing Fees:</div>
+                                        <div class="col-6 text-end" id="summaryFees">RM 0.00</div>
+                                    </div>
+                                    <hr>
+                                    <div class="row fw-bold">
+                                        <div class="col-6">Total:</div>
+                                        <div class="col-6 text-end" id="summaryTotal">RM 0.00</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="termsAgreement" required>
+                                    <label class="form-check-label" for="termsAgreement">
+                                        I agree to the <a href="#" class="text-primary">Terms & Conditions</a> and 
+                                        <a href="#" class="text-primary">Privacy Policy</a>
+                                    </label>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary w-100" id="backStep3">Back</button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-success w-100" id="confirmDonation">
+                                            <i class="fas fa-heart"></i> Complete Donation
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Success -->
+                            <div id="step4" style="display: none;">
+                                <div class="text-center py-4">
+                                    <div class="mb-4">
+                                        <i class="fas fa-check-circle fa-5x text-success"></i>
+                                    </div>
+                                    <h3 class="mb-3">Thank You for Your Donation!</h3>
+                                    <p class="lead mb-4">Your contribution will make a real difference.</p>
+                                    
+                                    <div class="alert alert-success mb-4">
+                                        <h5>Donation Confirmed</h5>
+                                        <p class="mb-1">Transaction ID: <strong id="transactionId">DON-123456</strong></p>
+                                        <p class="mb-1">Amount: <strong id="finalAmount">RM 0.00</strong></p>
+                                        <p class="mb-0">Date: <strong id="transactionDate">18 Dec 2025</strong></p>
+                                    </div>
+                                    
+                                    <p class="mb-4">
+                                        A receipt has been sent to <strong id="receiptEmail">your email</strong>.
+                                        You can also <a href="#" class="text-primary" id="downloadReceipt">download the receipt here</a>.
+                                    </p>
+                                    
+                                    <div class="d-grid gap-2 d-md-block">
+                                        <a href="index.html" class="btn btn-primary me-2">
+                                            <i class="fas fa-home"></i> Back to Home
+                                        </a>
+                                        <a href="pages/campaigns.html" class="btn btn-outline-primary">
+                                            <i class="fas fa-hand-holding-heart"></i> View Other Campaigns
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>CommunityGive</h5>
+                    <p>Making micro-donations accessible for local communities</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p>&copy; 2025 Micro-Donation Portal. All rights reserved.</p>
+                    <p>BPJ241210141 - Khairil Aiman</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/payment.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/donation.js"></script>
+    
+    <style>
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: 0;
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active .step-circle {
+            background-color: #4e73df;
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .step.active .step-label {
+            color: #4e73df;
+            font-weight: bold;
+        }
+        
+        .amount-btn.active {
+            background-color: #4e73df;
+            color: white;
+            border-color: #4e73df;
+        }
+        
+        .qr-container {
+            background-color: white;
+            border-radius: 10px;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transparency - CommunityGive</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="index.html">
+            <i class="fas fa-hand-holding-heart text-primary"></i>
+            <span class="ms-2">CommunityGive</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/campaigns.html">Campaigns</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/about.html">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/transparency.html">Transparency</a></li>
+                <li class="nav-item"><a class="nav-link" href="pages/contact.html">Contact</a></li>
+                
+                <!-- User menu will be inserted here by auth.js -->
+                
+                <!-- Login/Register buttons (hidden when logged in) -->
+                <li class="nav-item">
+                    <a class="btn btn-primary ms-2" href="#" id="loginBtn">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-outline-primary ms-2" href="#" id="registerBtn">
+                        <i class="fas fa-user-plus me-1"></i>Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+    <!-- Transparency Section -->
+    <section class="transparency-section py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 mx-auto">
+                    <h1 class="text-center mb-4">Transparency & Accountability</h1>
+                    <p class="lead text-center mb-5">
+                        We believe in complete transparency. Here's how we ensure every donation counts.
+                    </p>
+
+                    <!-- Stats Overview -->
+                    <div class="card shadow mb-5">
+                        <div class="card-body">
+                            <h3 class="card-title text-center mb-4">Platform Statistics</h3>
+                            <div class="row text-center">
+                                <div class="col-md-3 mb-3">
+                                    <div class="display-4 text-primary">RM 124,580</div>
+                                    <p class="text-muted">Total Donations Raised</p>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="display-4 text-success">94.7%</div>
+                                    <p class="text-muted">Direct to Cause</p>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="display-4 text-info">2,347</div>
+                                    <p class="text-muted">Total Donors</p>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="display-4 text-warning">56</div>
+                                    <p class="text-muted">Campaigns Funded</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fee Structure -->
+                    <div class="card shadow mb-5">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Our Fee Structure</h3>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Fee Type</th>
+                                            <th>Amount</th>
+                                            <th>Purpose</th>
+                                            <th>Who Pays</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Payment Processing</td>
+                                            <td>1.9% + RM0.20</td>
+                                            <td>Payment gateway charges</td>
+                                            <td>Donor (optional)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Platform Maintenance</td>
+                                            <td>2.5%</td>
+                                            <td>Server costs & development</td>
+                                            <td>Campaign organizer</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Bank Transfer</td>
+                                            <td>RM5.00</td>
+                                            <td>Bank processing fees</td>
+                                            <td>Campaign organizer</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-muted mt-3">
+                                <small>* Donors can choose to cover payment processing fees to ensure 100% of their donation goes to the cause.</small>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card shadow mb-5">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Recent Transactions</h3>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Donor</th>
+                                            <th>Campaign</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Receipt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>2025-12-18</td>
+                                            <td>Anonymous</td>
+                                            <td>Flood Relief Fund</td>
+                                            <td>RM 10.00</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td><a href="#" class="text-primary">View</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2025-12-17</td>
+                                            <td>Ahmad R.</td>
+                                            <td>Student Scholarship</td>
+                                            <td>RM 5.00</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td><a href="#" class="text-primary">View</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2025-12-16</td>
+                                            <td>Siti M.</td>
+                                            <td>Health Center</td>
+                                            <td>RM 20.00</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td><a href="#" class="text-primary">View</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2025-12-15</td>
+                                            <td>Anonymous</td>
+                                            <td>Animal Shelter</td>
+                                            <td>RM 2.00</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td><a href="#" class="text-primary">View</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2025-12-14</td>
+                                            <td>John L.</td>
+                                            <td>Community Garden</td>
+                                            <td>RM 50.00</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td><a href="#" class="text-primary">View</a></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audit Reports -->
+                    <div class="card shadow">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Audit Reports & Documentation</h3>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                            <h5>Monthly Financial Report</h5>
+                                            <p>December 2025</p>
+                                            <a href="#" class="btn btn-outline-danger">Download PDF</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-chart-bar fa-3x text-primary mb-3"></i>
+                                            <h5>Annual Impact Report</h5>
+                                            <p>2025 Summary</p>
+                                            <a href="#" class="btn btn-outline-primary">View Report</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                                            <h5>Security Audit</h5>
+                                            <p>Q4 2025</p>
+                                            <a href="#" class="btn btn-outline-success">View Details</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>CommunityGive</h5>
+                    <p>Making micro-donations accessible for local communities</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p>&copy; 2025 Micro-Donation Portal. All rights reserved.</p>
+                    <p>BPJ241210141 - Khairil Aiman</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
