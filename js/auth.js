@@ -1,9 +1,10 @@
 // auth.js - Updated with Backend API Integration
-// auth.js - Updated with Backend API Integration
 const API_BASE_URL = 'http://localhost/micro-donation-portal/backend/api';
 
 class AuthManager {
     constructor() {
+        console.log('AuthManager constructor called - Page:', window.location.pathname);
+        
         this.currentUser = null;
         this.tokenKey = 'micro_donation_token';
         this.userKey = 'micro_donation_user';
@@ -11,38 +12,52 @@ class AuthManager {
     }
     
     init() {
+        console.log('AuthManager init called');
+        
         // Check for saved user session
         const savedToken = localStorage.getItem(this.tokenKey);
         const savedUser = localStorage.getItem(this.userKey);
         
+        console.log('LocalStorage check:', {
+            token: savedToken ? 'Exists' : 'Missing',
+            user: savedUser ? 'Exists' : 'Missing'
+        });
+        
         if (savedToken && savedUser) {
             try {
                 this.currentUser = JSON.parse(savedUser);
+                console.log('User restored from localStorage:', this.currentUser);
                 this.setupAuthHeader(savedToken);
             } catch (error) {
+                console.error('Error parsing saved user:', error);
                 this.clearSession();
             }
+        } else {
+            console.log('No saved session found');
         }
         
         this.setupEventListeners();
+        // CRITICAL FIX: Update UI immediately on init
+        this.updateUI();
     }
     
     setupEventListeners() {
+        console.log('Setting up event listeners');
+        
         // Login form submission
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
+            console.log('Login form found, adding listener');
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
         
         // Logout buttons
         document.addEventListener('click', (e) => {
             if (e.target.closest('.logout-btn')) {
+                console.log('Logout button clicked');
                 this.handleLogout(e);
             }
         });
-        
-        // Update UI based on auth status
-        this.updateUI();
     }
     
     async handleLogin(event) {
@@ -53,6 +68,8 @@ class AuthManager {
                      form.querySelector('input[type="email"]')?.value;
         const password = form.querySelector('#loginPassword')?.value || 
                         form.querySelector('input[type="password"]')?.value;
+        
+        console.log('Login attempt for:', email);
         
         try {
             // Show loading state
@@ -71,6 +88,7 @@ class AuthManager {
             });
             
             const data = await response.json();
+            console.log('Login response:', data);
             
             if (data.success) {
                 // Set session
@@ -97,6 +115,7 @@ class AuthManager {
                     } else if (data.user.role === 'admin') {
                         window.location.href = 'admin-dashboard.html';
                     } else {
+                        // Force page reload to update navigation
                         window.location.reload();
                     }
                 }, 1000);
@@ -106,6 +125,7 @@ class AuthManager {
             }
             
         } catch (error) {
+            console.error('Login error:', error);
             this.showNotification(error.message, 'error');
             
             // Reset button
@@ -118,6 +138,8 @@ class AuthManager {
     }
     
     async handleRegister(userData) {
+        console.log('Registration attempt for:', userData.email);
+        
         try {
             const response = await fetch(`${API_BASE_URL}/auth/register.php`, {
                 method: 'POST',
@@ -128,6 +150,7 @@ class AuthManager {
             });
             
             const data = await response.json();
+            console.log('Registration response:', data);
             
             if (data.success) {
                 // Auto-login after successful registration
@@ -143,16 +166,20 @@ class AuthManager {
                 });
                 
                 const loginData = await loginResponse.json();
+                console.log('Auto-login response:', loginData);
                 
                 if (loginData.success) {
                     this.setSession(loginData.user, loginData.token);
                     return { success: true, user: loginData.user };
+                } else {
+                    console.error('Auto-login failed:', loginData.message);
                 }
             }
             
             return { success: false, message: data.message };
             
         } catch (error) {
+            console.error('Registration error:', error);
             return { 
                 success: false, 
                 message: 'Registration failed. Please try again.' 
@@ -162,6 +189,8 @@ class AuthManager {
     
     async handleLogout(event) {
         if (event) event.preventDefault();
+        
+        console.log('Logout initiated');
         
         try {
             await fetch(`${API_BASE_URL}/auth/logout.php`);
@@ -179,31 +208,49 @@ class AuthManager {
     }
     
     setSession(user, token) {
+        console.log('Setting session for user:', user);
+        
         this.currentUser = user;
         
         // Save to localStorage
         localStorage.setItem(this.tokenKey, token);
         localStorage.setItem(this.userKey, JSON.stringify(user));
         
+        console.log('Saved to localStorage. Token:', token ? 'Yes' : 'No', 'User:', user ? 'Yes' : 'No');
+        
         // Setup auth header for API calls
         this.setupAuthHeader(token);
         
         // Update UI
         this.updateUI();
+        
+        // Dispatch custom event for other scripts
+        window.dispatchEvent(new CustomEvent('authchange', { 
+            detail: { user: user, authenticated: true } 
+        }));
     }
     
     clearSession() {
+        console.log('Clearing session');
+        
         this.currentUser = null;
         
         // Remove from localStorage
         localStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
         
+        console.log('LocalStorage cleared');
+        
         // Clear auth header
         this.clearAuthHeader();
         
         // Update UI
         this.updateUI();
+        
+        // Dispatch custom event for other scripts
+        window.dispatchEvent(new CustomEvent('authchange', { 
+            detail: { user: null, authenticated: false } 
+        }));
     }
     
     setupAuthHeader(token) {
@@ -216,15 +263,25 @@ class AuthManager {
     }
     
     updateUI() {
+        console.log('Updating UI. Authenticated:', this.isAuthenticated());
+        
         const loginBtn = document.getElementById('loginBtn');
         const registerBtn = document.getElementById('registerBtn');
         const userMenu = document.getElementById('userMenu');
         const adminMenu = document.getElementById('adminMenu');
         
         if (this.isAuthenticated()) {
+            console.log('User is authenticated, updating UI...');
+            
             // User is logged in
-            if (loginBtn) loginBtn.style.display = 'none';
-            if (registerBtn) registerBtn.style.display = 'none';
+            if (loginBtn) {
+                loginBtn.style.display = 'none';
+                loginBtn.parentElement.style.display = 'none'; // Hide the li item too
+            }
+            if (registerBtn) {
+                registerBtn.style.display = 'none';
+                registerBtn.parentElement.style.display = 'none'; // Hide the li item too
+            }
             
             // Create user menu if it doesn't exist
             if (!userMenu) {
@@ -255,9 +312,17 @@ class AuthManager {
                 }
             }
         } else {
+            console.log('User is NOT authenticated, showing login buttons');
+            
             // User is not logged in
-            if (loginBtn) loginBtn.style.display = 'block';
-            if (registerBtn) registerBtn.style.display = 'block';
+            if (loginBtn) {
+                loginBtn.style.display = 'block';
+                loginBtn.parentElement.style.display = 'block';
+            }
+            if (registerBtn) {
+                registerBtn.style.display = 'block';
+                registerBtn.parentElement.style.display = 'block';
+            }
             
             if (userMenu) userMenu.style.display = 'none';
             if (adminMenu) adminMenu.style.display = 'none';
@@ -266,8 +331,14 @@ class AuthManager {
     
     createUserMenu() {
         const navbarNav = document.querySelector('#navbarNav .navbar-nav');
-        if (!navbarNav || !this.currentUser) return;
+        if (!navbarNav || !this.currentUser) {
+            console.error('Cannot create user menu: navbarNav or currentUser missing');
+            return;
+        }
         
+        console.log('Creating user menu for:', this.currentUser.name);
+        
+        // CRITICAL FIX: Correct profile link path
         const userMenuHTML = `
             <li class="nav-item dropdown" id="userMenu">
                 <a class="nav-link dropdown-toggle" href="#" role="button" 
@@ -276,10 +347,10 @@ class AuthManager {
                     <span class="user-name">${this.currentUser.name.split(' ')[0]}</span>
                 </a>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="profile.html">
+                    <li><a class="dropdown-item" href="pages/profile.html">
                         <i class="fas fa-user me-2"></i>My Profile
                     </a></li>
-                    <li><a class="dropdown-item" href="my-donations.html">
+                    <li><a class="dropdown-item" href="#">
                         <i class="fas fa-donate me-2"></i>My Donations
                     </a></li>
                     ${this.isAdmin() ? 
@@ -299,8 +370,11 @@ class AuthManager {
         if (loginItem) {
             loginItem.insertAdjacentHTML('beforebegin', userMenuHTML);
         } else {
-            navbarNav.innerHTML += userMenuHTML;
+            // If no login button, add to end
+            navbarNav.insertAdjacentHTML('beforeend', userMenuHTML);
         }
+        
+        console.log('User menu created successfully');
     }
     
     createAdminMenu() {
@@ -323,11 +397,15 @@ class AuthManager {
     }
     
     isAuthenticated() {
-        return this.currentUser !== null;
+        const isAuth = this.currentUser !== null;
+        console.log('isAuthenticated check:', isAuth);
+        return isAuth;
     }
     
     isAdmin() {
-        return this.isAuthenticated() && this.currentUser.role === 'admin';
+        const isAdmin = this.isAuthenticated() && this.currentUser.role === 'admin';
+        console.log('isAdmin check:', isAdmin);
+        return isAdmin;
     }
     
     isDonor() {
@@ -335,6 +413,7 @@ class AuthManager {
     }
     
     getCurrentUser() {
+        console.log('getCurrentUser called:', this.currentUser);
         return this.currentUser;
     }
     
@@ -413,7 +492,19 @@ class AuthManager {
 }
 
 // Initialize auth manager
+console.log('Initializing auth manager...');
 const auth = new AuthManager();
+
+// Make auth available globally
+window.auth = auth;
+
+// Listen for storage changes (when another tab logs in/out)
+window.addEventListener('storage', function(e) {
+    if (e.key === 'micro_donation_user' || e.key === 'micro_donation_token') {
+        console.log('Auth storage changed, reloading auth state');
+        auth.init(); // Re-initialize to sync state
+    }
+});
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
