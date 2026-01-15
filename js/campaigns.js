@@ -49,7 +49,7 @@ class CampaignManager {
                 progress: 65,
                 donors: 423,
                 daysLeft: 15,
-                image: "../assets/images/campaign1.jpg",
+                image: "assets/images/campaign1.jpg",
                 organizer: "MPP KPTM",
                 dateCreated: "2025-11-01",
                 featured: true
@@ -64,7 +64,7 @@ class CampaignManager {
                 progress: 62,
                 donors: 287,
                 daysLeft: 30,
-                image: "../assets/images/campaign2.jpg",
+                image: "assets/images/campaign2.jpg",
                 organizer: "Student Affairs",
                 dateCreated: "2025-11-15",
                 featured: true
@@ -79,7 +79,7 @@ class CampaignManager {
                 progress: 56,
                 donors: 512,
                 daysLeft: 45,
-                image: "../assets/images/campaign3.jpg",
+                image: "assets/images/campaign3.jpg",
                 organizer: "Community Council",
                 dateCreated: "2025-10-20",
                 featured: true
@@ -94,7 +94,7 @@ class CampaignManager {
                 progress: 63,
                 donors: 198,
                 daysLeft: 20,
-                image: "../assets/images/campaign4.jpg",
+                image: "assets/images/campaign4.jpg",
                 organizer: "Animal Welfare Club",
                 dateCreated: "2025-11-10",
                 featured: false
@@ -109,7 +109,7 @@ class CampaignManager {
                 progress: 59,
                 donors: 156,
                 daysLeft: 25,
-                image: "../assets/images/campaign5.jpg",
+                image: "assets/images/campaign5.jpg",
                 organizer: "Green Society",
                 dateCreated: "2025-11-05",
                 featured: false
@@ -124,7 +124,7 @@ class CampaignManager {
                 progress: 53,
                 donors: 234,
                 daysLeft: 40,
-                image: "../assets/images/campaign6.jpg",
+                image: "assets/images/campaign6.jpg",
                 organizer: "Tech Club KPTM",
                 dateCreated: "2025-10-30",
                 featured: false
