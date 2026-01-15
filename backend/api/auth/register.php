@@ -1,12 +1,14 @@
 <?php
+require_once dirname(dirname(__FILE__)) . '/config/database.php';
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-include_once '../../config/database.php';
-include_once '../../models/User.php';
+$basePath = dirname(dirname(dirname(__FILE__)));
+require_once $basePath . '/backend/config/database.php';
+include_once dirname(dirname(dirname(__FILE__))) . '/models/User.php';
 
 $database = new Database();
 $db = $database->getConnection();

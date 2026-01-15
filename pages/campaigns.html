@@ -225,62 +225,178 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/campaigns.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/campaigns.js"></script>
     <script src="js/auth-global.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const startCampaignBtn = document.getElementById('startCampaignBtn');
-            const startCampaignModal = new bootstrap.Modal(document.getElementById('startCampaignModal'));
-            
-            if (startCampaignBtn) {
-                startCampaignBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    startCampaignModal.show();
-                });
-            }
-            
-            // Load campaigns
-            if (typeof loadAllCampaigns === 'function') {
-                loadAllCampaigns();
-            }
-            
-            // Filter functionality
-            const searchInput = document.getElementById('searchCampaigns');
-            const filterSelect = document.getElementById('filterCategory');
-            const searchBtn = document.getElementById('searchBtn');
-            
-            if (searchBtn) {
-                searchBtn.addEventListener('click', filterCampaigns);
-            }
-            
-            if (searchInput) {
-                searchInput.addEventListener('keyup', filterCampaigns);
-            }
-            
-            if (filterSelect) {
-                filterSelect.addEventListener('change', filterCampaigns);
-            }
-            
-            // Sort buttons
-            document.querySelectorAll('[data-sort]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    sortCampaigns(this.dataset.sort);
-                });
+    // REPLACE the entire inline script in campaigns.html with:
+    document.addEventListener('DOMContentLoaded', function() {
+        const startCampaignBtn = document.getElementById('startCampaignBtn');
+        const startCampaignModal = new bootstrap.Modal(document.getElementById('startCampaignModal'));
+        
+        if (startCampaignBtn) {
+            startCampaignBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Use the auth instance from auth.js
+                if (!window.auth || !window.auth.isAuthenticated()) {
+                    window.auth.showNotification('Please login to create a campaign', 'warning');
+                    
+                    // Show login modal
+                    const loginModalElement = document.getElementById('loginModal');
+                    if (loginModalElement) {
+                        const loginModal = new bootstrap.Modal(loginModalElement);
+                        loginModal.show();
+                    }
+                    return;
+                }
+                
+                // User is logged in, show campaign creation modal
+                startCampaignModal.show();
             });
-            
-            function filterCampaigns() {
-                const searchTerm = searchInput.value.toLowerCase();
-                const category = filterSelect.value;
-                // Implementation would go here
-            }
-            
-            function sortCampaigns(sortBy) {
-                // Implementation would go here
-            }
+        }
+        
+        // Load campaigns
+        if (typeof loadAllCampaigns === 'function') {
+            loadAllCampaigns();
+        }
+        
+        // Filter functionality
+        const searchInput = document.getElementById('searchCampaigns');
+        const filterSelect = document.getElementById('filterCategory');
+        const searchBtn = document.getElementById('searchBtn');
+        
+        if (searchBtn) {
+            searchBtn.addEventListener('click', filterCampaigns);
+        }
+        
+        if (searchInput) {
+            searchInput.addEventListener('keyup', filterCampaigns);
+        }
+        
+        if (filterSelect) {
+            filterSelect.addEventListener('change', filterCampaigns);
+        }
+        
+        // Sort buttons
+        document.querySelectorAll('[data-sort]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                if (typeof campaignManager !== 'undefined' && typeof campaignManager.sortCampaigns === 'function') {
+                    const sorted = campaignManager.sortCampaigns(this.dataset.sort);
+                    renderSortedCampaigns(sorted);
+                }
+            });
         });
-    </script>
+        
+        // Handle new campaign form submission
+        const newCampaignForm = document.getElementById('newCampaignForm');
+        if (newCampaignForm) {
+            newCampaignForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                try {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                    
+                    const campaignData = {
+                        title: document.getElementById('campaignTitle').value,
+                        description: document.getElementById('campaignDescription').value,
+                        target: parseFloat(document.getElementById('targetAmount').value),
+                        category: document.getElementById('campaignCategory').value,
+                        days_left: 30
+                    };
+                    
+                    // Add organizer info if user is logged in
+                    if (window.auth && window.auth.currentUser) {
+                        campaignData.organizer = window.auth.currentUser.name || window.auth.currentUser.email;
+                    } else {
+                        campaignData.organizer = 'Anonymous';
+                    }
+                    
+                    // Handle image upload
+                    const imageInput = document.getElementById('campaignImage');
+                    if (imageInput.files.length > 0) {
+                        // For now, use placeholder - implement upload later
+                        campaignData.image_url = '/micro-donation-portal/assets/images/default-campaign.jpg';
+                    }
+                    
+                    // Use campaignManager
+                    if (typeof campaignManager !== 'undefined' && typeof campaignManager.createCampaign === 'function') {
+                        const result = await campaignManager.createCampaign(campaignData);
+                        
+                        if (result.success) {
+                            window.auth.showNotification(result.message, 'success');
+                            newCampaignForm.reset();
+                            startCampaignModal.hide();
+                            
+                            if (typeof loadAllCampaigns === 'function') {
+                                loadAllCampaigns();
+                            }
+                        } else {
+                            window.auth.showNotification(result.message || 'Failed to create campaign', 'error');
+                        }
+                    }
+                } catch (error) {
+                    if (window.auth) {
+                        window.auth.showNotification(error.message || 'Error creating campaign', 'error');
+                    } else {
+                        alert(error.message || 'Error creating campaign');
+                    }
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+        }
+        
+        function filterCampaigns() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const category = filterSelect.value;
+            
+            if (typeof campaignManager !== 'undefined') {
+                let filtered = campaignManager.filterCampaigns(searchTerm);
+                
+                if (category) {
+                    filtered = campaignManager.filterByCategory(category);
+                }
+                
+                renderFilteredCampaigns(filtered);
+            }
+        }
+        
+        function renderFilteredCampaigns(campaigns) {
+            const container = document.getElementById('campaignsGrid');
+            if (!container) return;
+            
+            if (campaigns.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4>No campaigns found</h4>
+                        <p class="text-muted">Try adjusting your search or filter criteria</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = campaigns.map(campaign => 
+                    campaignManager.renderCampaignCard(campaign)
+                ).join('');
+            }
+        }
+        
+        function renderSortedCampaigns(campaigns) {
+            const container = document.getElementById('campaignsGrid');
+            if (!container) return;
+            
+            container.innerHTML = campaigns.map(campaign => 
+                campaignManager.renderCampaignCard(campaign)
+            ).join('');
+        }
+    });
+</script>
 </body>
 </html>

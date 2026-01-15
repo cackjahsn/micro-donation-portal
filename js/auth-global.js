@@ -4,9 +4,9 @@
 function checkGlobalAuth() {
     console.log('=== GLOBAL AUTH CHECK ===');
     
-    // Get from localStorage
-    const userStr = localStorage.getItem('micro_donation_user');
-    const token = localStorage.getItem('micro_donation_token');
+    // Use micro_donation_ keys
+        const userStr = localStorage.getItem('micro_donation_user');
+        const token = localStorage.getItem('micro_donation_token');
     
     console.log('LocalStorage check:', { userStr: !!userStr, token: !!token });
     

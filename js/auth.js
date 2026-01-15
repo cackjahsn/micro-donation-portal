@@ -37,7 +37,7 @@ class AuthManager {
         }
         
         this.setupEventListeners();
-        // CRITICAL FIX: Update UI immediately on init
+        // Update UI immediately on init
         this.updateUI();
     }
     
@@ -48,91 +48,195 @@ class AuthManager {
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
             console.log('Login form found, adding listener');
-            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+            
+            // Remove any existing listeners to prevent duplicates
+            const newForm = loginForm.cloneNode(true);
+            loginForm.parentNode.replaceChild(newForm, loginForm);
+            
+            newForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('Login form submitted');
+                
+                // Get form values
+                const emailInput = newForm.querySelector('input[type="email"], #loginEmail');
+                const passwordInput = newForm.querySelector('input[type="password"], #loginPassword');
+                
+                if (!emailInput || !passwordInput) {
+                    this.showNotification('Please fill in all fields', 'error');
+                    return;
+                }
+                
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                
+                if (!email || !password) {
+                    this.showNotification('Please enter both email and password', 'error');
+                    return;
+                }
+                
+                console.log('Calling handleLogin with:', email);
+                await this.handleLogin(email, password);
+            });
         }
         
         // Logout buttons
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.logout-btn')) {
+            if (e.target.closest('.logout-btn') || e.target.id === 'logoutBtn') {
                 console.log('Logout button clicked');
                 this.handleLogout(e);
             }
         });
     }
     
-    async handleLogin(event) {
-        event.preventDefault();
+    async handleLogin(email, password) {
+        console.log('=== LOGIN START ===');
+        console.log('Email:', email, 'Type:', typeof email);
+        console.log('Password:', 'Type:', typeof password);
         
-        const form = event.target;
-        const email = form.querySelector('#loginEmail')?.value || 
-                     form.querySelector('input[type="email"]')?.value;
-        const password = form.querySelector('#loginPassword')?.value || 
-                        form.querySelector('input[type="password"]')?.value;
+        // Find login button - use multiple selectors
+        let loginBtn = document.querySelector('#loginBtn, button[type="submit"]');
         
-        console.log('Login attempt for:', email);
+        if (!loginBtn) {
+            console.error('Login button not found anywhere on page');
+            // Try alternative - find any button in the login form
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginBtn = loginForm.querySelector('button');
+            }
+        }
+        
+        const originalText = loginBtn ? loginBtn.innerHTML : 'Login';
+        console.log('Original button text:', originalText);
+        
+        // Safety timeout to prevent stuck button
+        const restoreTimeout = setTimeout(() => {
+            console.warn('Login timeout - forcing button restoration');
+            if (loginBtn && loginBtn.disabled) {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = originalText;
+                this.showNotification('Login timeout. Please try again.', 'error');
+            }
+        }, 15000);
         
         try {
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-            submitBtn.disabled = true;
+            // Disable button and show loading
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                console.log('Button disabled and loading state set');
+            }
             
-            // API call to backend
+            // Validate inputs
+            if (typeof email !== 'string' || typeof password !== 'string') {
+                console.error('Invalid input types:', { 
+                    emailType: typeof email, 
+                    passwordType: typeof password 
+                });
+                throw new Error('Invalid email or password format');
+            }
+            
+            const trimmedEmail = email.trim();
+            const trimmedPassword = password.trim();
+            
+            console.log('Trimmed values - Email:', trimmedEmail);
+            
+            if (!trimmedEmail || !trimmedPassword) {
+                throw new Error('Email and password are required');
+            }
+            
+            // Prepare login data
+            const loginData = {
+                email: trimmedEmail,
+                password: trimmedPassword
+            };
+            
+            console.log('Sending login request:', loginData);
+            
+            // Add AbortController for timeout
+            const controller = new AbortController();
+            const fetchTimeout = setTimeout(() => controller.abort(), 10000);
+            
+            // Make API call
             const response = await fetch(`${API_BASE_URL}/auth/login.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify(loginData),
+                signal: controller.signal
             });
             
-            const data = await response.json();
-            console.log('Login response:', data);
+            clearTimeout(fetchTimeout);
             
-            if (data.success) {
-                // Set session
+            // Get raw response first for debugging
+            const responseText = await response.text();
+            console.log('Raw login response:', responseText);
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+                console.log('Parsed response:', data);
+            } catch (jsonError) {
+                console.error('JSON parse error:', jsonError);
+                throw new Error('Invalid server response');
+            }
+            
+            if (data.success && data.user && data.token) {
+                console.log('Login successful for user:', data.user.name);
+                
+                // Set session with correct keys
                 this.setSession(data.user, data.token);
                 
-                // Show success message
+                // Clear safety timeout
+                clearTimeout(restoreTimeout);
+                
                 this.showNotification('Login successful!', 'success');
                 
                 // Close modal if exists
-                const modalElement = form.closest('.modal');
-                if (modalElement) {
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
-                    }
+                const loginModal = document.getElementById('loginModal');
+                if (loginModal) {
+                    const modal = bootstrap.Modal.getInstance(loginModal);
+                    if (modal) modal.hide();
                 }
                 
-                // Redirect based on role or stored redirect URL
-                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+                // Redirect based on role
                 setTimeout(() => {
-                    if (redirectUrl) {
-                        sessionStorage.removeItem('redirectAfterLogin');
-                        window.location.href = redirectUrl;
-                    } else if (data.user.role === 'admin') {
+                    if (data.user.role === 'admin') {
                         window.location.href = 'admin-dashboard.html';
                     } else {
                         // Force page reload to update navigation
-                        window.location.reload();
+                        window.location.href = 'index.html';
                     }
                 }, 1000);
                 
+                return true;
             } else {
                 throw new Error(data.message || 'Login failed');
             }
             
         } catch (error) {
-            console.error('Login error:', error);
-            this.showNotification(error.message, 'error');
+            console.error('Login error details:', error);
             
-            // Reset button
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
+            // Handle different error types
+            let errorMessage = error.message;
+            if (error.name === 'AbortError') {
+                errorMessage = 'Request timeout. Server not responding.';
+            }
+            
+            this.showNotification(errorMessage, 'error');
+            return false;
+            
+        } finally {
+            // ALWAYS restore button state
+            console.log('Finally block executing - restoring button...');
+            clearTimeout(restoreTimeout);
+            
+            if (loginBtn && loginBtn.parentNode) { // Check if button still exists in DOM
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = originalText;
+                console.log('Button restored. Disabled:', loginBtn.disabled);
+            } else {
+                console.warn('Could not restore button - element not found');
             }
         }
     }
@@ -212,9 +316,13 @@ class AuthManager {
         
         this.currentUser = user;
         
-        // Save to localStorage
+        // Save to localStorage with consistent keys
         localStorage.setItem(this.tokenKey, token);
         localStorage.setItem(this.userKey, JSON.stringify(user));
+        
+        // Remove any old/conflicting keys
+        localStorage.removeItem('communitygive_user');
+        localStorage.removeItem('communitygive_token');
         
         console.log('Saved to localStorage. Token:', token ? 'Yes' : 'No', 'User:', user ? 'Yes' : 'No');
         
@@ -267,8 +375,6 @@ class AuthManager {
         
         const loginBtn = document.getElementById('loginBtn');
         const registerBtn = document.getElementById('registerBtn');
-        const userMenu = document.getElementById('userMenu');
-        const adminMenu = document.getElementById('adminMenu');
         
         if (this.isAuthenticated()) {
             console.log('User is authenticated, updating UI...');
@@ -276,35 +382,28 @@ class AuthManager {
             // User is logged in
             if (loginBtn) {
                 loginBtn.style.display = 'none';
-                loginBtn.parentElement.style.display = 'none'; // Hide the li item too
+                if (loginBtn.parentElement) {
+                    loginBtn.parentElement.style.display = 'none';
+                }
             }
             if (registerBtn) {
                 registerBtn.style.display = 'none';
-                registerBtn.parentElement.style.display = 'none'; // Hide the li item too
+                if (registerBtn.parentElement) {
+                    registerBtn.parentElement.style.display = 'none';
+                }
             }
             
             // Create user menu if it doesn't exist
+            const userMenu = document.getElementById('userMenu');
             if (!userMenu) {
                 this.createUserMenu();
             } else {
                 userMenu.style.display = 'block';
-                
-                // Update user info
-                const userName = userMenu.querySelector('.user-name');
-                const userAvatar = userMenu.querySelector('.user-avatar');
-                
-                if (userName) {
-                    userName.textContent = this.currentUser.name;
-                }
-                
-                if (userAvatar && this.currentUser.avatar) {
-                    userAvatar.src = this.currentUser.avatar;
-                    userAvatar.alt = this.currentUser.name;
-                }
             }
             
             // Show admin menu if admin
             if (this.isAdmin()) {
+                const adminMenu = document.getElementById('adminMenu');
                 if (!adminMenu) {
                     this.createAdminMenu();
                 } else {
@@ -317,46 +416,68 @@ class AuthManager {
             // User is not logged in
             if (loginBtn) {
                 loginBtn.style.display = 'block';
-                loginBtn.parentElement.style.display = 'block';
+                if (loginBtn.parentElement) {
+                    loginBtn.parentElement.style.display = 'block';
+                }
             }
             if (registerBtn) {
                 registerBtn.style.display = 'block';
-                registerBtn.parentElement.style.display = 'block';
+                if (registerBtn.parentElement) {
+                    registerBtn.parentElement.style.display = 'block';
+                }
             }
             
-            if (userMenu) userMenu.style.display = 'none';
-            if (adminMenu) adminMenu.style.display = 'none';
+            // Remove user menu if exists
+            const userMenu = document.getElementById('userMenu');
+            if (userMenu) {
+                userMenu.remove();
+            }
+            
+            // Remove admin menu if exists
+            const adminMenu = document.getElementById('adminMenu');
+            if (adminMenu) {
+                adminMenu.remove();
+            }
         }
     }
     
     createUserMenu() {
+        console.log('Creating user menu...');
+        
+        // Find navbar
         const navbarNav = document.querySelector('#navbarNav .navbar-nav');
         if (!navbarNav || !this.currentUser) {
             console.error('Cannot create user menu: navbarNav or currentUser missing');
             return;
         }
         
-        console.log('Creating user menu for:', this.currentUser.name);
+        // Remove existing user menu if it exists
+        const existingMenu = document.getElementById('userMenu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
         
-        // CRITICAL FIX: Correct profile link path
         const userMenuHTML = `
             <li class="nav-item dropdown" id="userMenu">
                 <a class="nav-link dropdown-toggle" href="#" role="button" 
                    data-bs-toggle="dropdown">
                     <i class="fas fa-user-circle me-1"></i>
-                    <span class="user-name">${this.currentUser.name.split(' ')[0]}</span>
+                    <span class="user-name">${this.currentUser.name?.split(' ')[0] || this.currentUser.email}</span>
+                    ${this.currentUser.role === 'admin' ? ' (Admin)' : ''}
                 </a>
                 <ul class="dropdown-menu">
+                    ${this.currentUser.role === 'admin' ? `
+                        <li><a class="dropdown-item" href="admin-dashboard.html">
+                            <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                    ` : ''}
                     <li><a class="dropdown-item" href="pages/profile.html">
                         <i class="fas fa-user me-2"></i>My Profile
                     </a></li>
                     <li><a class="dropdown-item" href="#">
                         <i class="fas fa-donate me-2"></i>My Donations
                     </a></li>
-                    ${this.isAdmin() ? 
-                        `<li><a class="dropdown-item" href="admin-dashboard.html">
-                            <i class="fas fa-cog me-2"></i>Admin Dashboard
-                        </a></li>` : ''}
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger logout-btn" href="#">
                         <i class="fas fa-sign-out-alt me-2"></i>Logout
@@ -365,12 +486,12 @@ class AuthManager {
             </li>
         `;
         
-        // Add user menu before the login/register buttons
+        // Find where to insert (before login/register buttons)
         const loginItem = navbarNav.querySelector('.nav-item:has(#loginBtn)');
         if (loginItem) {
             loginItem.insertAdjacentHTML('beforebegin', userMenuHTML);
         } else {
-            // If no login button, add to end
+            // Append to end if login button not found
             navbarNav.insertAdjacentHTML('beforeend', userMenuHTML);
         }
         
@@ -504,6 +625,31 @@ window.addEventListener('storage', function(e) {
         console.log('Auth storage changed, reloading auth state');
         auth.init(); // Re-initialize to sync state
     }
+});
+
+// Add global unstuck function to fix stuck buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix stuck login buttons every 5 seconds
+    setInterval(function() {
+        const stuckButtons = document.querySelectorAll('button:disabled');
+        stuckButtons.forEach(btn => {
+            // If button has spinner text and has been disabled
+            if (btn.innerHTML.includes('fa-spinner')) {
+                console.log('Found stuck button:', btn);
+                btn.disabled = false;
+                btn.innerHTML = btn.innerHTML.includes('Login') ? 'Login' : 'Submit';
+            }
+        });
+    }, 5000);
+    
+    // Force restore login button on page unload
+    window.addEventListener('beforeunload', function() {
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = 'Login';
+        }
+    });
 });
 
 // Export for use in other modules
