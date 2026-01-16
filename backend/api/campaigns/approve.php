@@ -1,8 +1,22 @@
 <?php
-require_once dirname(dirname(__FILE__)) . '/config/database.php';
+// Add error reporting at the TOP
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
+// Set headers
 header('Content-Type: application/json');
-$basePath = dirname(dirname(dirname(__FILE__)));
-require_once $basePath . '/backend/config/database.php';
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    exit(0);
+}
+
+// FIX THE PATH HERE:
+$configPath = dirname(__FILE__) . '/../../config/database.php';
+require_once $configPath;
 
 $database = new Database();
 $db = $database->getConnection();

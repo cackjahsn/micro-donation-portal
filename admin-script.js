@@ -32,11 +32,17 @@ class AdminDashboard {
     }
     
     loadUserData() {
-        const savedUser = localStorage.getItem('communitygive_user');
-        if (savedUser) {
-            this.currentUser = JSON.parse(savedUser);
-            this.updateUserInfo();
+        // Use auth.getCurrentUser if available
+        if (typeof auth !== 'undefined' && auth.getCurrentUser) {
+            this.currentUser = auth.getCurrentUser();
+        } else {
+            // Fallback to localStorage with utils check
+            const savedUser = localStorage.getItem('communitygive_user');
+            if (savedUser) {
+                this.currentUser = JSON.parse(savedUser);
+            }
         }
+        this.updateUserInfo();
     }
     
     updateUserInfo() {
@@ -80,8 +86,14 @@ class AdminDashboard {
     }
     
     async loadPage(page) {
+        // Destroy existing charts first
+        this.destroyAllCharts();
+        
         this.currentPage = page;
         const content = document.getElementById('main-content');
+        
+        // Clear content first
+        content.innerHTML = '';
         
         switch(page) {
             case 'overview':
@@ -110,41 +122,6 @@ class AdminDashboard {
         }
     }
 
-        // Add to AdminDashboard class
-
-            async loadAllCampaignsTable() {
-        try {
-            console.log('Loading campaigns for admin table...');
-            
-            // Clear any existing chart if we're switching views
-            if (this.charts.revenue) {
-                this.charts.revenue.destroy();
-                delete this.charts.revenue;
-            }
-            
-            // Try to fetch from API
-            const response = await fetch('backend/api/campaigns/get-all.php');
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const result = await response.json();
-            console.log('Campaigns data received:', result);
-            
-            if (result.success && result.campaigns) {
-                // Create a simple table for now
-                this.renderCampaignsTable(result.campaigns);
-            } else {
-                this.showNotification('No campaigns found or API error', 'warning');
-            }
-            
-        } catch (error) {
-            console.error('Error loading campaigns table:', error);
-            this.showNotification('Failed to load campaigns: ' + error.message, 'error');
-        }
-    }
-
     // Add this helper method too
     renderCampaignsTable(campaigns) {
         const container = document.getElementById('campaignsTableContainer');
@@ -159,6 +136,14 @@ class AdminDashboard {
             `;
             return;
         }
+        
+        // Use utils.formatCurrency if available
+        const formatCurrency = (amount) => {
+            if (typeof utils !== 'undefined' && utils.formatCurrency) {
+                return utils.formatCurrency(amount);
+            }
+            return `RM ${parseFloat(amount).toLocaleString()}`;
+        };
         
         // Create a simple table
         let html = `
@@ -188,8 +173,8 @@ class AdminDashboard {
                     <td>${campaign.id}</td>
                     <td><strong>${campaign.title}</strong></td>
                     <td><span class="badge bg-primary">${campaign.category}</span></td>
-                    <td>RM ${parseFloat(campaign.target).toLocaleString()}</td>
-                    <td>RM ${parseFloat(campaign.raised || 0).toLocaleString()}</td>
+                    <td>${formatCurrency(campaign.target)}</td>
+                    <td>${formatCurrency(campaign.raised || 0)}</td>
                     <td>
                         <div class="progress" style="height: 8px;">
                             <div class="progress-bar bg-success" style="width: ${campaign.progress || 0}%"></div>
@@ -225,24 +210,84 @@ class AdminDashboard {
         container.innerHTML = html;
     }
 
-    async loadPendingCampaigns() {
+        async loadPendingCampaigns() {
         try {
-            const response = await fetch('backend/api/campaigns/get-pending.php');
-            const result = await response.json();
+            console.log('Loading pending campaigns from API...');
             
-            if (result.success) {
-                this.renderPendingCampaigns(result.campaigns);
+            // Show loading state
+            const container = document.getElementById('pendingCampaignsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading pending campaigns...</p>
+                    </div>
+                `;
             }
+            
+        
+            const response = await fetch('../backend/api/campaigns/get-pending.php', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            console.log('Pending campaigns response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('Pending campaigns API result:', result);
+            
+            if (result.success && Array.isArray(result.campaigns)) {
+                this.renderPendingCampaigns(result.campaigns);
+                
+                // Update pending count
+                const pendingCount = document.getElementById('pendingCount');
+                if (pendingCount) {
+                    pendingCount.textContent = result.campaigns.length;
+                }
+                
+                // Also update the pending count in the sidebar if exists
+                const pendingBadge = document.querySelector('#pendingCampaignsCount');
+                if (pendingBadge) {
+                    pendingBadge.textContent = result.campaigns.length;
+                }
+            } else {
+                throw new Error(result.message || 'Failed to load pending campaigns');
+            }
+            
         } catch (error) {
             console.error('Error loading pending campaigns:', error);
+            
+            // Show error in container
+            const container = document.getElementById('pendingCampaignsContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <h5>Unable to load pending campaigns</h5>
+                        <p class="text-muted">${error.message}</p>
+                        <p class="text-muted small">Make sure the backend server is running</p>
+                        <button class="btn btn-outline-primary mt-3" onclick="adminDashboard.loadPendingCampaigns()">
+                            <i class="fas fa-redo"></i> Try Again
+                        </button>
+                    </div>
+                `;
+            }
         }
     }
-
-    renderPendingCampaigns(campaigns) {
+    
+        renderPendingCampaigns(campaigns) {
         const container = document.getElementById('pendingCampaignsContainer');
         if (!container) return;
         
-        if (campaigns.length === 0) {
+        if (!campaigns || campaigns.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-5">
                     <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
@@ -253,21 +298,30 @@ class AdminDashboard {
             return;
         }
         
+        // Format currency using utils if available
+        const formatCurrency = (amount) => {
+            if (typeof utils !== 'undefined' && utils.formatCurrency) {
+                return utils.formatCurrency(amount);
+            }
+            return `RM ${parseFloat(amount).toLocaleString()}`;
+        };
+        
         container.innerHTML = campaigns.map(campaign => `
             <div class="card mb-3">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3">
-                            <img src="${campaign.image_url || '/micro-donation-portal/assets/images/default-campaign.jpg'}" 
-                                class="img-fluid rounded" alt="${campaign.title}" style="max-height: 150px;">
+                            <img src="${campaign.image || '/micro-donation-portal/assets/images/default-campaign.jpg'}" 
+                                class="img-fluid rounded" alt="${campaign.title}" style="max-height: 150px; object-fit: cover;">
                         </div>
                         <div class="col-md-6">
                             <h5>${campaign.title}</h5>
-                            <p class="text-muted">${campaign.description.substring(0, 200)}...</p>
+                            <p class="text-muted">${campaign.description.substring(0, 200)}${campaign.description.length > 200 ? '...' : ''}</p>
                             <div class="mt-2">
                                 <span class="badge bg-primary">${campaign.category}</span>
-                                <span class="badge bg-secondary ms-2">Target: RM ${campaign.target_amount}</span>
+                                <span class="badge bg-secondary ms-2">Target: ${formatCurrency(campaign.target)}</span>
                                 <span class="badge bg-info ms-2">By: ${campaign.organizer}</span>
+                                <span class="badge bg-warning ms-2">Submitted: ${new Date(campaign.dateCreated).toLocaleDateString()}</span>
                             </div>
                         </div>
                         <div class="col-md-3 text-end">
@@ -292,49 +346,134 @@ class AdminDashboard {
         `).join('');
     }
 
-    async approveCampaign(campaignId) {
-        if (confirm('Are you sure you want to approve this campaign?')) {
-            try {
-                const response = await fetch('backend/api/campaigns/approve.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: campaignId, action: 'approve' })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    this.showNotification('Campaign approved successfully', 'success');
-                    this.loadPendingCampaigns();
-                } else {
-                    this.showNotification(result.message, 'error');
+    async loadAllCampaignsTable() {
+        try {
+            console.log('Loading all campaigns for admin table...');
+            
+            const container = document.getElementById('campaignsTableContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading campaigns...</p>
+                    </div>
+                `;
+            }
+            
+            // Fetch all campaigns (including active)
+            const response = await fetch('../backend/api/campaigns/get-all.php', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
                 }
-            } catch (error) {
-                this.showNotification('Error approving campaign', 'error');
+            });
+            
+            console.log('All campaigns response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('All campaigns API result:', result);
+            
+            if (result.success && Array.isArray(result.campaigns)) {
+                this.renderCampaignsTable(result.campaigns);
+            } else {
+                this.showNotification('No campaigns found or API error: ' + (result.message || 'Unknown error'), 'warning');
+            }
+            
+        } catch (error) {
+            console.error('Error loading campaigns table:', error);
+            this.showNotification('Failed to load campaigns: ' + error.message, 'error');
+            
+            // Show error in container
+            const container = document.getElementById('campaignsTableContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Failed to load campaigns: ${error.message}
+                    </div>
+                `;
             }
         }
     }
 
-    async rejectCampaign(campaignId) {
-        if (confirm('Are you sure you want to reject this campaign?')) {
-            try {
-                const response = await fetch('backend/api/campaigns/approve.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: campaignId, action: 'reject' })
-                });
+    async approveCampaign(campaignId) {
+        if (!confirm('Are you sure you want to approve this campaign? This will make it visible to donors.')) {
+            return;
+        }
+        
+        try {
+            // Use correct path
+            const response = await fetch('../backend/api/campaigns/approve.php', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    id: campaignId, 
+                    action: 'approve' 
+                })
+            });
+            
+            console.log('Approve response status:', response.status);
+            
+            const result = await response.json();
+            console.log('Approve API result:', result);
+            
+            if (result.success) {
+                this.showNotification(`Campaign #${campaignId} approved successfully`, 'success');
                 
-                const result = await response.json();
-                
-                if (result.success) {
-                    this.showNotification('Campaign rejected', 'success');
-                    this.loadPendingCampaigns();
-                } else {
-                    this.showNotification(result.message, 'error');
-                }
-            } catch (error) {
-                this.showNotification('Error rejecting campaign', 'error');
+                // Reload both pending campaigns and all campaigns
+                this.loadPendingCampaigns();
+                this.loadAllCampaignsTable();
+            } else {
+                this.showNotification('Failed to approve campaign: ' + (result.message || 'Unknown error'), 'error');
             }
+        } catch (error) {
+            console.error('Error approving campaign:', error);
+            this.showNotification('Error approving campaign: ' + error.message, 'error');
+        }
+    }
+
+    async rejectCampaign(campaignId) {
+        if (!confirm('Are you sure you want to reject this campaign? This will cancel it.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('../backend/api/campaigns/approve.php', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    id: campaignId, 
+                    action: 'reject' 
+                })
+            });
+            
+            console.log('Reject response status:', response.status);
+            
+            const result = await response.json();
+            console.log('Reject API result:', result);
+            
+            if (result.success) {
+                this.showNotification(`Campaign #${campaignId} rejected`, 'success');
+                
+                // Reload both pending campaigns and all campaigns
+                this.loadPendingCampaigns();
+                this.loadAllCampaignsTable();
+            } else {
+                this.showNotification('Failed to reject campaign: ' + (result.message || 'Unknown error'), 'error');
+            }
+        } catch (error) {
+            console.error('Error rejecting campaign:', error);
+            this.showNotification('Error rejecting campaign: ' + error.message, 'error');
         }
     }
     
@@ -1545,33 +1684,39 @@ class AdminDashboard {
     }
     
     showNotification(message, type = 'info') {
-        const existing = document.querySelector('.admin-notification');
-        if (existing) existing.remove();
-        
-        const notification = document.createElement('div');
-        notification.className = `admin-notification alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
-        notification.innerHTML = `
-            <i class="fas ${this.getNotificationIcon(type)} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        notification.style.cssText = `
-            position: fixed;
-            top: 90px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            if (notification.parentNode) notification.remove();
-        }, 5000);
-    }
+            if (typeof utils !== 'undefined' && utils.showNotification) {
+                utils.showNotification(message, type);
+            } else {
+                // Original notification code
+                const existing = document.querySelector('.admin-notification');
+                if (existing) existing.remove();
+                
+                const notification = document.createElement('div');
+                notification.className = `admin-notification alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+                notification.innerHTML = `
+                    <i class="fas ${this.getNotificationIcon(type)} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 90px;
+                    right: 20px;
+                    z-index: 9999;
+                    min-width: 300px;
+                    max-width: 400px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (notification.parentNode) notification.remove();
+                }, 5000);
+            }
+        }
+    
     
     getNotificationIcon(type) {
         const icons = {
@@ -1595,6 +1740,20 @@ class AdminDashboard {
             { id: 'DON-001233', amount: 50.00, date: '2025-12-18', status: 'completed' },
             { id: 'DON-001232', amount: 25.00, date: '2025-12-18', status: 'completed' }
         ];
+    }
+
+    destroyAllCharts() {
+        Object.keys(this.charts).forEach(chartName => {
+            if (this.charts[chartName]) {
+                try {
+                    this.charts[chartName].destroy();
+                } catch (e) {
+                    console.log('Error destroying chart:', chartName, e);
+                }
+                this.charts[chartName] = null;
+            }
+        });
+        this.charts = {};
     }
 }
 

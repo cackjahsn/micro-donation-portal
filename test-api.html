@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>API Test</h1>
+<div id="results"></div>
+
+<script>
+async function testApi(url) {
+    const div = document.getElementById('results');
+    div.innerHTML += `<h3>Testing: ${url}</h3>`;
+    
+    try {
+        const response = await fetch(url);
+        const text = await response.text();
+        div.innerHTML += `<p>Status: ${response.status}</p>`;
+        div.innerHTML += `<pre>${text.substring(0, 500)}</pre>`;
+    } catch (error) {
+        div.innerHTML += `<p style="color:red">Error: ${error.message}</p>`;
+    }
+    div.innerHTML += '<hr>';
+}
+
+// Test different path options
+testApi('../backend/api/campaigns/get-all.php');
+testApi('backend/api/campaigns/get-all.php');
+testApi('/micro-donation-portal/backend/api/campaigns/get-all.php');
+</script>
+</body>
+</html>

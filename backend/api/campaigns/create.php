@@ -1,7 +1,11 @@
 <?php
-// create.php - FIXED VERSION
+// create.php - FIXED PATH VERSION
 
-require_once dirname(dirname(__FILE__)) . '/config/database.php';
+// Add error reporting at the TOP
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -11,8 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-$basePath = dirname(dirname(dirname(__FILE__)));
-require_once $basePath . '/backend/config/database.php';
+// FIX THE PATH HERE:
+$configPath = dirname(__FILE__) . '/../../config/database.php';
+require_once $configPath;
 
 $database = new Database();
 $db = $database->getConnection();

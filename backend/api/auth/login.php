@@ -18,9 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 ob_clean();
 
 try {
-    // CORRECT PATH: Go up 3 levels, then config/database.php (NO extra backend/)
-    $basePath = dirname(dirname(dirname(__FILE__))); // This gives: C:\xampp\htdocs\micro-donation-portal\backend
-    $configPath = $basePath . '/config/database.php'; // NOT: '/backend/config/database.php'
+    $configPath = dirname(__FILE__) . '/../../config/database.php';
+    require_once $configPath;
     
     if (!file_exists($configPath)) {
         // For debugging

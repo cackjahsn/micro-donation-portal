@@ -8,25 +8,65 @@ class AuthManager {
         this.currentUser = null;
         this.tokenKey = 'micro_donation_token';
         this.userKey = 'micro_donation_user';
+        
+        // Initialize utils if available
+        if (typeof utils !== 'undefined') {
+            this.utils = utils;
+        } else {
+            // Fallback to localStorage
+            console.warn('Utils not available, using localStorage directly');
+            this.utils = {
+                getStorage: (key) => {
+                    const value = localStorage.getItem(`micro_donation_${key}`);
+                    if (!value) {
+                        // Try legacy key
+                        const legacyKey = key === 'user' ? 'communitygive_user' : 
+                                        key === 'token' ? 'communitygive_token' : 
+                                        `micro_donation_${key}`;
+                        const legacyValue = localStorage.getItem(legacyKey);
+                        if (legacyValue && (key === 'user' || key === 'token')) {
+                            // Migrate to new key
+                            localStorage.setItem(`micro_donation_${key}`, legacyValue);
+                            localStorage.removeItem(legacyKey);
+                            return legacyValue;
+                        }
+                    }
+                    try {
+                        return value ? JSON.parse(value) : null;
+                    } catch {
+                        return value;
+                    }
+                },
+                setStorage: (key, value) => {
+                    const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+                    localStorage.setItem(`micro_donation_${key}`, stringValue);
+                },
+                removeStorage: (key) => {
+                    localStorage.removeItem(`micro_donation_${key}`);
+                    localStorage.removeItem(`communitygive_${key}`);
+                }
+            };
+        }
+        
         this.init();
     }
     
     init() {
         console.log('AuthManager init called');
         
-        // Check for saved user session
-        const savedToken = localStorage.getItem(this.tokenKey);
-        const savedUser = localStorage.getItem(this.userKey);
+        // Check for saved user session using utils
+        const savedToken = this.utils.getStorage('token');
+        const savedUser = this.utils.getStorage('user');
         
-        console.log('LocalStorage check:', {
+        console.log('Storage check:', {
             token: savedToken ? 'Exists' : 'Missing',
             user: savedUser ? 'Exists' : 'Missing'
         });
         
         if (savedToken && savedUser) {
             try {
-                this.currentUser = JSON.parse(savedUser);
-                console.log('User restored from localStorage:', this.currentUser);
+                this.currentUser = savedUser;
+                console.log('User restored from storage:', this.currentUser);
                 this.setupAuthHeader(savedToken);
             } catch (error) {
                 console.error('Error parsing saved user:', error);
@@ -316,15 +356,11 @@ class AuthManager {
         
         this.currentUser = user;
         
-        // Save to localStorage with consistent keys
-        localStorage.setItem(this.tokenKey, token);
-        localStorage.setItem(this.userKey, JSON.stringify(user));
+        // Save to storage using utils
+        this.utils.setStorage('user', user);
+        this.utils.setStorage('token', token);
         
-        // Remove any old/conflicting keys
-        localStorage.removeItem('communitygive_user');
-        localStorage.removeItem('communitygive_token');
-        
-        console.log('Saved to localStorage. Token:', token ? 'Yes' : 'No', 'User:', user ? 'Yes' : 'No');
+        console.log('Saved to storage. Token:', token ? 'Yes' : 'No', 'User:', user ? 'Yes' : 'No');
         
         // Setup auth header for API calls
         this.setupAuthHeader(token);
@@ -343,11 +379,11 @@ class AuthManager {
         
         this.currentUser = null;
         
-        // Remove from localStorage
-        localStorage.removeItem(this.tokenKey);
-        localStorage.removeItem(this.userKey);
+        // Remove from storage using utils
+        this.utils.removeStorage('user');
+        this.utils.removeStorage('token');
         
-        console.log('LocalStorage cleared');
+        console.log('Storage cleared');
         
         // Clear auth header
         this.clearAuthHeader();
@@ -442,27 +478,40 @@ class AuthManager {
     }
     
     createUserMenu() {
-        console.log('Creating user menu...');
+        console.log('Creating user menu... Current user:', this.currentUser);
         
-        // Find navbar
-        const navbarNav = document.querySelector('#navbarNav .navbar-nav');
-        if (!navbarNav || !this.currentUser) {
-            console.error('Cannot create user menu: navbarNav or currentUser missing');
-            return;
-        }
-        
-        // Remove existing user menu if it exists
+        // Remove existing user menu
         const existingMenu = document.getElementById('userMenu');
         if (existingMenu) {
             existingMenu.remove();
         }
         
+        // Check if we have a user
+        if (!this.currentUser) {
+            console.error('Cannot create user menu: No current user');
+            return;
+        }
+        
+        // Try different selectors to find the navbar
+        let navbarNav = document.querySelector('#navbarNav .navbar-nav');
+        if (!navbarNav) {
+            navbarNav = document.querySelector('.navbar-nav');
+        }
+        if (!navbarNav) {
+            console.error('Cannot create user menu: Navbar not found');
+            return;
+        }
+        
+        const userName = this.currentUser.name?.split(' ')[0] || 
+                        this.currentUser.email?.split('@')[0] || 
+                        'User';
+        
         const userMenuHTML = `
             <li class="nav-item dropdown" id="userMenu">
                 <a class="nav-link dropdown-toggle" href="#" role="button" 
-                   data-bs-toggle="dropdown">
+                data-bs-toggle="dropdown">
                     <i class="fas fa-user-circle me-1"></i>
-                    <span class="user-name">${this.currentUser.name?.split(' ')[0] || this.currentUser.email}</span>
+                    <span class="user-name">${userName}</span>
                     ${this.currentUser.role === 'admin' ? ' (Admin)' : ''}
                 </a>
                 <ul class="dropdown-menu">
@@ -486,12 +535,14 @@ class AuthManager {
             </li>
         `;
         
-        // Find where to insert (before login/register buttons)
-        const loginItem = navbarNav.querySelector('.nav-item:has(#loginBtn)');
+        // Find login buttons to insert before them
+        const loginBtn = navbarNav.querySelector('#loginBtn');
+        const loginItem = loginBtn ? loginBtn.closest('.nav-item') : null;
+        
         if (loginItem) {
             loginItem.insertAdjacentHTML('beforebegin', userMenuHTML);
         } else {
-            // Append to end if login button not found
+            // Append to end if no login button found
             navbarNav.insertAdjacentHTML('beforeend', userMenuHTML);
         }
         
@@ -573,42 +624,42 @@ class AuthManager {
     }
     
     showNotification(message, type = 'info') {
-        // Remove existing notifications
-        const existingNotification = document.querySelector('.auth-notification');
-        if (existingNotification) {
-            existingNotification.remove();
-        }
-        
-        // Map type to Bootstrap alert classes
-        const alertClass = type === 'error' ? 'danger' : type;
-        
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `auth-notification alert alert-${alertClass} alert-dismissible fade show`;
-        notification.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        // Style the notification
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-        
-        // Add to document
-        document.body.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
+        // Use utils.showNotification if available, otherwise use local method
+        if (typeof utils !== 'undefined' && utils.showNotification) {
+            utils.showNotification(message, type);
+        } else {
+            // Local fallback notification
+            const existingNotification = document.querySelector('.auth-notification');
+            if (existingNotification) {
+                existingNotification.remove();
             }
-        }, 5000);
+            
+            const alertClass = type === 'error' ? 'danger' : type;
+            
+            const notification = document.createElement('div');
+            notification.className = `auth-notification alert alert-${alertClass} alert-dismissible fade show`;
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
     }
 }
 
@@ -621,7 +672,8 @@ window.auth = auth;
 
 // Listen for storage changes (when another tab logs in/out)
 window.addEventListener('storage', function(e) {
-    if (e.key === 'micro_donation_user' || e.key === 'micro_donation_token') {
+    if (e.key === 'micro_donation_user' || e.key === 'micro_donation_token' ||
+        e.key === 'communitygive_user' || e.key === 'communitygive_token') {
         console.log('Auth storage changed, reloading auth state');
         auth.init(); // Re-initialize to sync state
     }

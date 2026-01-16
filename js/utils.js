@@ -1,7 +1,8 @@
-// Utility Functions
+// Enhanced Utils.js with localStorage management and all previous features
 class Utils {
     constructor() {
         this.initialized = false;
+        this.storagePrefix = 'micro_donation_'; // Consistent storage prefix
     }
     
     init() {
@@ -11,13 +12,174 @@ class Utils {
         this.setupFormValidation();
         this.setupBackToTop();
         this.setupPrintButtons();
+        this.setupMobileMenu();
+        this.setupSmoothScroll();
+        this.setupLazyLoading();
+        this.setupCharacterCounters();
+        this.setupPasswordToggles();
+        this.setupFileUploadPreview();
+        this.setupAPIDebugging();
         
         this.initialized = true;
     }
     
+    // ==================== STORAGE MANAGEMENT ====================
+    
+    // Get item from localStorage with legacy support
+    getStorage(key) {
+        // Try new key first
+        let value = localStorage.getItem(`${this.storagePrefix}${key}`);
+        
+        // If not found, try legacy keys
+        if (!value) {
+            const legacyKeys = {
+                'user': 'communitygive_user',
+                'token': 'communitygive_token',
+                'campaigns': 'temp_campaigns'
+            };
+            
+            if (legacyKeys[key]) {
+                value = localStorage.getItem(legacyKeys[key]);
+                if (value) {
+                    // Migrate to new key system
+                    this.setStorage(key, value);
+                    localStorage.removeItem(legacyKeys[key]);
+                    console.log(`Migrated ${legacyKeys[key]} to new key system`);
+                }
+            }
+        }
+        
+        try {
+            return value ? JSON.parse(value) : null;
+        } catch (e) {
+            console.error(`Error parsing storage key ${key}:`, e);
+            return value; // Return raw value if not JSON
+        }
+    }
+    
+    // Set item in localStorage
+    setStorage(key, value) {
+        const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+        localStorage.setItem(`${this.storagePrefix}${key}`, stringValue);
+    }
+    
+    // Remove item from localStorage
+    removeStorage(key) {
+        localStorage.removeItem(`${this.storagePrefix}${key}`);
+        
+        // Also remove legacy keys
+        const legacyKeys = {
+            'user': 'communitygive_user',
+            'token': 'communitygive_token',
+            'campaigns': 'temp_campaigns'
+        };
+        
+        if (legacyKeys[key]) {
+            localStorage.removeItem(legacyKeys[key]);
+        }
+    }
+    
+    // Clear all app storage
+    clearAllStorage() {
+        const keysToRemove = [];
+        
+        // Remove all prefixed keys
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith(this.storagePrefix)) {
+                keysToRemove.push(key);
+            }
+        }
+        
+        // Also remove legacy keys
+        const legacyKeys = ['communitygive_user', 'communitygive_token', 'temp_campaigns'];
+        
+        keysToRemove.concat(legacyKeys).forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        console.log('Cleared all app storage');
+    }
+    
+    // Get storage statistics
+    getStorageStats() {
+        const stats = {
+            total: 0,
+            prefixed: 0,
+            legacy: 0,
+            size: 0
+        };
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            
+            stats.total++;
+            stats.size += (key.length + value.length) * 2; // Approximate size in bytes
+            
+            if (key.startsWith(this.storagePrefix)) {
+                stats.prefixed++;
+            } else if (key.includes('communitygive') || key.includes('temp_')) {
+                stats.legacy++;
+            }
+        }
+        
+        return stats;
+    }
+    
+    // ==================== AUTH UTILITIES ====================
+    
+    // Check if user is authenticated
+    isAuthenticated() {
+        const user = this.getStorage('user');
+        const token = this.getStorage('token');
+        return !!(user && token);
+    }
+    
+    // Check if user is admin
+    isAdmin() {
+        const user = this.getStorage('user');
+        return user && user.role === 'admin';
+    }
+    
+    // Get current user
+    getCurrentUser() {
+        return this.getStorage('user');
+    }
+    
+    // Get auth token
+    getAuthToken() {
+        return this.getStorage('token');
+    }
+    
+    // Update user profile
+    updateUserProfile(updates) {
+        const user = this.getCurrentUser();
+        if (!user) return false;
+        
+        const updatedUser = { ...user, ...updates };
+        this.setStorage('user', updatedUser);
+        
+        // Dispatch event for other parts of the app
+        window.dispatchEvent(new CustomEvent('userUpdated', { 
+            detail: { user: updatedUser } 
+        }));
+        
+        return true;
+    }
+    
+    // ==================== FORMATTING UTILITIES ====================
+    
     // Format currency
-    formatCurrency(amount, currency = 'RM') {
-        return `${currency} ${parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+    formatCurrency(amount, currency = 'RM', decimals = 2) {
+        const formatter = new Intl.NumberFormat('en-MY', {
+            style: 'currency',
+            currency: 'MYR',
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+        
+        return formatter.format(parseFloat(amount) || 0).replace('MYR', currency);
     }
     
     // Format date
@@ -40,21 +202,94 @@ class Utils {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
+            },
+            time: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
+            datetime: {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             }
         };
         
         return d.toLocaleDateString('en-MY', options[format] || options.medium);
     }
     
+    // Format relative time (e.g., "2 hours ago")
+    formatRelativeTime(date) {
+        const now = new Date();
+        const diffMs = now - new Date(date);
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHour / 24);
+        
+        if (diffDay > 7) {
+            return this.formatDate(date, 'short');
+        } else if (diffDay > 0) {
+            return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+        } else if (diffHour > 0) {
+            return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+        } else if (diffMin > 0) {
+            return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+        } else {
+            return 'Just now';
+        }
+    }
+    
     // Format number with commas
-    formatNumber(num) {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    formatNumber(num, decimals = 0) {
+        const number = parseFloat(num) || 0;
+        return number.toLocaleString('en-MY', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
     }
     
     // Calculate percentage
     calculatePercentage(part, whole) {
         if (whole === 0) return 0;
-        return Math.round((part / whole) * 100);
+        const percentage = (part / whole) * 100;
+        return Math.round(percentage * 100) / 100; // 2 decimal places
+    }
+    
+    // Format file size
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // ==================== STRING UTILITIES ====================
+    
+    // Truncate text
+    truncateText(text, maxLength = 100, suffix = '...') {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength - suffix.length) + suffix;
+    }
+    
+    // Capitalize first letter
+    capitalize(text) {
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    }
+    
+    // Generate slug from text
+    generateSlug(text) {
+        return text
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/--+/g, '-')
+            .trim();
     }
     
     // Generate random ID
@@ -63,6 +298,56 @@ class Utils {
         const random = Math.random().toString(36).substr(2, 5);
         return `${prefix}${timestamp}${random}`.toUpperCase();
     }
+    
+    // ==================== VALIDATION UTILITIES ====================
+    
+    // Validate email
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    // Validate phone number (Malaysian format)
+    isValidPhone(phone) {
+        const phoneRegex = /^(\+?6?01)[0-46-9]-*[0-9]{7,8}$/;
+        return phoneRegex.test(phone.replace(/\s/g, ''));
+    }
+    
+    // Validate password strength
+    checkPasswordStrength(password) {
+        let strength = 0;
+        const feedback = [];
+        
+        // Length check
+        if (password.length >= 8) strength++;
+        else feedback.push('At least 8 characters');
+        
+        // Lowercase check
+        if (/[a-z]/.test(password)) strength++;
+        else feedback.push('Lowercase letters');
+        
+        // Uppercase check
+        if (/[A-Z]/.test(password)) strength++;
+        else feedback.push('Uppercase letters');
+        
+        // Number check
+        if (/[0-9]/.test(password)) strength++;
+        else feedback.push('Numbers');
+        
+        // Special character check
+        if (/[^a-zA-Z0-9]/.test(password)) strength++;
+        else feedback.push('Special characters');
+        
+        return {
+            score: strength,
+            maxScore: 5,
+            feedback: feedback,
+            strength: strength <= 2 ? 'weak' : strength <= 4 ? 'medium' : 'strong',
+            isValid: strength >= 3
+        };
+    }
+    
+    // ==================== PERFORMANCE UTILITIES ====================
     
     // Debounce function
     debounce(func, wait) {
@@ -89,60 +374,56 @@ class Utils {
         };
     }
     
-    // Setup Bootstrap tooltips
-    setupTooltips() {
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+    // ==================== DOM UTILITIES ====================
+    
+    // Check if element is in viewport
+    isInViewport(element) {
+        const rect = element.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+    
+    // Scroll to element
+    scrollToElement(elementId, offset = 100) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
         });
     }
     
-    // Setup form validation
-    setupFormValidation() {
-        // Add Bootstrap validation styles to custom validation
-        const forms = document.querySelectorAll('.needs-validation');
+    // Toggle element visibility
+    toggleElement(elementId, show = null) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
         
-        Array.from(forms).forEach(form => {
-            form.addEventListener('submit', event => {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                
-                form.classList.add('was-validated');
-            }, false);
-        });
+        if (show === null) {
+            element.style.display = element.style.display === 'none' ? '' : 'none';
+        } else {
+            element.style.display = show ? '' : 'none';
+        }
     }
     
-    // Setup back to top button
-    setupBackToTop() {
-        const backToTopBtn = document.getElementById('backToTop');
-        if (!backToTopBtn) return;
+    // Add/remove CSS class with animation
+    animateClass(element, className, duration = 300) {
+        if (!element) return;
         
-        window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 300) {
-                backToTopBtn.style.display = 'block';
-            } else {
-                backToTopBtn.style.display = 'none';
-            }
-        });
-        
-        backToTopBtn.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        });
+        element.classList.add(className);
+        setTimeout(() => {
+            element.classList.remove(className);
+        }, duration);
     }
     
-    // Setup print buttons
-    setupPrintButtons() {
-        document.querySelectorAll('.print-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                window.print();
-            });
-        });
-    }
+    // ==================== NOTIFICATION SYSTEM ====================
     
     // Show notification/toast
     showNotification(message, type = 'info', duration = 5000) {
@@ -175,13 +456,50 @@ class Utils {
             animation: slideInRight 0.3s ease-out;
         `;
         
+        // Add animation styles if not present
+        if (!document.querySelector('#notification-animations')) {
+            const style = document.createElement('style');
+            style.id = 'notification-animations';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+                .notification-exit {
+                    animation: slideOutRight 0.3s ease-out forwards;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
         // Add to document
         document.body.appendChild(notification);
         
         // Auto remove after duration
         setTimeout(() => {
             if (notification.parentNode) {
-                notification.remove();
+                notification.classList.add('notification-exit');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
             }
         }, duration);
         
@@ -198,6 +516,8 @@ class Utils {
         
         return icons[type] || 'fa-info-circle';
     }
+    
+    // ==================== FILE UTILITIES ====================
     
     // Copy to clipboard
     async copyToClipboard(text) {
@@ -242,6 +562,28 @@ class Utils {
         }, 100);
     }
     
+    // Read file as text
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    }
+    
+    // Read file as data URL
+    readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    // ==================== URL UTILITIES ====================
+    
     // Get URL parameters
     getUrlParams() {
         const params = {};
@@ -272,43 +614,65 @@ class Utils {
         window.history.pushState({}, '', url);
     }
     
-    // Check if element is in viewport
-    isInViewport(element) {
-        const rect = element.getBoundingClientRect();
-        return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-        );
+    // Get current page name
+    getCurrentPage() {
+        return window.location.pathname.split('/').pop().replace('.html', '');
     }
     
-    // Lazy load images
-    setupLazyLoading() {
-        const lazyImages = [].slice.call(document.querySelectorAll('img.lazy'));
+    // ==================== SETUP FUNCTIONS ====================
+    
+    // Setup Bootstrap tooltips
+    setupTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+    
+    // Setup form validation
+    setupFormValidation() {
+        const forms = document.querySelectorAll('.needs-validation');
         
-        if ('IntersectionObserver' in window) {
-            const lazyImageObserver = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        const lazyImage = entry.target;
-                        lazyImage.src = lazyImage.dataset.src;
-                        lazyImage.classList.remove('lazy');
-                        lazyImageObserver.unobserve(lazyImage);
-                    }
-                });
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }
+    
+    // Setup back to top button
+    setupBackToTop() {
+        const backToTopBtn = document.getElementById('backToTop');
+        if (!backToTopBtn) return;
+        
+        window.addEventListener('scroll', this.throttle(() => {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.style.display = 'block';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        }, 100));
+        
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
             });
-            
-            lazyImages.forEach((lazyImage) => {
-                lazyImageObserver.observe(lazyImage);
+        });
+    }
+    
+    // Setup print buttons
+    setupPrintButtons() {
+        document.querySelectorAll('.print-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                window.print();
             });
-        } else {
-            // Fallback for older browsers
-            lazyImages.forEach((lazyImage) => {
-                lazyImage.src = lazyImage.dataset.src;
-                lazyImage.classList.remove('lazy');
-            });
-        }
+        });
     }
     
     // Mobile menu toggle
@@ -350,6 +714,34 @@ class Utils {
                 }
             });
         });
+    }
+    
+    // Lazy load images
+    setupLazyLoading() {
+        const lazyImages = [].slice.call(document.querySelectorAll('img.lazy'));
+        
+        if ('IntersectionObserver' in window) {
+            const lazyImageObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const lazyImage = entry.target;
+                        lazyImage.src = lazyImage.dataset.src;
+                        lazyImage.classList.remove('lazy');
+                        lazyImageObserver.unobserve(lazyImage);
+                    }
+                });
+            });
+            
+            lazyImages.forEach((lazyImage) => {
+                lazyImageObserver.observe(lazyImage);
+            });
+        } else {
+            // Fallback for older browsers
+            lazyImages.forEach((lazyImage) => {
+                lazyImage.src = lazyImage.dataset.src;
+                lazyImage.classList.remove('lazy');
+            });
+        }
     }
     
     // Load more functionality
@@ -409,6 +801,13 @@ class Utils {
                 
                 counter.textContent = `${currentLength}/${maxLength} characters`;
                 counter.style.color = remaining < 0 ? '#dc3545' : remaining < 20 ? '#ffc107' : '#6c757d';
+                
+                // Add/remove invalid class
+                if (remaining < 0) {
+                    field.classList.add('is-invalid');
+                } else {
+                    field.classList.remove('is-invalid');
+                }
             };
             
             field.addEventListener('input', updateCounter);
@@ -466,17 +865,138 @@ class Utils {
             });
         });
     }
+    
+    // ==================== API UTILITIES ====================
+    
+    // Make API request with authentication
+    async apiRequest(endpoint, options = {}) {
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        };
+        
+        // Add auth token if available
+        const token = this.getAuthToken();
+        if (token) {
+            defaultOptions.headers.Authorization = `Bearer ${token}`;
+        }
+        
+        const mergedOptions = {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...(options.headers || {})
+            }
+        };
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/${endpoint}`, mergedOptions);
+            
+            // Handle HTTP errors
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`);
+            }
+            
+            // Try to parse JSON response
+            try {
+                return await response.json();
+            } catch (jsonError) {
+                return { success: false, message: 'Invalid JSON response' };
+            }
+            
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw error;
+        }
+    }
+    
+    // Handle API errors
+    handleApiError(error, fallbackMessage = 'An error occurred') {
+        const message = error.message || fallbackMessage;
+        this.showNotification(message, 'error');
+        
+        // Auto logout on 401 Unauthorized
+        if (error.message.includes('401')) {
+            this.removeStorage('user');
+            this.removeStorage('token');
+            window.location.href = 'index.html';
+        }
+        
+        return { success: false, message };
+    }
+
+        // Add to utils.js
+    setupAPIDebugging() {
+        // Log all fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            console.log('Fetch request:', args[0], args[1]);
+            return originalFetch.apply(this, args)
+                .then(response => {
+                    console.log('Fetch response:', args[0], response.status);
+                    return response;
+                })
+                .catch(error => {
+                    console.error('Fetch error:', args[0], error);
+                    throw error;
+                });
+        };
+    }
+
+        // Add this method to Utils class:
+    getApiUrl(endpoint) {
+        // Get current page path
+        const currentPath = window.location.pathname;
+        
+        // Check if we're in admin dashboard (root) or pages folder
+        if (currentPath.includes('admin-dashboard.html') || 
+            currentPath.endsWith('/micro-donation-portal/') ||
+            currentPath.endsWith('/micro-donation-portal/index.html')) {
+            // From root folder
+            return `../backend/api/${endpoint}`;
+        } else if (currentPath.includes('/pages/')) {
+            // From pages folder
+            return `../../backend/api/${endpoint}`;
+        } else {
+            // Default (from root)
+            return `../backend/api/${endpoint}`;
+        }
+    }
+
+        // Also add this utility method:
+    async testApi(endpoint) {
+        const url = this.getApiUrl(endpoint);
+        console.log(`Testing API: ${url}`);
+        
+        try {
+            const response = await fetch(url);
+            console.log(`API ${endpoint} status: ${response.status}`);
+            return response;
+        } catch (error) {
+            console.error(`API ${endpoint} error:`, error);
+            throw error;
+        }
+    }
 }
 
-// Initialize utilities
+// Initialize utilities globally
 const utils = new Utils();
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     utils.init();
+    
+    // Make utils available globally
+    window.utils = utils;
+    
+    console.log('Utils initialized with storage management');
+    console.log('Storage stats:', utils.getStorageStats());
 });
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { Utils };
+    module.exports = { Utils, utils };
 }

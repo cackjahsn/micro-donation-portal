@@ -9,6 +9,36 @@ class CampaignManager {
             'community',
             'environment'
         ];
+        
+        // Initialize utils if available
+        if (typeof utils !== 'undefined') {
+            this.utils = utils;
+        } else {
+            // Fallback utility methods
+            this.utils = {
+                getStorage: (key) => {
+                    const value = localStorage.getItem(`micro_donation_${key}`);
+                    if (!value && key === 'temp_campaigns') {
+                        const legacyValue = localStorage.getItem('temp_campaigns');
+                        if (legacyValue) {
+                            localStorage.setItem(`micro_donation_${key}`, legacyValue);
+                            localStorage.removeItem('temp_campaigns');
+                            return legacyValue;
+                        }
+                    }
+                    try {
+                        return value ? JSON.parse(value) : null;
+                    } catch {
+                        return value;
+                    }
+                },
+                setStorage: (key, value) => {
+                    const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+                    localStorage.setItem(`micro_donation_${key}`, stringValue);
+                }
+            };
+        }
+        
         this.init();
     }
     
@@ -36,44 +66,55 @@ class CampaignManager {
         });
     }
     
+    // In campaigns.js, update the getAllCampaigns method:
     async getAllCampaigns() {
         try {
-            // Try to fetch from API first
-            const response = await fetch('/micro-donation-portal/backend/api/campaigns/get-all.php');
+            // Show loading state
+            console.log('Fetching campaigns from API...');
             
-            if (response.ok) {
-                const result = await response.json();
-                
-                if (result.success && result.campaigns) {
-                    // Transform database data to match frontend format
-                    this.campaigns = result.campaigns.map(campaign => ({
-                        id: campaign.id,
-                        title: campaign.title,
-                        description: campaign.description,
-                        category: campaign.category,
-                        target: parseFloat(campaign.target),
-                        raised: parseFloat(campaign.raised || 0),
-                        progress: parseFloat(campaign.progress || 0),
-                        donors: parseInt(campaign.donors || 0),
-                        daysLeft: parseInt(campaign.daysLeft || 30),
-                        image: campaign.image || '/micro-donation-portal/assets/images/default-campaign.jpg',
-                        organizer: campaign.organizer || 'Anonymous',
-                        dateCreated: campaign.dateCreated || new Date().toISOString().split('T')[0],
-                        featured: campaign.featured || false,
-                        status: campaign.status || 'active'
-                    }));
-                    
-                    return this.campaigns;
-                }
+            const response = await fetch(utils.getApiUrl('campaigns/get-all.php'));
+            
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}`);
             }
             
-            // If API fails, fall back to sample data
-            console.warn('API call failed, using sample campaigns');
-            return this.loadSampleCampaigns();
+            const responseText = await response.text();
+            console.log('Raw API response:', responseText);
+            
+            // Check if response is empty
+            if (!responseText.trim()) {
+                throw new Error('Empty response from server');
+            }
+            
+            const result = JSON.parse(responseText);
+            console.log('Parsed result:', result);
+            
+            if (result.success && result.campaigns) {
+                // Transform and return campaigns
+                this.campaigns = result.campaigns.map(campaign => ({
+                    id: campaign.id || campaign.campaign_id,
+                    title: campaign.title || campaign.campaign_title,
+                    description: campaign.description || campaign.campaign_description,
+                    category: campaign.category || 'community',
+                    target: parseFloat(campaign.target || campaign.target_amount || 10000),
+                    raised: parseFloat(campaign.raised || campaign.raised_amount || 0),
+                    progress: parseFloat(campaign.progress || 0),
+                    donors: parseInt(campaign.donors || campaign.donor_count || 0),
+                    daysLeft: parseInt(campaign.days_left || 30),
+                    image: campaign.image || campaign.image_url || '/micro-donation-portal/assets/images/default-campaign.jpg',
+                    organizer: campaign.organizer || 'Anonymous',
+                    dateCreated: campaign.created_at || campaign.date_created || new Date().toISOString().split('T')[0],
+                    featured: campaign.featured || false,
+                    status: campaign.status || 'active'
+                }));
+                
+                return this.campaigns;
+            } else {
+                throw new Error(result.message || 'Invalid response format');
+            }
             
         } catch (error) {
-            console.error('Error fetching campaigns:', error);
-            // Fall back to sample data
+            console.warn('API call failed, using sample data:', error.message);
             return this.loadSampleCampaigns();
         }
     }
@@ -184,7 +225,7 @@ class CampaignManager {
     async getCampaignById(id) {
         try {
             // Try API first
-            const response = await fetch(`micro-donation-portal/backend/api/campaigns/get-single.php?id=${id}`);
+            const response = await fetch(`../backend/api/campaigns/get-single.php?id=${id}`);
             
             if (response.ok) {
                 const result = await response.json();
@@ -244,7 +285,7 @@ class CampaignManager {
     
     async createCampaignInDB(campaignData) {
         try {
-            const response = await fetch('backend/api/campaigns/create.php', {
+            const response = await fetch('../backend/api/campaigns/create.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -314,7 +355,7 @@ class CampaignManager {
             // Add to campaigns array
             this.campaigns.unshift(tempCampaign);
             
-            // Save to localStorage
+            // Save to storage
             this.saveTempCampaign(tempCampaign);
             
             return {
@@ -325,15 +366,22 @@ class CampaignManager {
         }
     }
 
-        // In campaigns.js - FIX getCurrentUser method
-        getCurrentUser() {
-        // Check both possible localStorage keys
+    // In campaigns.js - FIX getCurrentUser method to use utils
+    getCurrentUser() {
+        if (typeof auth !== 'undefined' && auth.getCurrentUser) {
+            return auth.getCurrentUser();
+        }
+        
+        if (typeof utils !== 'undefined' && utils.getCurrentUser) {
+            return utils.getCurrentUser();
+        }
+        
+        // Fallback to localStorage check
         let userData = localStorage.getItem('micro_donation_user');
         
         // Fallback to old key
         if (!userData) {
             userData = localStorage.getItem('communitygive_user');
-            // If found with old key, migrate to new key
             if (userData) {
                 localStorage.setItem('micro_donation_user', userData);
             }
@@ -445,13 +493,13 @@ class CampaignManager {
     }
     
     saveTempCampaign(campaign) {
-        const tempCampaigns = JSON.parse(localStorage.getItem('temp_campaigns') || '[]');
+        const tempCampaigns = this.utils.getStorage('temp_campaigns') || [];
         tempCampaigns.push(campaign);
-        localStorage.setItem('temp_campaigns', JSON.stringify(tempCampaigns));
+        this.utils.setStorage('temp_campaigns', tempCampaigns);
     }
     
     loadTempCampaigns() {
-        const tempCampaigns = JSON.parse(localStorage.getItem('temp_campaigns') || '[]');
+        const tempCampaigns = this.utils.getStorage('temp_campaigns') || [];
         
         if (tempCampaigns.length > 0) {
             // Merge temp campaigns with existing campaigns
@@ -477,6 +525,12 @@ class CampaignManager {
         // Add pending badge for campaigns awaiting approval
         const pendingBadge = campaign.status === 'pending' ? 
             '<span class="badge bg-secondary ms-2">Pending Approval</span>' : '';
+        
+        // Use utils.formatCurrency if available
+        const raisedAmount = typeof utils !== 'undefined' && utils.formatCurrency ? 
+            utils.formatCurrency(campaign.raised) : `RM ${campaign.raised.toLocaleString()}`;
+        const targetAmount = typeof utils !== 'undefined' && utils.formatCurrency ? 
+            utils.formatCurrency(campaign.target) : `RM ${campaign.target.toLocaleString()}`;
         
         return `
             <div class="col-md-6 col-lg-4 mb-4 stagger-item">
@@ -507,8 +561,8 @@ class CampaignManager {
                         
                         <div class="row align-items-center">
                             <div class="col-7">
-                                <div class="fw-bold text-success">RM ${campaign.raised.toLocaleString()}</div>
-                                <small class="text-muted">raised of RM ${campaign.target.toLocaleString()}</small>
+                                <div class="fw-bold text-success">${raisedAmount}</div>
+                                <small class="text-muted">raised of ${targetAmount}</small>
                             </div>
                             <div class="col-5 text-end">
                                 <a href="donation-page.html?campaign=${campaign.id}" 
@@ -550,7 +604,7 @@ class CampaignManager {
             // Always load campaigns first (now includes API call)
             campaigns = await this.getAllCampaigns();
             
-            // Load any temporary campaigns from localStorage
+            // Load any temporary campaigns from storage
             const tempCampaigns = this.loadTempCampaigns();
             
             // Apply category filter if specified

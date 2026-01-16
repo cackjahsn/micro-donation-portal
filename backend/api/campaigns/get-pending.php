@@ -1,5 +1,10 @@
 <?php
-require_once dirname(dirname(__FILE__)) . '/config/database.php';
+// Enable ALL error reporting at the VERY TOP
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
+// Set headers BEFORE any output
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -10,16 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-// Get database connection
-$basePath = dirname(dirname(dirname(__FILE__)));
-require_once $basePath . '/backend/config/database.php';
-
 try {
+    // Get database connection - USE PATH 2
+    $configPath = dirname(__FILE__) . '/../../config/database.php';
+    
+    if (!file_exists($configPath)) {
+        throw new Exception("Database config not found at: " . $configPath);
+    }
+    
+    require_once $configPath;
+    
     $database = new Database();
     $db = $database->getConnection();
     
-    // IMPORTANT: Set auto-commit
+    // IMPORTANT: Set PDO to auto-commit mode
     $db->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Get ALL campaigns including pending
     $query = "SELECT * FROM campaigns WHERE status = 'pending' ORDER BY created_at DESC";
@@ -35,31 +46,41 @@ try {
             'title' => $campaign['title'],
             'description' => $campaign['description'],
             'category' => $campaign['category'],
-            'target' => (float)$campaign['target_amount'],
-            'raised' => (float)$campaign['current_amount'],
-            'progress' => (float)$campaign['progress_percentage'],
-            'donors' => (int)$campaign['donors_count'],
-            'daysLeft' => (int)$campaign['days_left'],
-            'image' => $campaign['image_url'] ?: 'assets/images/default-campaign.jpg',
+            'target_amount' => (float)$campaign['target_amount'],
+            'image_url' => $campaign['image_url'] ?: '/micro-donation-portal/assets/images/default-campaign.jpg',
             'organizer' => $campaign['organizer'],
-            'dateCreated' => $campaign['created_at'],
-            'featured' => (bool)$campaign['featured'],
+            'created_at' => $campaign['created_at'],
             'status' => $campaign['status']
         ];
     }
     
-    echo json_encode([
+    $response = [
         'success' => true,
         'campaigns' => $formatted,
         'count' => count($formatted),
         'message' => count($formatted) . ' pending campaigns found'
-    ]);
+    ];
+    
+    echo json_encode($response, JSON_PRETTY_PRINT);
     
 } catch (PDOException $e) {
-    echo json_encode([
+    $errorResponse = [
         'success' => false,
         'message' => 'Database error: ' . $e->getMessage(),
         'campaigns' => []
-    ]);
+    ];
+    
+    http_response_code(500);
+    echo json_encode($errorResponse, JSON_PRETTY_PRINT);
+    
+} catch (Exception $e) {
+    $errorResponse = [
+        'success' => false,
+        'message' => 'Error: ' . $e->getMessage(),
+        'campaigns' => []
+    ];
+    
+    http_response_code(500);
+    echo json_encode($errorResponse, JSON_PRETTY_PRINT);
 }
 ?>

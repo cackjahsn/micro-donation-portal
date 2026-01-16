@@ -1,23 +1,42 @@
-// js/auth-global.js - Global authentication helper for all pages
+// js/auth-global.js - Global authentication helper for all pages (Updated for Utils.js)
 
 // Check authentication status on any page
 function checkGlobalAuth() {
     console.log('=== GLOBAL AUTH CHECK ===');
     
-    // Use micro_donation_ keys
-        const userStr = localStorage.getItem('micro_donation_user');
-        const token = localStorage.getItem('micro_donation_token');
-    
-    console.log('LocalStorage check:', { userStr: !!userStr, token: !!token });
-    
-    if (userStr && token) {
-        try {
-            const user = JSON.parse(userStr);
+    // Use utils.getStorage if available
+    if (typeof utils !== 'undefined' && utils.getStorage) {
+        const user = utils.getStorage('user');
+        const token = utils.getStorage('token');
+        
+        console.log('Utils storage check:', { 
+            user: user ? 'Exists' : 'Missing', 
+            token: token ? 'Exists' : 'Missing' 
+        });
+        
+        if (user && token) {
             console.log('User is logged in globally:', user);
             return user;
-        } catch (e) {
-            console.error('Error parsing user:', e);
-            return null;
+        }
+    } else {
+        // Fallback to localStorage
+        const userStr = localStorage.getItem('micro_donation_user');
+        const token = localStorage.getItem('micro_donation_token');
+        
+        console.log('LocalStorage check:', { 
+            userStr: !!userStr, 
+            token: !!token 
+        });
+        
+        if (userStr && token) {
+            try {
+                const user = JSON.parse(userStr);
+                console.log('User is logged in globally:', user);
+                return user;
+            } catch (e) {
+                console.error('Error parsing user:', e);
+                return null;
+            }
         }
     }
     
@@ -36,11 +55,15 @@ function updateNavbarForAuth(user) {
         // User is logged in - hide login/register buttons
         if (loginBtn) {
             loginBtn.style.display = 'none';
-            loginBtn.parentElement.style.display = 'none'; // Hide the li item
+            if (loginBtn.parentElement) {
+                loginBtn.parentElement.style.display = 'none'; // Hide the li item
+            }
         }
         if (registerBtn) {
             registerBtn.style.display = 'none';
-            registerBtn.parentElement.style.display = 'none'; // Hide the li item
+            if (registerBtn.parentElement) {
+                registerBtn.parentElement.style.display = 'none'; // Hide the li item
+            }
         }
         
         // Create user menu if not exists
@@ -49,17 +72,27 @@ function updateNavbarForAuth(user) {
         // User is not logged in - show login/register buttons
         if (loginBtn) {
             loginBtn.style.display = 'block';
-            loginBtn.parentElement.style.display = 'block';
+            if (loginBtn.parentElement) {
+                loginBtn.parentElement.style.display = 'block';
+            }
         }
         if (registerBtn) {
             registerBtn.style.display = 'block';
-            registerBtn.parentElement.style.display = 'block';
+            if (registerBtn.parentElement) {
+                registerBtn.parentElement.style.display = 'block';
+            }
         }
         
         // Remove user menu if exists
         const userMenu = document.getElementById('userMenu');
         if (userMenu) {
             userMenu.remove();
+        }
+        
+        // Remove admin menu if exists
+        const adminMenu = document.getElementById('adminMenu');
+        if (adminMenu) {
+            adminMenu.remove();
         }
     }
 }
@@ -78,16 +111,27 @@ function createUserMenu(user) {
         return;
     }
     
-    console.log('Creating user menu for:', user.name);
+    const userName = user.name?.split(' ')[0] || 
+                    user.email?.split('@')[0] || 
+                    'User';
+    
+    console.log('Creating user menu for:', userName);
     
     const userMenuHTML = `
         <li class="nav-item dropdown" id="userMenu">
             <a class="nav-link dropdown-toggle" href="#" role="button" 
                data-bs-toggle="dropdown">
                 <i class="fas fa-user-circle me-1"></i>
-                <span class="user-name">${user.name.split(' ')[0]}</span>
+                <span class="user-name">${userName}</span>
+                ${user.role === 'admin' ? ' (Admin)' : ''}
             </a>
             <ul class="dropdown-menu">
+                ${user.role === 'admin' ? `
+                    <li><a class="dropdown-item" href="admin-dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                ` : ''}
                 <li><a class="dropdown-item" href="pages/profile.html">
                     <i class="fas fa-user me-2"></i>My Profile
                 </a></li>
@@ -116,40 +160,94 @@ function createUserMenu(user) {
         e.preventDefault();
         console.log('Global logout clicked');
         
-        // Clear localStorage
-        localStorage.removeItem('micro_donation_token');
-        localStorage.removeItem('micro_donation_user');
-        
-        // Clear any auth instance
-        if (window.auth && typeof auth.clearSession === 'function') {
+        // Clear storage using utils if available
+        if (typeof utils !== 'undefined' && utils.clearSession) {
+            utils.clearSession();
+        } else if (typeof auth !== 'undefined' && auth.clearSession) {
             auth.clearSession();
+        } else {
+            // Fallback to localStorage clearing
+            localStorage.removeItem('micro_donation_token');
+            localStorage.removeItem('micro_donation_user');
+            localStorage.removeItem('communitygive_token');
+            localStorage.removeItem('communitygive_user');
+        }
+        
+        // Show notification
+        if (typeof utils !== 'undefined' && utils.showNotification) {
+            utils.showNotification('Logged out successfully', 'success');
         }
         
         // Redirect to homepage
-        window.location.href = 'index.html';
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 500);
     });
+}
+
+// Create admin menu if user is admin
+function createAdminMenu(user) {
+    if (user.role !== 'admin') return;
+    
+    if (document.getElementById('adminMenu')) {
+        return;
+    }
+    
+    const navbarNav = document.querySelector('#navbarNav .navbar-nav');
+    if (!navbarNav) return;
+    
+    const adminMenuHTML = `
+        <li class="nav-item" id="adminMenu">
+            <a class="nav-link" href="admin-dashboard.html">
+                <i class="fas fa-tachometer-alt me-1"></i>Admin
+            </a>
+        </li>
+    `;
+    
+    // Add admin menu at the beginning
+    navbarNav.insertAdjacentHTML('afterbegin', adminMenuHTML);
 }
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Global auth helper loaded');
     
-    // Wait a bit for auth.js to initialize if it exists
+    // Wait a bit for auth.js and utils.js to initialize
     setTimeout(function() {
         const user = checkGlobalAuth();
         updateNavbarForAuth(user);
         
-        // Also listen for auth changes
+        if (user && user.role === 'admin') {
+            createAdminMenu(user);
+        }
+        
+        // Listen for auth changes
         window.addEventListener('storage', function(e) {
-            if (e.key === 'micro_donation_user' || e.key === 'micro_donation_token') {
+            if (e.key === 'micro_donation_user' || e.key === 'micro_donation_token' ||
+                e.key === 'communitygive_user' || e.key === 'communitygive_token') {
                 console.log('Auth storage changed, updating navbar...');
                 const updatedUser = checkGlobalAuth();
                 updateNavbarForAuth(updatedUser);
+                
+                if (updatedUser && updatedUser.role === 'admin') {
+                    createAdminMenu(updatedUser);
+                }
             }
         });
-    }, 100);
+        
+        // Listen for custom auth change events
+        window.addEventListener('authchange', function(e) {
+            console.log('Auth change event received:', e.detail);
+            updateNavbarForAuth(e.detail.user);
+            
+            if (e.detail.user && e.detail.user.role === 'admin') {
+                createAdminMenu(e.detail.user);
+            }
+        });
+    }, 300);
 });
 
 // Make functions available globally
 window.checkGlobalAuth = checkGlobalAuth;
 window.updateNavbarForAuth = updateNavbarForAuth;
+window.createUserMenu = createUserMenu;
