@@ -228,7 +228,7 @@ class AdminDashboard {
             }
             
         
-            const response = await fetch('../backend/api/campaigns/get-pending.php', {
+            const response = await fetch('backend/api/campaigns/get-pending.php', {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'
@@ -363,7 +363,7 @@ class AdminDashboard {
             }
             
             // Fetch all campaigns (including active)
-            const response = await fetch('../backend/api/campaigns/get-all.php', {
+            const response = await fetch('backend/api/campaigns/get-all.php', {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'
