@@ -1,69 +1,750 @@
-/* Main Styles */
+/* Main Styles - Eye Comforting Light Theme */
 :root {
-    --primary-color: #4e73df;
-    --secondary-color: #858796;
-    --success-color: #1cc88a;
-    --info-color: #36b9cc;
-    --warning-color: #f6c23e;
-    --danger-color: #e74a3b;
-    --light-color: #f8f9fc;
-    --dark-color: #5a5c69;
+    /* Soothing Color Palette */
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --text-primary: #334155;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --shadow-color: rgba(15, 23, 42, 0.08);
+    
+    /* Brand Colors */
+    --primary-color: #4f46e5;
+    --primary-light: #6366f1;
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    
+    --secondary-color: #94a3b8;
+    --success-color: #10b981;
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    
+    --info-color: #0ea5e9;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --accent-color: #8b5cf6;
+    
+    /* Design Tokens */
+    --shadow-sm: 0 2px 10px var(--shadow-color);
+    --shadow-md: 0 5px 20px var(--shadow-color);
+    --shadow-lg: 0 10px 30px var(--shadow-color);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Remove dark mode classes */
+.dark-mode {
+    display: none !important;
+}
+
+/* Global Body with Soothing Background */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: var(--dark-color);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    color: var(--text-primary);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
+/* Subtle background pattern */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(79, 70, 229, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.02) 0%, transparent 50%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Typography with Softer Colors */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+h1 {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.5rem;
+}
+
+/* Hero Banner - Softer Contrast */
 .hero-banner {
-    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.92) 0%, rgba(124, 58, 237, 0.92) 100%),
                 url('assets/images/banner.jpg');
     background-size: cover;
     background-position: center;
     padding: 100px 0;
-    margin-bottom: 50px;
+    margin-bottom: 60px;
+    position: relative;
+    overflow: hidden;
 }
 
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,202.7C672,203,768,181,864,165.3C960,149,1056,139,1152,149.3C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') bottom center no-repeat;
+    background-size: cover;
+    z-index: 1;
+}
+
+.hero-banner > .container {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-banner h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-banner p {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced Cards with Softer Colors */
 .campaign-card {
-    transition: transform 0.3s ease;
+    transition: var(--transition);
     border: none;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     margin-bottom: 30px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    position: relative;
 }
 
 .campaign-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(79, 70, 229, 0.2);
 }
 
+.campaign-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+    z-index: 1;
+}
+
+.campaign-card.featured::before {
+    height: 6px;
+    background: var(--success-gradient);
+}
+
+.campaign-card .card-img-top {
+    height: 220px;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.campaign-card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.campaign-card .card-body {
+    padding: 1.5rem;
+}
+
+.campaign-card .card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.campaign-card .card-text {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Campaign Stats */
+.campaign-stats {
+    display: flex;
+    justify-content: space-between;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.campaign-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.campaign-stats .stat i {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+/* Enhanced Progress Bars */
 .progress {
-    height: 20px;
-    border-radius: 10px;
+    height: 10px;
+    border-radius: 5px;
     margin: 15px 0;
+    background-color: rgba(226, 232, 240, 0.6);
+    overflow: hidden;
+    position: relative;
 }
 
 .progress-bar {
-    border-radius: 10px;
+    border-radius: 5px;
+    background: var(--success-gradient);
+    position: relative;
+    overflow: hidden;
+    transition: width 0.6s ease;
 }
 
+.progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Enhanced Buttons with Softer Colors */
 .btn-donate {
-    background: var(--success-color);
-    border-color: var(--success-color);
+    background: var(--success-gradient);
+    border: none;
     color: white;
-    font-weight: bold;
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .btn-donate:hover {
-    background: #17a673;
-    border-color: #17a673;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    color: white;
+}
+
+.btn-donate::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-donate:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+    color: white;
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    transition: var(--transition);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+}
+
+/* Trust Badges with Softer Background */
+.trust-badges {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    margin: 50px 0;
+    backdrop-filter: blur(5px);
+}
+
+.trust-badge {
+    text-align: center;
+    padding: 30px 20px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.6);
+    transition: var(--transition);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.trust-badge:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+    background: white;
+    border-color: rgba(79, 70, 229, 0.1);
+}
+
+.trust-badge i {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.trust-badge h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.trust-badge p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Live Donations */
+.live-donations {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    max-height: 400px;
+    overflow-y: auto;
+    backdrop-filter: blur(5px);
+}
+
+.donation-feed-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    transition: var(--transition);
+}
+
+.donation-feed-item:hover {
+    background: rgba(241, 245, 249, 0.5);
+    border-radius: var(--radius-sm);
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.donation-feed-item:last-child {
+    border-bottom: none;
+}
+
+.donation-feed-item .donor-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.donation-feed-item .donation-amount {
+    color: var(--success-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-left: auto;
+}
+
+/* Enhanced Form Elements */
+.form-control, .form-select {
+    border: 2px solid rgba(226, 232, 240, 0.8);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    transition: var(--transition);
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.1);
+    background: white;
+    color: var(--text-primary);
+}
+
+/* Enhanced Stats Cards */
+.stats-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    background: white;
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+}
+
+.stats-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.stats-card .stat-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Enhanced Footer */
+.footer {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #cbd5e1;
+    margin-top: 80px;
+    position: relative;
+    overflow: hidden;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+}
+
+.footer h5 {
+    color: white;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+}
+
+.footer-links a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: var(--transition);
+    padding: 5px 0;
+    display: block;
+}
+
+.footer-links a:hover {
+    color: white;
+    padding-left: 10px;
+    border-left: 3px solid var(--primary-color);
+}
+
+/* Navbar with Softer Colors */
+.navbar {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    transition: var(--transition);
+}
+
+.navbar-brand {
+    color: var(--primary-color) !important;
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.nav-link {
+    color: var(--text-primary) !important;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--primary-color) !important;
+}
+
+/* Page Content Areas (About, Transparency, Contact) */
+.page-content {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    margin: 30px 0;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    backdrop-filter: blur(5px);
+}
+
+.page-content h1 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.page-content p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.page-content .card {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    backdrop-filter: blur(5px);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .hero-banner {
+        padding: 80px 0;
+    }
+    
+    .hero-banner h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-banner p {
+        font-size: 1.1rem;
+    }
+    
+    .campaign-card {
+        margin-bottom: 25px;
+    }
+    
+    .trust-badges {
+        grid-template-columns: 1fr;
+        padding: 30px 20px;
+        gap: 20px;
+    }
+    
+    .trust-badge {
+        padding: 25px 15px;
+    }
+    
+    .page-content {
+        padding: 25px;
+        margin: 20px 0;
+    }
+}
+
+@media (max-width: 576px) {
     .hero-banner h1 {
         font-size: 2rem;
     }
     
-    .navbar-brand span {
-        display: none;
+    .campaign-card .card-img-top {
+        height: 180px;
     }
+    
+    .btn-donate, .btn-primary {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .page-content {
+        padding: 20px 15px;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.5);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-gradient);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+}
+
+/* Loading Animation */
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(226, 232, 240, 0.3);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Gradient Text Utility */
+.gradient-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Alert Messages */
+.alert {
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow-sm);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.alert-success {
+    border-left: 4px solid var(--success-color);
+}
+
+.alert-info {
+    border-left: 4px solid var(--info-color);
+}
+
+.alert-warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.alert-danger {
+    border-left: 4px solid var(--danger-color);
+}
+
+/* Fix Navbar Z-index Issue */
+.navbar {
+    z-index: 1030 !important; /* Bootstrap default is 1030, ensure it's above */
+    position: relative;
+}
+
+.navbar-collapse {
+    z-index: 1031;
+}
+
+.dropdown-menu {
+    z-index: 1050 !important; /* Make sure dropdown is above everything */
+    position: absolute !important;
+}
+
+/* Ensure the dropdown doesn't get cut off */
+.navbar .dropdown {
+    position: relative;
+}
+
+.navbar .dropdown-menu {
+    position: absolute !important;
+    top: 100% !important;
+    left: auto !important;
+    right: 0 !important;
+    transform: none !important;
+    margin-top: 0.125rem !important;
+}
+
+/* Make sure hero banner doesn't interfere */
+.hero-banner {
+    position: relative;
+    z-index: 1; /* Lower than navbar */
+    margin-top: 0 !important;
+}
+
+/* Specific fix for user dropdown */
+.user-dropdown .dropdown-menu {
+    min-width: 250px !important;
+    padding: 0.5rem 0 !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* If using fixed navbar */
+.navbar.fixed-top {
+    z-index: 1030 !important;
 }

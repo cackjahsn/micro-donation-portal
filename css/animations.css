@@ -273,3 +273,36 @@
     transform: translateY(20px);
     transition: opacity 0.3s, transform 0.3s;
 }
+
+/* Add to animations.css */
+@keyframes progress-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.progress-goal-marker {
+    position: absolute;
+    top: -25px;
+    transform: translateX(-50%);
+    background: #2ecc71;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.donation-goal-tracker {
+    position: relative;
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+.donation-goal-tracker .progress {
+    height: 100%;
+    background: linear-gradient(90deg, #4e73df, #2ecc71);
+    border-radius: 5px;
+    transition: width 0.6s ease;
+}

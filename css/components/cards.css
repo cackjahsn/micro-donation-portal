@@ -75,6 +75,43 @@
     font-weight: 500;
 }
 
+/* Add to cards.css */
+.campaign-card-urgent {
+    border-left: 5px solid #e74c3c;
+    animation: pulse 2s infinite;
+}
+
+.campaign-card-featured {
+    border: 2px solid #f39c12;
+    background: linear-gradient(145deg, #ffffff 0%, #fff8e1 100%);
+}
+
+.campaign-progress-wrapper {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.campaign-donor-avatars {
+    display: flex;
+    align-items: center;
+}
+
+.campaign-donor-avatars img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid white;
+    margin-left: -10px;
+}
+
+.campaign-donor-avatars span {
+    margin-left: 10px;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
 /* Stats Card */
 .stats-card {
     border-left: 4px solid var(--primary-color);

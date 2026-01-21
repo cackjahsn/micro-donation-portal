@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginModalElement = document.getElementById('loginModal');
     const loginModal = loginModalElement ? new bootstrap.Modal(loginModalElement) : null;
     const campaignsContainer = document.getElementById('campaignsContainer');
+
+    // Initialize fixed navbar
+    if (typeof NavbarManager !== 'undefined') {
+        window.navbarManager = new NavbarManager();
+    }
     
     // Event Listeners for navigation
     if (loginBtn) {
@@ -31,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (campaignsContainer) {
         loadCampaigns();
     }
+    
     
     // Function to setup login modal enhancements
     function setupLoginModal() {
@@ -69,7 +75,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     target: 50000,
                     raised: 32500,
                     progress: 65,
-                    image: "assets/images/campaign1.jpg"
+                    image: "assets/images/campaign1.jpg",
+                    category: "Emergency",
+                    urgency: "High",
+                    donors: 127
                 },
                 {
                     id: 2,
@@ -78,7 +87,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     target: 30000,
                     raised: 18500,
                     progress: 62,
-                    image: "assets/images/campaign2.jpg"
+                    image: "assets/images/campaign2.jpg",
+                    category: "Education",
+                    urgency: "Medium",
+                    donors: 89
                 },
                 {
                     id: 3,
@@ -87,7 +99,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     target: 75000,
                     raised: 42000,
                     progress: 56,
-                    image: "assets/images/campaign3.jpg"
+                    image: "assets/images/campaign3.jpg",
+                    category: "Health",
+                    urgency: "High",
+                    donors: 156
                 }
             ];
             
@@ -103,26 +118,50 @@ document.addEventListener('DOMContentLoaded', function() {
         campaignsContainer.innerHTML = '';
         
         campaigns.forEach(campaign => {
+            // Determine urgency badge
+            let urgencyBadge = '';
+            if (campaign.urgency === "High") {
+                urgencyBadge = '<span class="badge bg-danger position-absolute top-2 start-2"><i class="fas fa-fire me-1"></i>Urgent</span>';
+            } else if (campaign.urgency === "Medium") {
+                urgencyBadge = '<span class="badge bg-warning position-absolute top-2 start-2">Ending Soon</span>';
+            }
+            
             const campaignCard = `
                 <div class="col-md-4">
                     <div class="card campaign-card">
-                        <img src="${campaign.image}" class="card-img-top" alt="${campaign.title}" height="200">
+                        <div class="position-relative">
+                            <img src="${campaign.image}" class="card-img-top" alt="${campaign.title}" height="200">
+                            ${urgencyBadge}
+                            <span class="badge bg-primary position-absolute bottom-2 start-2">${campaign.category}</span>
+                        </div>
                         <div class="card-body">
                             <h5 class="card-title">${campaign.title}</h5>
                             <p class="card-text">${campaign.description}</p>
+                            
+                            <!-- Campaign Stats -->
+                            <div class="campaign-stats mb-3">
+                                <div class="stat">
+                                    <i class="fas fa-users text-primary"></i>
+                                    <span>${campaign.donors} donors</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-calendar-alt text-info"></i>
+                                    <span>7 days left</span>
+                                </div>
+                            </div>
                             
                             <div class="mb-3">
                                 <strong>Raised: RM${campaign.raised.toLocaleString()}</strong>
                                 <span class="float-end">Target: RM${campaign.target.toLocaleString()}</span>
                             </div>
                             
-                            <div class="progress">
-                                <div class="progress-bar bg-success" style="width: ${campaign.progress}%"></div>
+                            <div class="progress mb-3">
+                                <div class="progress-bar" style="width: ${campaign.progress}%"></div>
                             </div>
                             
                             <div class="text-center mt-3">
                                 <a href="donation-page.html?campaign=${campaign.id}" class="btn btn-donate btn-lg">
-                                    <i class="fas fa-heart"></i> Donate Now
+                                    <i class="fas fa-heart me-2"></i>Donate Now
                                 </a>
                             </div>
                         </div>
@@ -236,7 +275,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = redirectUrl;
             }, 500);
         }
-    }
+    }       
+    
 });
 
 // Global functions for use in HTML onclick attributes
@@ -247,3 +287,94 @@ function showForgotPassword() {
 function sendResetLink() {
     // This function is now handled by the window.sendResetLink above
 }
+
+// Navbar Scroll Behavior
+class NavbarManager {
+    constructor() {
+        this.navbar = document.querySelector('.navbar');
+        this.navbarHeight = this.navbar ? this.navbar.offsetHeight : 70;
+        this.lastScrollTop = 0;
+        
+        this.init();
+    }
+    
+    init() {
+        // Add scroll event listener
+        window.addEventListener('scroll', () => this.handleScroll());
+        
+        // Initial check
+        this.handleScroll();
+        
+        // Close mobile menu when clicking a link
+        this.setupMobileMenu();
+        
+        // Update body padding based on navbar height
+        this.updateBodyPadding();
+    }
+    
+    handleScroll() {
+        if (!this.navbar) return;
+        
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add/remove scrolled class based on scroll position
+        if (scrollTop > 50) {
+            this.navbar.classList.add('scrolled');
+        } else {
+            this.navbar.classList.remove('scrolled');
+        }
+        
+        // Optional: Hide navbar on scroll down, show on scroll up
+        // Uncomment if you want this behavior
+        /*
+        if (scrollTop > this.lastScrollTop && scrollTop > this.navbarHeight) {
+            // Scroll down - hide navbar
+            this.navbar.style.transform = 'translateY(-100%)';
+        } else {
+            // Scroll up - show navbar
+            this.navbar.style.transform = 'translateY(0)';
+        }
+        */
+        
+        this.lastScrollTop = scrollTop;
+    }
+    
+    setupMobileMenu() {
+        // Close mobile menu when clicking a link
+        const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+        const navbarToggler = document.querySelector('.navbar-toggler');
+        const navbarCollapse = document.querySelector('.navbar-collapse');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                // Check if mobile menu is open
+                if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+                    // Close the menu
+                    navbarToggler.click();
+                }
+            });
+        });
+    }
+    
+    updateBodyPadding() {
+        // Update body padding to match navbar height
+        document.body.style.paddingTop = this.navbarHeight + 'px';
+        
+        // Update on resize
+        window.addEventListener('resize', () => {
+            this.navbarHeight = this.navbar.offsetHeight;
+            document.body.style.paddingTop = this.navbarHeight + 'px';
+        });
+    }
+    
+    // Public method to manually update (if navbar height changes dynamically)
+    update() {
+        this.navbarHeight = this.navbar.offsetHeight;
+        this.updateBodyPadding();
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.navbarManager = new NavbarManager();
+});
