@@ -524,9 +524,6 @@ class AuthManager {
                     <li><a class="dropdown-item" href="pages/profile.html">
                         <i class="fas fa-user me-2"></i>My Profile
                     </a></li>
-                    <li><a class="dropdown-item" href="#">
-                        <i class="fas fa-donate me-2"></i>My Donations
-                    </a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger logout-btn" href="#">
                         <i class="fas fa-sign-out-alt me-2"></i>Logout
