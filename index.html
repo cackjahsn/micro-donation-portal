@@ -69,12 +69,34 @@
         </div>
     </section>
 
-    <!-- Campaigns Section -->
-    <section class="campaigns-section py-5">
+        <!-- In index.html, find where you want to show campaigns -->
+    <section id="featured-campaigns" class="py-5 bg-light">
         <div class="container">
-            <h2 class="text-center mb-5">Active Campaigns</h2>
-            <div class="row" id="campaignsContainer">
-                <!-- Campaign cards will be loaded dynamically -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2 class="section-title">Active Campaigns</h2>
+                    <p class="text-muted">Support our latest initiatives and make a difference</p>
+                </div>
+            </div>
+            
+            <!-- Campaigns will load here -->
+            <div id="campaigns-container" class="row g-4">
+                <!-- Campaign cards will be dynamically inserted here -->
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading campaigns...</span>
+                    </div>
+                    <p class="mt-2">Loading campaigns...</p>
+                </div>
+            </div>
+            
+            <!-- View All button -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <a href="pages/campaigns.html" class="btn btn-primary">
+                        <i class="fas fa-arrow-right me-2"></i>View All Campaigns
+                    </a>
+                </div>
             </div>
         </div>
     </section>
@@ -182,6 +204,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/homepage-campaigns.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

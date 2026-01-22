@@ -25,13 +25,14 @@ class Utils {
     
     // ==================== STORAGE MANAGEMENT ====================
     
-    // Get item from localStorage with legacy support
-    getStorage(key) {
+    // Update ONLY the getStorage method in utils.js:
+    getStorage(key, returnRaw = false) {
         // Try new key first
-        let value = localStorage.getItem(`${this.storagePrefix}${key}`);
+        const newKey = `${this.storagePrefix}${key}`;
+        let value = localStorage.getItem(newKey);
         
         // If not found, try legacy keys
-        if (!value) {
+        if (value === null) {
             const legacyKeys = {
                 'user': 'communitygive_user',
                 'token': 'communitygive_token',
@@ -40,20 +41,37 @@ class Utils {
             
             if (legacyKeys[key]) {
                 value = localStorage.getItem(legacyKeys[key]);
-                if (value) {
+                if (value !== null) {
                     // Migrate to new key system
-                    this.setStorage(key, value);
+                    localStorage.setItem(newKey, value);
                     localStorage.removeItem(legacyKeys[key]);
                     console.log(`Migrated ${legacyKeys[key]} to new key system`);
                 }
             }
         }
         
+        // If not found at all
+        if (value === null) {
+            return returnRaw ? null : null;
+        }
+        
+        // SPECIAL HANDLING FOR TOKENS - they are strings, not JSON
+        if (key === 'token') {
+            return value; // Return token as plain string
+        }
+        
+        // For other keys, try to parse as JSON
         try {
-            return value ? JSON.parse(value) : null;
+            // Check if it's JSON by looking for object/array start
+            const trimmed = value.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                return JSON.parse(value);
+            }
+            // If not JSON, return as-is
+            return value;
         } catch (e) {
-            console.error(`Error parsing storage key ${key}:`, e);
-            return value; // Return raw value if not JSON
+            console.warn(`Could not parse storage key "${key}" as JSON. Returning raw value.`, e);
+            return value; // Return raw value
         }
     }
     
@@ -946,24 +964,30 @@ class Utils {
         };
     }
 
-        // Add this method to Utils class:
-    getApiUrl(endpoint) {
-        // Get current page path
+        getApiUrl(endpoint) {
+        // Check if we have a global API base URL
+        if (window.API_BASE_URL) {
+            return `${window.API_BASE_URL}${endpoint}`;
+        }
+        
         const currentPath = window.location.pathname;
         
-        // Check if we're in admin dashboard (root) or pages folder
-        if (currentPath.includes('admin-dashboard.html') || 
-            currentPath.endsWith('/micro-donation-portal/') ||
-            currentPath.endsWith('/micro-donation-portal/index.html')) {
-            // From root folder
-            return `../backend/api/${endpoint}`;
-        } else if (currentPath.includes('/pages/')) {
-            // From pages folder
-            return `../../backend/api/${endpoint}`;
-        } else {
-            // Default (from root)
-            return `../backend/api/${endpoint}`;
+        // If path contains micro-donation-portal, use it as base
+        if (currentPath.includes('/micro-donation-portal/')) {
+            // Extract the base path up to /micro-donation-portal/
+            const baseMatch = currentPath.match(/(.*\/micro-donation-portal\/)/);
+            if (baseMatch && baseMatch[1]) {
+                return `${baseMatch[1]}backend/api/${endpoint}`;
+            }
         }
+        
+        // Fallback for local development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return `/micro-donation-portal/backend/api/${endpoint}`;
+        }
+        
+        // Default relative path
+        return `backend/api/${endpoint}`;
     }
 
         // Also add this utility method:

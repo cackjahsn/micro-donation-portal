@@ -1,5 +1,5 @@
-// auth.js - Updated with Backend API Integration
-const API_BASE_URL = 'http://localhost/micro-donation-portal/backend/api';
+// auth.js - Updated with Backend API Integration (FIXED REGISTRATION)
+const API_BASE_URL = '/micro-donation-portal/backend/api';
 
 class AuthManager {
     constructor() {
@@ -83,6 +83,55 @@ class AuthManager {
     
     setupEventListeners() {
         console.log('Setting up event listeners');
+
+            // Login button click (opens modal)
+        document.addEventListener('click', (e) => {
+            // Check if login button was clicked
+            if (e.target.id === 'loginBtn' || e.target.closest('#loginBtn')) {
+                e.preventDefault();
+                console.log('Login button clicked, showing modal');
+                this.showLoginModal();
+            }
+            
+            // Check if register button was clicked
+            if (e.target.id === 'registerBtn' || e.target.closest('#registerBtn')) {
+                e.preventDefault();
+                console.log('Register button clicked, showing modal');
+                this.showRegisterModal();
+            }
+        });
+
+        // ========== ADD MODAL CLOSE HANDLERS ==========
+    // Setup modal hidden event listeners
+    setTimeout(() => {
+        const loginModal = document.getElementById('loginModal');
+        const registerModal = document.getElementById('registerModal');
+        
+        if (loginModal) {
+            loginModal.addEventListener('hidden.bs.modal', () => {
+                console.log('Login modal hidden - cleaning up');
+                this.cleanupModalBackdrop();
+            });
+        }
+        
+        if (registerModal) {
+            registerModal.addEventListener('hidden.bs.modal', () => {
+                console.log('Register modal hidden - cleaning up');
+                this.cleanupModalBackdrop();
+            });
+        }
+    }, 100);
+
+    // Add emergency escape key handler
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            console.log('Escape pressed - emergency modal cleanup');
+            this.emergencyModalCleanup();
+        }
+    });
+    // ========== END ADDED CODE ==========
+
+        
         
         // Login form submission
         const loginForm = document.getElementById('loginForm');
@@ -98,8 +147,8 @@ class AuthManager {
                 console.log('Login form submitted');
                 
                 // Get form values
-                const emailInput = newForm.querySelector('input[type="email"], #loginEmail');
-                const passwordInput = newForm.querySelector('input[type="password"], #loginPassword');
+                const emailInput = newForm.querySelector('input[type="email"], #loginEmail, input[name="email"]');
+                const passwordInput = newForm.querySelector('input[type="password"], #loginPassword, input[name="password"]');
                 
                 if (!emailInput || !passwordInput) {
                     this.showNotification('Please fill in all fields', 'error');
@@ -119,6 +168,60 @@ class AuthManager {
             });
         }
         
+        // Registration form submission
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            console.log('Registration form found, adding listener');
+            
+            const newRegisterForm = registerForm.cloneNode(true);
+            registerForm.parentNode.replaceChild(newRegisterForm, registerForm);
+            
+            newRegisterForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('Registration form submitted');
+                
+                // Get form values
+                const nameInput = newRegisterForm.querySelector('#name, input[name="name"]');
+                const emailInput = newRegisterForm.querySelector('#email, input[name="email"]');
+                const passwordInput = newRegisterForm.querySelector('#password, input[name="password"]');
+                const confirmPasswordInput = newRegisterForm.querySelector('#confirmPassword, input[name="confirmPassword"]');
+                
+                if (!nameInput || !emailInput || !passwordInput || !confirmPasswordInput) {
+                    this.showNotification('Please fill in all required fields', 'error');
+                    return;
+                }
+                
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                
+                if (!name || !email || !password || !confirmPassword) {
+                    this.showNotification('Please fill in all required fields', 'error');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    this.showNotification('Passwords do not match', 'error');
+                    return;
+                }
+                
+                if (!this.isValidEmail(email)) {
+                    this.showNotification('Please enter a valid email address', 'error');
+                    return;
+                }
+                
+                const userData = {
+                    name: name,
+                    email: email,
+                    password: password
+                };
+                
+                console.log('Calling handleRegister with:', userData.email);
+                await this.handleRegister(userData);
+            });
+        }
+        
         // Logout buttons
         document.addEventListener('click', (e) => {
             if (e.target.closest('.logout-btn') || e.target.id === 'logoutBtn') {
@@ -127,28 +230,117 @@ class AuthManager {
             }
         });
     }
+
+        showLoginModal() {
+        console.log('showLoginModal called');
+        const loginModal = document.getElementById('loginModal');
+        
+        if (!loginModal) {
+            console.error('Login modal element not found!');
+            return;
+        }
+        
+        // Check if Bootstrap is available
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap not loaded!');
+            return;
+        }
+        
+        try {
+            // Cleanup any existing modal first
+            this.cleanupModalBackdrop();
+            
+            const modal = new bootstrap.Modal(loginModal);
+            modal.show();
+            console.log('Login modal shown successfully');
+        } catch (error) {
+            console.error('Error showing login modal:', error);
+            this.emergencyModalCleanup();
+        }
+    }
+
+    showRegisterModal() {
+        console.log('showRegisterModal called');
+        const registerModal = document.getElementById('registerModal');
+        
+        if (!registerModal) {
+            console.error('Register modal element not found!');
+            return;
+        }
+        
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap not loaded!');
+            return;
+        }
+        
+        try {
+            // Cleanup any existing modal first
+            this.cleanupModalBackdrop();
+            
+            const modal = new bootstrap.Modal(registerModal);
+            modal.show();
+            console.log('Register modal shown successfully');
+        } catch (error) {
+            console.error('Error showing register modal:', error);
+            this.emergencyModalCleanup();
+        }
+    }
+
+        cleanupModalBackdrop() {
+        console.log('Cleaning up modal backdrop');
+        
+        // Remove modal backdrop if exists
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+            console.log('Removed modal backdrop');
+        }
+        
+        // Remove modal-open class from body
+        document.body.classList.remove('modal-open');
+        
+        // Reset body style
+        document.body.style = '';
+        
+        // Remove padding-right that Bootstrap adds
+        document.body.style.paddingRight = '';
+    }
+
+    emergencyModalCleanup() {
+        console.log('Emergency modal cleanup!');
+        
+        // Force remove all modal-related elements
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        });
+        
+        // Remove all backdrops
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // Fix body
+        document.body.classList.remove('modal-open');
+        document.body.style = '';
+        document.body.style.paddingRight = '';
+        
+        console.log('Emergency cleanup completed');
+    }
     
     async handleLogin(email, password) {
         console.log('=== LOGIN START ===');
-        console.log('Email:', email, 'Type:', typeof email);
-        console.log('Password:', 'Type:', typeof password);
+        console.log('Email:', email);
         
-        // Find login button - use multiple selectors
-        let loginBtn = document.querySelector('#loginBtn, button[type="submit"]');
-        
+        // Find login button
+        let loginBtn = document.querySelector('#loginForm button[type="submit"]');
         if (!loginBtn) {
-            console.error('Login button not found anywhere on page');
-            // Try alternative - find any button in the login form
-            const loginForm = document.getElementById('loginForm');
-            if (loginForm) {
-                loginBtn = loginForm.querySelector('button');
-            }
+            loginBtn = document.querySelector('button[type="submit"]');
         }
         
         const originalText = loginBtn ? loginBtn.innerHTML : 'Login';
-        console.log('Original button text:', originalText);
         
-        // Safety timeout to prevent stuck button
+        // Safety timeout
         const restoreTimeout = setTimeout(() => {
             console.warn('Login timeout - forcing button restoration');
             if (loginBtn && loginBtn.disabled) {
@@ -163,22 +355,10 @@ class AuthManager {
             if (loginBtn) {
                 loginBtn.disabled = true;
                 loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-                console.log('Button disabled and loading state set');
-            }
-            
-            // Validate inputs
-            if (typeof email !== 'string' || typeof password !== 'string') {
-                console.error('Invalid input types:', { 
-                    emailType: typeof email, 
-                    passwordType: typeof password 
-                });
-                throw new Error('Invalid email or password format');
             }
             
             const trimmedEmail = email.trim();
             const trimmedPassword = password.trim();
-            
-            console.log('Trimmed values - Email:', trimmedEmail);
             
             if (!trimmedEmail || !trimmedPassword) {
                 throw new Error('Email and password are required');
@@ -190,9 +370,9 @@ class AuthManager {
                 password: trimmedPassword
             };
             
-            console.log('Sending login request:', loginData);
+            console.log('Sending login request to:', `${API_BASE_URL}/auth/login.php`);
             
-            // Add AbortController for timeout
+            // Add timeout
             const controller = new AbortController();
             const fetchTimeout = setTimeout(() => controller.abort(), 10000);
             
@@ -208,14 +388,13 @@ class AuthManager {
             
             clearTimeout(fetchTimeout);
             
-            // Get raw response first for debugging
+            // Get raw response
             const responseText = await response.text();
             console.log('Raw login response:', responseText);
             
             let data;
             try {
                 data = JSON.parse(responseText);
-                console.log('Parsed response:', data);
             } catch (jsonError) {
                 console.error('JSON parse error:', jsonError);
                 throw new Error('Invalid server response');
@@ -224,17 +403,15 @@ class AuthManager {
             if (data.success && data.user && data.token) {
                 console.log('Login successful for user:', data.user.name);
                 
-                // Set session with correct keys
+                // Set session
                 this.setSession(data.user, data.token);
                 
-                // Clear safety timeout
                 clearTimeout(restoreTimeout);
-                
                 this.showNotification('Login successful!', 'success');
                 
                 // Close modal if exists
                 const loginModal = document.getElementById('loginModal');
-                if (loginModal) {
+                if (loginModal && typeof bootstrap !== 'undefined') {
                     const modal = bootstrap.Modal.getInstance(loginModal);
                     if (modal) modal.hide();
                 }
@@ -257,7 +434,6 @@ class AuthManager {
         } catch (error) {
             console.error('Login error details:', error);
             
-            // Handle different error types
             let errorMessage = error.message;
             if (error.name === 'AbortError') {
                 errorMessage = 'Request timeout. Server not responding.';
@@ -271,12 +447,9 @@ class AuthManager {
             console.log('Finally block executing - restoring button...');
             clearTimeout(restoreTimeout);
             
-            if (loginBtn && loginBtn.parentNode) { // Check if button still exists in DOM
+            if (loginBtn && loginBtn.parentNode) {
                 loginBtn.disabled = false;
                 loginBtn.innerHTML = originalText;
-                console.log('Button restored. Disabled:', loginBtn.disabled);
-            } else {
-                console.warn('Could not restore button - element not found');
             }
         }
     }
@@ -284,7 +457,19 @@ class AuthManager {
     async handleRegister(userData) {
         console.log('Registration attempt for:', userData.email);
         
+        // Find register button
+        let registerBtn = document.querySelector('#registerForm button[type="submit"]');
+        const originalText = registerBtn ? registerBtn.innerHTML : 'Register';
+        
         try {
+            // Disable button and show loading
+            if (registerBtn) {
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+            }
+            
+            console.log('Sending registration request to:', `${API_BASE_URL}/auth/register.php`);
+            
             const response = await fetch(`${API_BASE_URL}/auth/register.php`, {
                 method: 'POST',
                 headers: {
@@ -293,41 +478,65 @@ class AuthManager {
                 body: JSON.stringify(userData)
             });
             
-            const data = await response.json();
-            console.log('Registration response:', data);
+            console.log('Registration response status:', response.status);
             
-            if (data.success) {
-                // Auto-login after successful registration
-                const loginResponse = await fetch(`${API_BASE_URL}/auth/login.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email: userData.email,
-                        password: userData.password
-                    })
-                });
-                
-                const loginData = await loginResponse.json();
-                console.log('Auto-login response:', loginData);
-                
-                if (loginData.success) {
-                    this.setSession(loginData.user, loginData.token);
-                    return { success: true, user: loginData.user };
-                } else {
-                    console.error('Auto-login failed:', loginData.message);
-                }
+            const responseText = await response.text();
+            console.log('Raw registration response:', responseText);
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (jsonError) {
+                console.error('JSON parse error:', jsonError);
+                throw new Error('Invalid server response format');
             }
             
-            return { success: false, message: data.message };
+            console.log('Registration parsed response:', data);
+            
+            if (data.success) {
+                this.showNotification('Registration successful!', 'success');
+                
+                // Auto-login after successful registration
+                console.log('Attempting auto-login after registration...');
+                const loginResult = await this.handleLogin(userData.email, userData.password);
+                
+                if (loginResult) {
+                    return { success: true, user: this.currentUser };
+                } else {
+                    console.warn('Auto-login failed, redirecting to login page');
+                    this.showNotification('Registration successful! Please login.', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                }
+            } else {
+                throw new Error(data.message || 'Registration failed');
+            }
             
         } catch (error) {
             console.error('Registration error:', error);
+            
+            let errorMessage = error.message;
+            if (error.message.includes('404')) {
+                errorMessage = 'Registration service unavailable. Please try again later.';
+            } else if (error.message.includes('409')) {
+                errorMessage = 'Email already registered. Please use a different email or login.';
+            }
+            
+            this.showNotification(errorMessage, 'error');
             return { 
                 success: false, 
-                message: 'Registration failed. Please try again.' 
+                message: errorMessage 
             };
+            
+        } finally {
+            // Restore button state
+            if (registerBtn) {
+                setTimeout(() => {
+                    registerBtn.disabled = false;
+                    registerBtn.innerHTML = originalText;
+                }, 1000);
+            }
         }
     }
     
@@ -567,13 +776,11 @@ class AuthManager {
     
     isAuthenticated() {
         const isAuth = this.currentUser !== null;
-        console.log('isAuthenticated check:', isAuth);
         return isAuth;
     }
     
     isAdmin() {
         const isAdmin = this.isAuthenticated() && this.currentUser.role === 'admin';
-        console.log('isAdmin check:', isAdmin);
         return isAdmin;
     }
     
@@ -582,7 +789,6 @@ class AuthManager {
     }
     
     getCurrentUser() {
-        console.log('getCurrentUser called:', this.currentUser);
         return this.currentUser;
     }
     
@@ -697,6 +903,78 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginBtn) {
             loginBtn.disabled = false;
             loginBtn.innerHTML = 'Login';
+        }
+    });
+});
+
+// Check if we're on registration page and auth exists
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.pathname.includes('register.html')) {
+        console.log('On registration page, ensuring auth is available');
+        if (typeof auth === 'undefined') {
+            console.log('Auth not initialized on register page, initializing...');
+            window.auth = new AuthManager();
+        }
+    }
+});
+
+// Force page visibility fix - add this at the very end of auth.js
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Loading page visibility fix');
+    
+    // Monitor for page being hidden
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && 
+                (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+                
+                // Check if body is hidden or has modal-open class
+                const bodyStyle = window.getComputedStyle(document.body);
+                if (bodyStyle.display === 'none' || 
+                    document.body.classList.contains('modal-open') && bodyStyle.overflow === 'hidden') {
+                    
+                    console.log('Page was hidden! Forcing visible...');
+                    
+                    // Force page to be visible
+                    document.body.style.display = 'block';
+                    document.body.style.overflow = 'visible';
+                    document.body.classList.remove('modal-open');
+                    
+                    // Remove any modal backdrops
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    
+                    // Hide all modals
+                    document.querySelectorAll('.modal.show').forEach(modal => {
+                        modal.classList.remove('show');
+                        modal.style.display = 'none';
+                    });
+                }
+            }
+        });
+    });
+    
+    // Start observing the body element
+    observer.observe(document.body, { 
+        attributes: true, 
+        attributeFilter: ['style', 'class'] 
+    });
+    
+    // Also add a click handler for modal close buttons
+    document.addEventListener('click', function(e) {
+        const closeBtn = e.target.closest('[data-bs-dismiss="modal"], .btn-close');
+        if (closeBtn) {
+            console.log('Modal close button clicked - ensuring page stays visible');
+            
+            // Wait a bit then ensure page is visible
+            setTimeout(function() {
+                document.body.style.display = 'block';
+                document.body.classList.remove('modal-open');
+                
+                // Force cleanup
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+            }, 100);
         }
     });
 });
