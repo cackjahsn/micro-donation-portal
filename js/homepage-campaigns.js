@@ -51,39 +51,28 @@ async function loadHomepageCampaigns() {
     }
 }
 
-async function getAllCampaigns() {
-    try {
+    // In homepage-campaigns.js, replace the getAllCampaigns function with:
+    async function getAllCampaigns() {
         console.log('Fetching campaigns for homepage...');
         
-        // Use utils for API URL if available
-        let apiUrl = 'backend/api/campaigns/get-all.php';
-        if (typeof utils !== 'undefined' && utils.getApiUrl) {
-            apiUrl = utils.getApiUrl('campaigns/get-all.php');
-        }
-        
-        console.log('API URL:', apiUrl);
-        
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-            console.warn('API returned', response.status, 'using sample data');
+        try {
+            // Use utils.fetchAPI for consistent API calls
+            const data = await utils.fetchAPI('campaigns/get-all.php');
+            
+            console.log('API response data:', data);
+            
+            if (data.success) {
+                return data.campaigns || [];
+            } else {
+                throw new Error(data.message || 'Failed to load campaigns');
+            }
+            
+        } catch (error) {
+            console.error('Error fetching campaigns:', error);
+            utils.showNotification('Could not load campaigns. Using sample data.', 'warning');
             return getSampleCampaigns();
         }
-        
-        const data = await response.json();
-        console.log('API response:', data);
-        
-        if (data.success && data.campaigns) {
-            return data.campaigns;
-        } else {
-            return getSampleCampaigns();
-        }
-        
-    } catch (error) {
-        console.error('API call failed:', error);
-        return getSampleCampaigns();
     }
-}
 
 function displayCampaigns(campaigns, container) {
     if (!campaigns || campaigns.length === 0) {

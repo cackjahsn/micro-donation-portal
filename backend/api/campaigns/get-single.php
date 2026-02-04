@@ -1,5 +1,4 @@
 <?php
-require_once dirname(dirname(__FILE__)) . '/config/database.php';
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -10,21 +9,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-// Get database connection
-$basePath = dirname(dirname(dirname(__FILE__)));
-require_once $basePath . '/backend/config/database.php';
-
-$id = isset($_GET['id']) ? $_GET['id'] : null;
-
-if (!$id) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Campaign ID is required'
-    ]);
-    exit();
-}
+// CORRECT PATH FOR YOUR STRUCTURE:
+$configPath = dirname(dirname(dirname(__FILE__))) . '/config/database.php';
 
 try {
+    if (!file_exists($configPath)) {
+        throw new Exception("Database config not found");
+    }
+    
+    require_once $configPath;
+    
+    $id = isset($_GET['id']) ? $_GET['id'] : null;
+
+    if (!$id) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Campaign ID is required'
+        ]);
+        exit();
+    }
+
     $database = new Database();
     $db = $database->getConnection();
     $db->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
@@ -69,6 +73,11 @@ try {
     echo json_encode([
         'success' => false,
         'message' => 'Database error: ' . $e->getMessage()
+    ]);
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error: ' . $e->getMessage()
     ]);
 }
 ?>

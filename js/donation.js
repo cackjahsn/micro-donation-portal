@@ -2,7 +2,17 @@
 class DonationPage {
     constructor() {
         this.basePath = this.getBasePath();
-        this.paymentProcessor = new PaymentProcessor();
+        this.isProcessing = false;
+        
+        // Initialize PaymentProcessor with error handling
+        try {
+            this.paymentProcessor = new PaymentProcessor();
+        } catch (error) {
+            console.error('Failed to initialize PaymentProcessor:', error);
+            // Create a fallback payment processor
+            this.paymentProcessor = this.createFallbackPaymentProcessor();
+        }
+        
         this.donationData = {
             campaignId: 1,
             amount: 5,
@@ -13,11 +23,50 @@ class DonationPage {
             donorEmail: '',
             anonymous: false,
             coverFees: false,
-            selectedTier: 'helper'
+            selectedTier: 'helper',
+            donationId: null,
+            transactionId: null
         };
         this.steps = {
             current: 1,
             total: 4
+        
+        };
+    }
+    
+    // Fallback payment processor if main one fails
+    createFallbackPaymentProcessor() {
+        return {
+            processDonation: async (donationData, useSimulation = true) => {
+                // Simple fallback simulation
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return {
+                    success: true,
+                    type: 'fallback',
+                    transactionId: 'FALLBACK-' + Date.now(),
+                    donationId: Date.now(),
+                    amount: donationData.amount,
+                    message: 'Donation processed (fallback mode)'
+                };
+            },
+            generateSimulatedReceipt: async (donationId) => {
+                return {
+                    success: true,
+                    receiptUrl: '#',
+                    message: 'Receipt generation not available in fallback mode'
+                };
+            },
+            calculateFees: (amount, method = 'qr') => {
+                return {
+                    percentageFee: 0,
+                    fixedFee: 0,
+                    totalFee: 0,
+                    finalAmount: amount
+                };
+            },
+            formatCurrency: (amount) => {
+                return 'RM ' + amount.toFixed(2);
+            }
         };
     }
     
@@ -30,7 +79,7 @@ class DonationPage {
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const campaignId = urlParams.get('campaign') || 1;
-        this.donationData.campaignId = campaignId;
+        this.donationData.campaignId = parseInt(campaignId);
         
         // Load campaign info
         await this.loadCampaignInfo(campaignId);
@@ -44,14 +93,16 @@ class DonationPage {
     async loadCampaignInfo(id) {
         try {
             // Try to fetch from API first
-            const response = await fetch(`${this.basePath}backend/api/campaigns/get-single.php?id=${id}`);
+            const response = await fetch(utils.getApiUrl('campaigns/get-single.php?id=${id}'));
             if (response.ok) {
-                const campaign = await response.json();
-                this.displayCampaignInfo(campaign);
-                return;
+                const result = await response.json();
+                if (result.success) {
+                    this.displayCampaignInfo(result.data || result);
+                    return;
+                }
             }
         } catch (error) {
-            console.log('Using fallback campaign data');
+            console.log('Using fallback campaign data:', error.message);
         }
         
         // Fallback to static data
@@ -114,7 +165,7 @@ class DonationPage {
                         <img src="${campaign.image_url}" 
                              class="img-fluid rounded" 
                              alt="${campaign.title}"
-                             onerror="this.onerror=null; this.src='https://via.placeholder.com/400x200/4e73df/ffffff?text=Campaign'">
+                             onerror="this.onerror=null; this.src='${this.basePath}assets/images/default-campaign.jpg'">
                     </div>
                     <div class="col-md-9">
                         <h3 class="card-title mb-2">${campaign.title}</h3>
@@ -123,22 +174,32 @@ class DonationPage {
                         <!-- Donation Impact Visualizer -->
                         <div class="donation-impact-visual">
                             <div class="donation-goal-tracker">
-                                <div class="progress" style="width: ${progressPercent}%;">
-                                    <div class="progress-goal-marker" style="left: 100%;">Goal: RM ${campaign.target_amount.toLocaleString()}</div>
+                                <div class="progress" style="height: 20px; border-radius: 10px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: ${progressPercent}%; background: linear-gradient(90deg, #4e73df, #6f42c1);"
+                                         aria-valuenow="${progressPercent}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        ${progressPercent}%
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <small>RM ${campaign.current_amount.toLocaleString()}</small>
+                                    <small>Goal: RM ${campaign.target_amount.toLocaleString()}</small>
                                 </div>
                             </div>
-                            <div class="impact-stats">
-                                <div class="stat">
-                                    <span class="stat-value">${campaign.donor_count || 0}</span>
-                                    <span class="stat-label">Donors</span>
+                            <div class="impact-stats d-flex justify-content-around mt-3">
+                                <div class="stat text-center">
+                                    <span class="stat-value d-block fw-bold">${campaign.donor_count || 0}</span>
+                                    <span class="stat-label text-muted small">Donors</span>
                                 </div>
-                                <div class="stat">
-                                    <span class="stat-value">RM ${campaign.current_amount.toLocaleString()}</span>
-                                    <span class="stat-label">Raised</span>
+                                <div class="stat text-center">
+                                    <span class="stat-value d-block fw-bold">${campaign.days_left || 30}</span>
+                                    <span class="stat-label text-muted small">Days left</span>
                                 </div>
-                                <div class="stat">
-                                    <span class="stat-value">${campaign.days_left || 30}</span>
-                                    <span class="stat-label">Days left</span>
+                                <div class="stat text-center">
+                                    <span class="stat-value d-block fw-bold">${progressPercent}%</span>
+                                    <span class="stat-label text-muted small">Funded</span>
                                 </div>
                             </div>
                         </div>
@@ -146,6 +207,9 @@ class DonationPage {
                 </div>
             </div>
         `;
+        
+        // Store campaign data for receipt generation
+        this.campaignInfo = campaign;
     }
     
     setupEventListeners() {
@@ -223,6 +287,24 @@ class DonationPage {
             });
         });
         
+        // Payment method radio buttons
+        document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                this.donationData.paymentMethod = e.target.value;
+                const qrCodeArea = document.getElementById('qrCodeArea');
+                const bankSelection = document.getElementById('bankSelection');
+                
+                if (e.target.value === 'qr') {
+                    if (qrCodeArea) qrCodeArea.style.display = 'block';
+                    if (bankSelection) bankSelection.style.display = 'none';
+                    this.generateQRCode();
+                } else if (e.target.value === 'fpx') {
+                    if (qrCodeArea) qrCodeArea.style.display = 'none';
+                    if (bankSelection) bankSelection.style.display = 'block';
+                }
+            });
+        });
+        
         // Step navigation
         document.getElementById('nextStep1')?.addEventListener('click', () => this.nextStep(1));
         document.getElementById('backStep2')?.addEventListener('click', () => this.showStep(1));
@@ -245,6 +327,22 @@ class DonationPage {
                 this.donationData.termsAgreed = termsCheckbox.checked;
             });
         }
+        
+        // Anonymous donation
+        const anonymousCheckbox = document.getElementById('anonymousDonation');
+        if (anonymousCheckbox) {
+            anonymousCheckbox.addEventListener('change', () => {
+                this.donationData.anonymous = anonymousCheckbox.checked;
+            });
+        }
+        
+        // NEW: Handle receipt download button
+        document.getElementById('downloadReceipt')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (this.donationData.donationId) {
+                this.generateReceipt(this.donationData.donationId);
+            }
+        });
     }
     
     resetTierSelection() {
@@ -333,6 +431,14 @@ class DonationPage {
                 if (!donorEmail?.value) {
                     this.showNotification('Please enter your email address', 'warning');
                     donorEmail?.focus();
+                    return false;
+                }
+                
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(donorEmail.value)) {
+                    this.showNotification('Please enter a valid email address', 'warning');
+                    donorEmail.focus();
                     return false;
                 }
                 
@@ -429,54 +535,200 @@ class DonationPage {
         }
     }
     
-    async processDonation() {
-        if (!this.validateStep(3)) return;
-        
-        const confirmBtn = document.getElementById('confirmDonation');
-        const originalText = confirmBtn.innerHTML;
-        
-        try {
-            // Update donation data
-            this.donationData.donorName = document.getElementById('donorName')?.value || '';
-            this.donationData.donorEmail = document.getElementById('donorEmail')?.value;
-            this.donationData.anonymous = document.getElementById('anonymousDonation')?.checked || false;
-            
-            // Show loading
-            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-            confirmBtn.disabled = true;
-            
-            // Process payment
-            const paymentResult = await this.paymentProcessor.processDonation(this.donationData);
-            
-            if (!paymentResult.success) {
-                throw new Error(paymentResult.error || 'Payment failed');
+        async processDonation() {
+            // Prevent multiple clicks
+            if (this.isProcessingDonation) {
+                console.log('Donation already processing, please wait...');
+                return;
             }
             
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            if (!this.validateStep(3)) return;
             
-            // Show success step
-            this.showStep(4);
+            const confirmBtn = document.getElementById('confirmDonation');
+            const originalText = confirmBtn.innerHTML;
             
-            // Update success details
-            const now = new Date();
-            document.getElementById('transactionId').textContent = this.donationData.transactionReference || 
-                'DON-' + Date.now();
-            document.getElementById('finalAmount').textContent = `RM ${this.donationData.total.toFixed(2)}`;
-            document.getElementById('transactionDate').textContent = now.toLocaleDateString('en-GB', {
-                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-            });
-            document.getElementById('receiptEmail').textContent = this.donationData.donorEmail;
+            try {
+                // Set processing flag
+                this.isProcessingDonation = true;
+                
+                // Update donation data
+                this.donationData.donorName = document.getElementById('donorName')?.value || '';
+                this.donationData.donorEmail = document.getElementById('donorEmail')?.value;
+                this.donationData.anonymous = document.getElementById('anonymousDonation')?.checked || false;
+                this.donationData.termsAgreed = document.getElementById('termsAgreement')?.checked || false;
+                
+                // Show loading with better visual feedback
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('processing');
+                
+                // Add overlay to prevent any clicks
+                this.addProcessingOverlay();
+                
+                // NEW: Process payment with simulated system
+                console.log('Processing donation:', this.donationData);
+                
+                // Use the PaymentProcessor's simulated method
+                const paymentResult = await this.paymentProcessor.processDonation(
+                    {
+                        amount: this.donationData.amount,
+                        campaignId: this.donationData.campaignId,
+                        donorEmail: this.donationData.donorEmail,
+                        donorName: this.donationData.anonymous ? 'Anonymous' : this.donationData.donorName,
+                        paymentMethod: this.donationData.paymentMethod,
+                        coverFees: this.donationData.coverFees,
+                        userId: auth?.getCurrentUser()?.id || 0 // Add user ID if available
+                    }, 
+                    true // Use simulation mode
+                );
+                
+                if (!paymentResult.success) {
+                    throw new Error(paymentResult.error || paymentResult.message || 'Payment failed');
+                }
+                
+                // Store donation and transaction IDs for receipt generation
+                this.donationData.donationId = paymentResult.donationId;
+                this.donationData.transactionId = paymentResult.transactionId;
+                
+                // Show success step
+                this.showStep(4);
+                
+                // Update success details
+                const now = new Date();
+                document.getElementById('transactionId').textContent = this.donationData.transactionId || 
+                    paymentResult.transactionId || 
+                    'DON-' + Date.now();
+                document.getElementById('finalAmount').textContent = `RM ${this.donationData.total.toFixed(2)}`;
+                document.getElementById('transactionDate').textContent = now.toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                document.getElementById('receiptEmail').textContent = this.donationData.donorEmail;
+                
+                // Update receipt download button
+                const downloadReceiptBtn = document.getElementById('downloadReceipt');
+                if (downloadReceiptBtn) {
+                    downloadReceiptBtn.onclick = (e) => {
+                        e.preventDefault();
+                        if (this.donationData.donationId) {
+                            this.generateReceipt(this.donationData.donationId);
+                        }
+                    };
+                }
+                
+                // Send to analytics or backend
+                this.trackDonationSuccess();
+                
+                // Add to live donations feed
+                this.addToLiveFeed();
+                
+                // Reset processing flag after a delay to prevent immediate re-submission
+                setTimeout(() => {
+                    this.isProcessingDonation = false;
+                }, 3000); // 3 second cooldown
+                
+            } catch (error) {
+                console.error('Donation error:', error);
+                this.showNotification(error.message || 'Payment failed. Please try again.', 'error');
+                
+                // Reset processing flag on error
+                this.isProcessingDonation = false;
+            } finally {
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('processing');
+                
+                // Remove overlay
+                this.removeProcessingOverlay();
+            }
+        }
+
+        // Add these helper methods to your class
+        addProcessingOverlay() {
+            const overlay = document.createElement('div');
+            overlay.id = 'donationProcessingOverlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.7);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            overlay.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="visually-hidden">Processing donation...</span>
+                    </div>
+                    <div class="mt-3 fw-bold">Processing your donation...</div>
+                    <div class="mt-1 text-muted small">Please don't close this window</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        removeProcessingOverlay() {
+            const overlay = document.getElementById('donationProcessingOverlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+    
+    // NEW: Generate receipt using simulated system
+    async generateReceipt(donationId) {
+        if (!donationId) {
+            this.showNotification('No donation ID found. Please contact support.', 'warning');
+            return;
+        }
+        
+        try {
+            // Use PaymentProcessor to generate receipt
+            const receiptResult = await this.paymentProcessor.generateSimulatedReceipt(donationId);
             
-            // Send to analytics or backend
-            this.trackDonationSuccess();
+            if (!receiptResult.success) {
+                throw new Error(receiptResult.message || 'Failed to generate receipt');
+            }
+            
+            // Receipt will open in new window automatically
+            this.showNotification('Receipt generated successfully', 'success');
             
         } catch (error) {
-            console.error('Donation error:', error);
-            this.showNotification(error.message || 'Payment failed. Please try again.', 'error');
-        } finally {
-            confirmBtn.innerHTML = originalText;
-            confirmBtn.disabled = false;
+            console.error('Receipt generation error:', error);
+            this.showNotification('Could not generate receipt. Please try again later.', 'error');
+            
+            // Fallback: Open generic receipt page
+            window.open(`${this.basePath}backend/api/payment/download-receipt.php?donation_id=${donationId}`, '_blank');
+        }
+    }
+    
+    // NEW: Add current donation to live feed
+    addToLiveFeed() {
+        const feed = document.querySelector('.donation-feed');
+        if (!feed) return;
+        
+        const donorName = this.donationData.anonymous ? 'Anonymous' : 
+                         (this.donationData.donorName || 'A Donor');
+        const initial = donorName === 'Anonymous' ? 'A' : donorName.charAt(0);
+        
+        const donationItem = document.createElement('div');
+        donationItem.className = 'donation-feed-item animate-fade-in';
+        donationItem.innerHTML = `
+            <div class="donor-avatar" style="background: linear-gradient(135deg, #4e73df, #6f42c1);">${initial}</div>
+            <div class="donor-info">
+                <div class="donor-name">${donorName}</div>
+                <div class="donation-amount text-success">RM ${this.donationData.amount.toFixed(2)}</div>
+                <div class="donation-time">just now</div>
+            </div>
+        `;
+        
+        feed.insertBefore(donationItem, feed.firstChild);
+        
+        // Limit to 8 items
+        if (feed.children.length > 8) {
+            feed.removeChild(feed.lastChild);
         }
     }
     
@@ -488,7 +740,9 @@ class DonationPage {
                 amount: this.donationData.amount,
                 campaignId: this.donationData.campaignId,
                 paymentMethod: this.donationData.paymentMethod,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                donationId: this.donationData.donationId,
+                transactionId: this.donationData.transactionId
             }
         };
         
@@ -496,39 +750,96 @@ class DonationPage {
         console.log('Donation completed:', donationEvent);
         
         // Update local storage for donation history
-        const donations = JSON.parse(localStorage.getItem('user_donations') || '[]');
-        donations.unshift({
-            ...this.donationData,
-            date: new Date().toISOString(),
-            status: 'completed'
-        });
-        localStorage.setItem('user_donations', JSON.stringify(donations.slice(0, 10))); // Keep last 10
+        try {
+            const donations = JSON.parse(localStorage.getItem('user_donations') || '[]');
+            donations.unshift({
+                ...this.donationData,
+                date: new Date().toISOString(),
+                status: 'completed'
+            });
+            localStorage.setItem('user_donations', JSON.stringify(donations.slice(0, 10))); // Keep last 10
+        } catch (error) {
+            console.error('Error saving to localStorage:', error);
+        }
     }
     
     showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.donation-notification');
+        existingNotifications.forEach(notification => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        });
+        
         // Create notification element
         const notification = document.createElement('div');
-        notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+        notification.className = `donation-notification alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
         notification.style.cssText = `
+            position: fixed;
             top: 20px;
             right: 20px;
             z-index: 9999;
             min-width: 300px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            animation: fadeIn 0.3s ease-out;
+            animation: slideInRight 0.3s ease-out;
         `;
         
+        const icon = type === 'error' ? 'exclamation-circle' : 
+                    type === 'warning' ? 'exclamation-triangle' : 
+                    type === 'success' ? 'check-circle' : 'info-circle';
+        
         notification.innerHTML = `
-            <strong>${type === 'error' ? 'Error' : type === 'warning' ? 'Warning' : 'Info'}:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${icon} me-2"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         `;
         
         document.body.appendChild(notification);
         
+        // Add animation styles if not present
+        if (!document.querySelector('#notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+                .donation-notification-exit {
+                    animation: slideOutRight 0.3s ease-out forwards;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
         // Auto remove after 5 seconds
         setTimeout(() => {
             if (notification.parentNode) {
-                notification.remove();
+                notification.classList.add('donation-notification-exit');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
             }
         }, 5000);
     }
@@ -541,4 +852,57 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make available globally for debugging
     window.donationPage = donationPage;
+    
+    // Add CSS for donation feed
+    if (!document.querySelector('#donation-feed-styles')) {
+        const style = document.createElement('style');
+        style.id = 'donation-feed-styles';
+        style.textContent = `
+            .donation-feed-item {
+                display: flex;
+                align-items: center;
+                padding: 10px;
+                border-radius: 8px;
+                background: #f8f9fa;
+                margin-bottom: 8px;
+                animation: fadeIn 0.5s ease-out;
+            }
+            .donor-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: #4e73df;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                margin-right: 12px;
+            }
+            .donor-info {
+                flex: 1;
+            }
+            .donor-name {
+                font-weight: 600;
+                color: #333;
+            }
+            .donation-amount {
+                color: #28a745;
+                font-weight: 600;
+            }
+            .donation-time {
+                font-size: 12px;
+                color: #6c757d;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes animate-fade-in {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 });

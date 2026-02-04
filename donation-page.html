@@ -8,6 +8,220 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: 0;
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .step.active .step-circle {
+            background-color: #4e73df;
+            color: white;
+            border-color: #4e73df;
+        }
+        
+        .step.completed .step-circle {
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        
+        .step-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .step.active .step-label {
+            color: #4e73df;
+            font-weight: bold;
+        }
+        
+        .step.completed .step-label {
+            color: #28a745;
+        }
+        
+        .amount-btn.active {
+            background-color: #4e73df;
+            color: white;
+            border-color: #4e73df;
+        }
+        
+        .qr-container {
+            background-color: white;
+            border-radius: 10px;
+        }
+        
+        /* Payment Method Cards */
+        .payment-method-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-method-card:hover {
+            border-color: #4e73df;
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+        
+        .payment-method-card.active {
+            border-color: #4e73df;
+            background-color: rgba(78, 115, 223, 0.1);
+        }
+        
+        .payment-method-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Tier Cards */
+        .tier-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .tier-card:hover {
+            border-color: #4e73df;
+            transform: translateY(-5px);
+        }
+        
+        .tier-card.active {
+            border-color: #4e73df;
+            background: linear-gradient(135deg, rgba(78, 115, 223, 0.1), rgba(108, 66, 193, 0.1));
+        }
+        
+        .tier-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .tier-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .tier-amount {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4e73df;
+        }
+        
+        .tier-desc {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        
+        /* Donation Feed */
+        .donation-feed {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .donation-feed-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Live donation feed side panel */
+        @media (min-width: 992px) {
+            .donation-feed-container {
+                position: sticky;
+                top: 100px;
+            }
+        }
+        
+        /* Loading animation */
+        .spinner-border {
+            vertical-align: middle;
+        }
+        
+        /* Simulated Payment Notice */
+        .simulated-notice {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border-left: 4px solid #f39c12;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        /* Progress bar for campaign */
+        .donation-goal-tracker .progress {
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .donation-goal-tracker .progress-bar {
+            background: linear-gradient(90deg, #4e73df, #6f42c1);
+            transition: width 1s ease-in-out;
+        }
+        
+        /* Live donation animation */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .new-donation {
+            animation: pulse 1s ease-in-out;
+        }
+    </style>
 </head>
 <body>
 <!-- Fixed Navbar -->
@@ -64,9 +278,10 @@
     <section class="donation-process py-5">
         <div class="container">
             <div class="row">
-                <div class="col-lg-8 mx-auto">
+                <!-- Main Donation Area -->
+                <div class="col-lg-8">
                     <!-- Progress Steps -->
-                    <div class="row mb-5">
+                    <div class="row mb-4">
                         <div class="col-12">
                             <div class="progress-steps">
                                 <div class="step active">
@@ -81,13 +296,30 @@
                                     <div class="step-circle">3</div>
                                     <div class="step-label">Confirmation</div>
                                 </div>
+                                <div class="step">
+                                    <div class="step-circle">4</div>
+                                    <div class="step-label">Complete</div>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Simulated Payment Notice -->
+                    <div class="simulated-notice mb-4">
+                        <i class="fas fa-info-circle text-warning me-2"></i>
+                        <strong>Demo Mode:</strong> This is a simulated payment system. No real money will be transferred.
+                        All donations are recorded in the database for testing purposes.
                     </div>
 
                     <!-- Campaign Info -->
                     <div class="card shadow mb-4" id="campaignInfoCard">
-                        <!-- Campaign info will be loaded here -->
+                        <!-- Campaign info will be loaded here by donation.js -->
+                        <div class="card-body text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading campaign...</span>
+                            </div>
+                            <p class="mt-2">Loading campaign information...</p>
+                        </div>
                     </div>
 
                     <!-- Donation Form -->
@@ -98,6 +330,53 @@
                             <!-- Step 1: Amount Selection -->
                             <div id="step1">
                                 <h4 class="mb-3">Select Donation Amount</h4>
+                                
+                                <!-- Donation Tiers -->
+                                <div class="row mb-4">
+                                    <div class="col-md-3 mb-3">
+                                        <div class="tier-card" data-tier="helper" data-amount="5">
+                                            <div class="tier-icon text-primary">
+                                                <i class="fas fa-hand-holding-heart"></i>
+                                            </div>
+                                            <div class="tier-name">Helper</div>
+                                            <div class="tier-amount">RM 5</div>
+                                            <div class="tier-desc">Small but meaningful support</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="tier-card" data-tier="supporter" data-amount="10">
+                                            <div class="tier-icon text-success">
+                                                <i class="fas fa-heart"></i>
+                                            </div>
+                                            <div class="tier-name">Supporter</div>
+                                            <div class="tier-amount">RM 10</div>
+                                            <div class="tier-desc">Substantial contribution</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="tier-card" data-tier="champion" data-amount="25">
+                                            <div class="tier-icon text-warning">
+                                                <i class="fas fa-star"></i>
+                                            </div>
+                                            <div class="tier-name">Champion</div>
+                                            <div class="tier-amount">RM 25</div>
+                                            <div class="tier-desc">Make a real difference</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="tier-card" data-tier="hero" data-amount="50">
+                                            <div class="tier-icon text-danger">
+                                                <i class="fas fa-crown"></i>
+                                            </div>
+                                            <div class="tier-name">Hero</div>
+                                            <div class="tier-amount">RM 50</div>
+                                            <div class="tier-desc">Transformative impact</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Quick Amount Buttons -->
+                                <h5 class="mb-3">Quick Amount</h5>
                                 <div class="row mb-4">
                                     <div class="col-6 col-md-3 mb-3">
                                         <button class="btn amount-btn btn-outline-primary w-100" data-amount="1">
@@ -121,6 +400,7 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Custom Amount -->
                                 <div class="mb-4">
                                     <label for="customAmount" class="form-label">Or Enter Custom Amount (RM)</label>
                                     <div class="input-group">
@@ -129,61 +409,89 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Cover Fees Option -->
                                 <div class="form-check mb-4">
                                     <input class="form-check-input" type="checkbox" id="coverFees">
                                     <label class="form-check-label" for="coverFees">
+                                        <i class="fas fa-shield-alt me-1 text-success"></i>
                                         Add RM 0.50 to cover payment processing fees
+                                        <small class="d-block text-muted">Ensure 100% of your donation goes to the cause</small>
                                     </label>
                                 </div>
                                 
-                                <button class="btn btn-primary btn-lg w-100" id="nextStep1">Continue to Payment</button>
+                                <button class="btn btn-primary btn-lg w-100" id="nextStep1">
+                                    <i class="fas fa-arrow-right me-2"></i>Continue to Payment
+                                </button>
                             </div>
 
                             <!-- Step 2: Payment Method -->
                             <div id="step2" style="display: none;">
                                 <h4 class="mb-3">Choose Payment Method</h4>
                                 
+                                <!-- Payment Method Options -->
                                 <div class="mb-4">
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="radio" name="paymentMethod" id="qrPayment" value="qr" checked>
-                                        <label class="form-check-label" for="qrPayment">
-                                            <i class="fas fa-qrcode fa-lg text-success me-2"></i>
-                                            <strong>QR Code Payment</strong>
-                                            <p class="text-muted mb-0">Scan QR code with your banking app</p>
-                                        </label>
+                                    <div class="payment-method-card active" data-method="qr">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="radio" name="paymentMethod" id="qrPayment" value="qr" checked>
+                                            <label class="form-check-label w-100" for="qrPayment">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-qrcode fa-2x text-success me-3"></i>
+                                                    <div>
+                                                        <strong class="d-block">QR Code Payment</strong>
+                                                        <p class="text-muted mb-0">Simulated QR scan for testing</p>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
                                     
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="radio" name="paymentMethod" id="onlineBanking" value="fpx">
-                                        <label class="form-check-label" for="onlineBanking">
-                                            <i class="fas fa-university fa-lg text-primary me-2"></i>
-                                            <strong>Online Banking (FPX)</strong>
-                                            <p class="text-muted mb-0">Direct bank transfer</p>
-                                        </label>
+                                    <div class="payment-method-card" data-method="fpx">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="radio" name="paymentMethod" id="onlineBanking" value="fpx">
+                                            <label class="form-check-label w-100" for="onlineBanking">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-university fa-2x text-primary me-3"></i>
+                                                    <div>
+                                                        <strong class="d-block">Online Banking (FPX)</strong>
+                                                        <p class="text-muted mb-0">Simulated bank transfer</p>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
                                     
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="radio" name="paymentMethod" id="cardPayment" value="card" disabled>
-                                        <label class="form-check-label" for="cardPayment">
-                                            <i class="fas fa-credit-card fa-lg text-warning me-2"></i>
-                                            <strong>Credit/Debit Card</strong>
-                                            <p class="text-muted mb-0">(Coming Soon)</p>
-                                        </label>
+                                    <div class="payment-method-card disabled" data-method="card">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="radio" name="paymentMethod" id="cardPayment" value="card" disabled>
+                                            <label class="form-check-label w-100" for="cardPayment">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-credit-card fa-2x text-warning me-3"></i>
+                                                    <div>
+                                                        <strong class="d-block">Credit/Debit Card</strong>
+                                                        <p class="text-muted mb-0">(Coming Soon)</p>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <!-- QR Code Display Area -->
-                                <div class="text-center mb-4" id="qrCodeArea" style="display: none;">
-                                    <h5>Scan QR Code to Pay</h5>
+                                <div class="text-center mb-4" id="qrCodeArea">
+                                    <h5>Simulated QR Code</h5>
                                     <div class="qr-container border p-3 d-inline-block mb-3">
                                         <img src="assets/qr-codes/sample-qr.png" alt="QR Code" id="qrCodeImage" style="width: 200px; height: 200px;">
                                     </div>
-                                    <p class="text-muted">Open your banking app and scan the QR code</p>
+                                    <p class="text-muted">Click "Complete Donation" to simulate QR scan</p>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <small>This is a simulated QR code for testing purposes only.</small>
+                                    </div>
                                 </div>
                                 
-                                <!-- Bank Selection -->
+                                <!-- Bank Selection (for FPX) -->
                                 <div class="mb-4" id="bankSelection" style="display: none;">
-                                    <label for="bankSelect" class="form-label">Select Your Bank</label>
+                                    <label for="bankSelect" class="form-label">Select Your Bank (Simulated)</label>
                                     <select class="form-select" id="bankSelect">
                                         <option value="">Choose bank</option>
                                         <option value="maybank">Maybank</option>
@@ -191,15 +499,21 @@
                                         <option value="public">Public Bank</option>
                                         <option value="rhb">RHB Bank</option>
                                         <option value="hongleong">Hong Leong Bank</option>
+                                        <option value="simulated">Simulated Bank (for testing)</option>
                                     </select>
                                 </div>
                                 
+                                <!-- Navigation Buttons -->
                                 <div class="row">
                                     <div class="col-6">
-                                        <button class="btn btn-outline-secondary w-100" id="backStep2">Back</button>
+                                        <button class="btn btn-outline-secondary w-100" id="backStep2">
+                                            <i class="fas fa-arrow-left me-2"></i>Back
+                                        </button>
                                     </div>
                                     <div class="col-6">
-                                        <button class="btn btn-primary w-100" id="nextStep2">Proceed to Payment</button>
+                                        <button class="btn btn-primary w-100" id="nextStep2">
+                                            Continue <i class="fas fa-arrow-right ms-2"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -214,7 +528,7 @@
                                 </div>
                                 
                                 <div class="mb-4">
-                                    <label for="donorEmail" class="form-label">Email Address</label>
+                                    <label for="donorEmail" class="form-label">Email Address *</label>
                                     <input type="email" class="form-control" id="donorEmail" placeholder="Enter your email" required>
                                     <div class="form-text">We'll send your donation receipt to this email</div>
                                 </div>
@@ -222,27 +536,37 @@
                                 <div class="form-check mb-4">
                                     <input class="form-check-input" type="checkbox" id="anonymousDonation">
                                     <label class="form-check-label" for="anonymousDonation">
+                                        <i class="fas fa-user-secret me-1"></i>
                                         Make this donation anonymous
                                     </label>
                                 </div>
                                 
+                                <!-- Donation Summary -->
                                 <div class="alert alert-info">
-                                    <h5>Donation Summary</h5>
-                                    <div class="row">
+                                    <h5>
+                                        <i class="fas fa-receipt me-2"></i>
+                                        Donation Summary
+                                    </h5>
+                                    <div class="row mb-2">
                                         <div class="col-6">Amount:</div>
-                                        <div class="col-6 text-end" id="summaryAmount">RM 0.00</div>
+                                        <div class="col-6 text-end fw-bold" id="summaryAmount">RM 0.00</div>
                                     </div>
-                                    <div class="row">
+                                    <div class="row mb-2">
                                         <div class="col-6">Processing Fees:</div>
                                         <div class="col-6 text-end" id="summaryFees">RM 0.00</div>
+                                    </div>
+                                    <div class="row mb-2" id="summaryTierRow" style="display: none;">
+                                        <div class="col-6">Tier:</div>
+                                        <div class="col-6 text-end" id="summaryTier">Helper Tier</div>
                                     </div>
                                     <hr>
                                     <div class="row fw-bold">
                                         <div class="col-6">Total:</div>
-                                        <div class="col-6 text-end" id="summaryTotal">RM 0.00</div>
+                                        <div class="col-6 text-end text-success" id="summaryTotal">RM 0.00</div>
                                     </div>
                                 </div>
                                 
+                                <!-- Terms Agreement -->
                                 <div class="form-check mb-4">
                                     <input class="form-check-input" type="checkbox" id="termsAgreement" required>
                                     <label class="form-check-label" for="termsAgreement">
@@ -251,13 +575,16 @@
                                     </label>
                                 </div>
                                 
+                                <!-- Navigation Buttons -->
                                 <div class="row">
                                     <div class="col-6">
-                                        <button class="btn btn-outline-secondary w-100" id="backStep3">Back</button>
+                                        <button class="btn btn-outline-secondary w-100" id="backStep3">
+                                            <i class="fas fa-arrow-left me-2"></i>Back
+                                        </button>
                                     </div>
                                     <div class="col-6">
                                         <button class="btn btn-success w-100" id="confirmDonation">
-                                            <i class="fas fa-heart"></i> Complete Donation
+                                            <i class="fas fa-heart me-2"></i> Complete Donation
                                         </button>
                                     </div>
                                 </div>
@@ -273,7 +600,10 @@
                                     <p class="lead mb-4">Your contribution will make a real difference.</p>
                                     
                                     <div class="alert alert-success mb-4">
-                                        <h5>Donation Confirmed</h5>
+                                        <h5>
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            Donation Confirmed
+                                        </h5>
                                         <p class="mb-1">Transaction ID: <strong id="transactionId">DON-123456</strong></p>
                                         <p class="mb-1">Amount: <strong id="finalAmount">RM 0.00</strong></p>
                                         <p class="mb-0">Date: <strong id="transactionDate">18 Dec 2025</strong></p>
@@ -281,18 +611,105 @@
                                     
                                     <p class="mb-4">
                                         A receipt has been sent to <strong id="receiptEmail">your email</strong>.
-                                        You can also <a href="#" class="text-primary" id="downloadReceipt">download the receipt here</a>.
+                                        You can also <a href="#" class="text-primary" id="downloadReceipt">
+                                            <i class="fas fa-download me-1"></i>download the receipt here
+                                        </a>.
                                     </p>
                                     
+                                    <!-- Impact Message -->
+                                    <div class="alert alert-light border mb-4">
+                                        <i class="fas fa-seedling text-success me-2"></i>
+                                        <strong>Your Impact:</strong> Your donation will help provide essential support to those in need.
+                                    </div>
+                                    
+                                    <!-- Action Buttons -->
                                     <div class="d-grid gap-2 d-md-block">
                                         <a href="index.html" class="btn btn-primary me-2">
-                                            <i class="fas fa-home"></i> Back to Home
+                                            <i class="fas fa-home me-1"></i> Back to Home
                                         </a>
                                         <a href="pages/campaigns.html" class="btn btn-outline-primary">
-                                            <i class="fas fa-hand-holding-heart"></i> View Other Campaigns
+                                            <i class="fas fa-hand-holding-heart me-1"></i> View Other Campaigns
                                         </a>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sidebar: Live Donations Feed & Info -->
+                <div class="col-lg-4 mt-4 mt-lg-0">
+                    <div class="donation-feed-container">
+                        <!-- Live Donations Feed -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-bolt me-2"></i>
+                                    Live Donations
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="donation-feed">
+                                    <!-- Donations will be loaded here dynamically -->
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading donations...</span>
+                                        </div>
+                                        <p class="mt-2">Loading live donations...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-sync-alt me-1"></i>
+                                    Updates every 10 seconds
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Donation Impact Info -->
+                        <div class="card shadow">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    Your Impact
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>100% Secure:</strong> Simulated payment system
+                                    </li>
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Instant Receipt:</strong> PDF receipt generated
+                                    </li>
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Database Recorded:</strong> All donations saved
+                                    </li>
+                                    <li class="mb-3">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Transparent:</strong> Full transaction history
+                                    </li>
+                                    <li>
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <strong>Tax Deductible:</strong> Official receipts provided
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Need Help Section -->
+                        <div class="card shadow mt-4">
+                            <div class="card-body text-center">
+                                <i class="fas fa-question-circle fa-2x text-primary mb-3"></i>
+                                <h6>Need Help?</h6>
+                                <p class="small text-muted mb-2">Contact our support team</p>
+                                <a href="pages/contact.html" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-headset me-1"></i> Get Help
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -317,76 +734,31 @@
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/auth-global.js"></script>
     <script src="js/payment.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/donation.js"></script>
     
-    
-    <style>
-        .progress-steps {
-            display: flex;
-            justify-content: space-between;
-            position: relative;
-            margin-bottom: 30px;
-        }
-        
-        .progress-steps::before {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: 10%;
-            right: 10%;
-            height: 2px;
-            background-color: #dee2e6;
-            z-index: 0;
-        }
-        
-        .step {
-            text-align: center;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .step-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #dee2e6;
-            color: #6c757d;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        
-        .step.active .step-circle {
-            background-color: #4e73df;
-            color: white;
-        }
-        
-        .step-label {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        
-        .step.active .step-label {
-            color: #4e73df;
-            font-weight: bold;
-        }
-        
-        .amount-btn.active {
-            background-color: #4e73df;
-            color: white;
-            border-color: #4e73df;
-        }
-        
-        .qr-container {
-            background-color: white;
-            border-radius: 10px;
-        }
-    </style>
+    <!-- Initialize Donation Page -->
+    <script>
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if donationPage is already defined (in donation.js)
+            if (typeof window.donationPage === 'undefined') {
+                const donationPage = new DonationPage();
+                donationPage.init();
+                window.donationPage = donationPage;
+            }
+            
+            // Initialize authentication if auth.js is loaded
+            if (typeof AuthManager !== 'undefined') {
+                const authManager = new AuthManager();
+                authManager.init();
+            }
+        });
+    </script>
 </body>
 </html>

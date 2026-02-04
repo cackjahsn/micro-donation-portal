@@ -1,56 +1,92 @@
 <?php
-require_once dirname(dirname(__FILE__)) . '/config/database.php';
+// /backend/api/user/profile.php
+
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Set headers
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET");
-header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-$basePath = dirname(dirname(dirname(__FILE__)));
-require_once $basePath . '/backend/config/database.php';
-include_once dirname(dirname(dirname(__FILE__))) . '/models/User.php';
+$response = [];
 
-$database = new Database();
-$db = $database->getConnection();
-
-$user = new User($db);
-
-// Get user ID from query parameter
-$user_id = isset($_GET['id']) ? $_GET['id'] : null;
-
-if($user_id) {
+try {
+    // Database connection - go up 3 levels from /backend/api/user/profile.php to /backend/config/database.php
+    require_once dirname(dirname(dirname(__FILE__))) . '/config/database.php';
+    
+    $database = new Database();
+    $db = $database->getConnection();
+    
+    // Include User model - CORRECT PATH: go up 2 levels then into models
+    // From: /backend/api/user/profile.php
+    // To: /backend/models/User.php
+    require_once dirname(dirname(dirname(__FILE__))) . '/models/User.php';
+    
+    $user = new User($db);
+    
+    // Get user ID from query parameter
+    $user_id = isset($_GET['id']) ? intval($_GET['id']) : null;
+    
+    if(!$user_id || $user_id <= 0) {
+        throw new Exception("Valid User ID is required");
+    }
+    
     // Get user data
     $user_data = $user->getUserById($user_id);
     
     if($user_data) {
-        // Count user donations
-        $query = "SELECT COUNT(DISTINCT campaign_id) as campaign_count 
-                  FROM donations 
-                  WHERE user_id = :user_id AND status = 'completed'";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":user_id", $user_id);
-        $stmt->execute();
-        $campaign_count = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Add campaigns supported count
+        $user_data['campaigns_supported'] = 0;
         
-        $user_data['campaigns_supported'] = $campaign_count['campaign_count'] ?? 0;
+        // Try to get donations count if table exists
+        try {
+            $checkTable = $db->query("SHOW TABLES LIKE 'donations'");
+            if($checkTable && $checkTable->rowCount() > 0) {
+                $query = "SELECT COUNT(DISTINCT campaign_id) as campaign_count 
+                         FROM donations 
+                         WHERE user_id = :user_id AND status = 'completed'";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(":user_id", $user_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $campaign_count = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($campaign_count) {
+                    $user_data['campaigns_supported'] = $campaign_count['campaign_count'] ?? 0;
+                }
+            }
+        } catch(Exception $e) {
+            // Silently fail
+            error_log("Donations count error: " . $e->getMessage());
+        }
         
-        http_response_code(200);
-        echo json_encode(array(
+        $response = [
             "success" => true,
-            "user" => $user_data
-        ));
+            "user" => $user_data,
+            "message" => "User profile retrieved successfully"
+        ];
     } else {
-        http_response_code(404);
-        echo json_encode(array(
+        $response = [
             "success" => false,
             "message" => "User not found"
-        ));
+        ];
     }
-} else {
-    http_response_code(400);
-    echo json_encode(array(
+    
+} catch(PDOException $e) {
+    $response = [
         "success" => false,
-        "message" => "User ID required"
-    ));
+        "message" => "Database error: " . $e->getMessage()
+    ];
+} catch(Exception $e) {
+    $response = [
+        "success" => false,
+        "message" => $e->getMessage()
+    ];
 }
+
+// Output JSON
+echo json_encode($response, JSON_PRETTY_PRINT);
+exit();
 ?>

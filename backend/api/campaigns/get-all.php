@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 try {
-    // Get database connection - USE PATH 2
-    $configPath = dirname(__FILE__) . '/../../config/database.php';
+    // CORRECT PATH FOR YOUR STRUCTURE:
+    $configPath = dirname(dirname(dirname(__FILE__))) . '/config/database.php';
     
     if (!file_exists($configPath)) {
         throw new Exception("Database config not found at: " . $configPath);
@@ -32,9 +32,21 @@ try {
     $db->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Only show approved campaigns
-    $query = "SELECT * FROM campaigns WHERE status = 'active' ORDER BY created_at DESC";
-    $stmt = $db->prepare($query);
+    // Get limit parameter if provided (for admin dashboard)
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 0;
+    
+    // Build query - Admin dashboard needs to see all campaigns regardless of status
+    if ($limit > 0) {
+        // For admin dashboard widget (recent campaigns)
+        $query = "SELECT * FROM campaigns ORDER BY created_at DESC LIMIT :limit";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    } else {
+        // For admin campaigns management page (all campaigns)
+        $query = "SELECT * FROM campaigns ORDER BY created_at DESC";
+        $stmt = $db->prepare($query);
+    }
+    
     $stmt->execute();
     
     $campaigns = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -42,21 +54,46 @@ try {
     // Always return an array, even if empty
     $formatted = [];
     foreach ($campaigns as $campaign) {
+        // Calculate progress percentage if it's 0 but we have amounts
+        $progress_percentage = (float)$campaign['progress_percentage'];
+        if ($progress_percentage == 0 && $campaign['target_amount'] > 0) {
+            $progress_percentage = ($campaign['current_amount'] / $campaign['target_amount']) * 100;
+        }
+        
         $formatted[] = [
+            // Basic info
             'id' => (int)$campaign['id'],
             'title' => $campaign['title'],
             'description' => $campaign['description'],
             'category' => $campaign['category'],
-            'target' => (float)$campaign['target_amount'],
-            'raised' => (float)$campaign['current_amount'],
-            'progress' => (float)$campaign['progress_percentage'],
-            'donors' => (int)$campaign['donors_count'],
-            'daysLeft' => (int)$campaign['days_left'],
-            'image' => $campaign['image_url'] ?: '/micro-donation-portal/assets/images/default-campaign.jpg',
+            
+            // Financial info - using EXACT database column names
+            'target_amount' => (float)$campaign['target_amount'],
+            'current_amount' => (float)$campaign['current_amount'],
+            'progress_percentage' => (float)$progress_percentage,
+            
+            // Donor info
+            'donors_count' => (int)$campaign['donors_count'],
+            'days_left' => (int)$campaign['days_left'],
+            
+            // Media & organizer
+            'image_url' => $campaign['image_url'] ?: 'assets/images/default-campaign.jpg',
             'organizer' => $campaign['organizer'],
-            'dateCreated' => $campaign['created_at'],
+            'organizer_logo' => $campaign['organizer_logo'],
+            
+            // Dates - using EXACT database column names
+            'start_date' => $campaign['start_date'],
+            'end_date' => $campaign['end_date'],
+            'created_at' => $campaign['created_at'],
+            'updated_at' => $campaign['updated_at'],
+            
+            // Status & flags
             'featured' => (bool)$campaign['featured'],
-            'status' => $campaign['status']
+            'status' => $campaign['status'],
+            
+            // User info (if available)
+            'created_by' => $campaign['created_by'] ? (int)$campaign['created_by'] : null,
+            'updated_by' => $campaign['updated_by'] ? (int)$campaign['updated_by'] : null
         ];
     }
     
@@ -64,7 +101,11 @@ try {
         'success' => true,
         'campaigns' => $formatted,
         'count' => count($formatted),
-        'message' => count($formatted) . ' campaigns found'
+        'message' => count($formatted) . ' campaigns found',
+        'debug' => [
+            'query_used' => $query,
+            'limit_applied' => $limit > 0 ? $limit : 'none'
+        ]
     ];
     
     echo json_encode($response, JSON_PRETTY_PRINT);
@@ -73,7 +114,13 @@ try {
     $errorResponse = [
         'success' => false,
         'message' => 'Database error: ' . $e->getMessage(),
-        'campaigns' => []
+        'campaigns' => [],
+        'error_details' => [
+            'code' => $e->getCode(),
+            'sql_state' => $e->errorInfo[0] ?? '',
+            'driver_code' => $e->errorInfo[1] ?? '',
+            'driver_message' => $e->errorInfo[2] ?? ''
+        ]
     ];
     
     http_response_code(500);

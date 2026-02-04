@@ -84,19 +84,38 @@ class User {
         return false;
     }
 
-    // Get user by ID
-    public function getUserById($id) {
-        $query = "SELECT id, email, name, role, avatar, 
-                         total_donated, date_joined, status
-                  FROM " . $this->table_name . "
-                  WHERE id = :id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
-        $stmt->execute();
-        
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
+        // In User.php - update the getUserById method
+        public function getUserById($id) {
+            try {
+                $query = "SELECT id, name, email, role, avatar, date_joined, 
+                                COALESCE(total_donated, 0) as total_donated, 
+                                status 
+                        FROM users 
+                        WHERE id = :id";
+                
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+                $stmt->execute();
+                
+                if ($stmt->rowCount() > 0) {
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    // Ensure all fields have values
+                    $row['total_donated'] = floatval($row['total_donated'] ?? 0);
+                    $row['role'] = $row['role'] ?? 'user';
+                    $row['avatar'] = $row['avatar'] ?? 'assets/images/default-avatar.png';
+                    $row['status'] = $row['status'] ?? 'active';
+                    
+                    return $row;
+                }
+                
+                return false;
+                
+            } catch(PDOException $e) {
+                error_log("User::getUserById error: " . $e->getMessage());
+                return false;
+            }
+        }
 
     // Verify password
     public function verifyPassword($password) {

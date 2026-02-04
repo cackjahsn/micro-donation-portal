@@ -1,5 +1,11 @@
 // js/auth-global.js - Global authentication helper for all pages (Updated for Utils.js)
 
+// Define global API_BASE_URL if not already defined
+if (typeof window.API_BASE_URL === 'undefined') {
+    window.API_BASE_URL = '/micro-donation-portal/backend/api';
+    console.log('API_BASE_URL set in auth-global.js:', window.API_BASE_URL);
+}
+
 // Check authentication status on any page
 function checkGlobalAuth() {
     console.log('=== GLOBAL AUTH CHECK ===');
@@ -105,7 +111,11 @@ function createUserMenu(user) {
         return;
     }
     
-    const navbarNav = document.querySelector('#navbarNav .navbar-nav');
+    // Try multiple selectors to find navbar
+    let navbarNav = document.querySelector('#navbarNav .navbar-nav');
+    if (!navbarNav) {
+        navbarNav = document.querySelector('.navbar-nav');
+    }
     if (!navbarNav) {
         console.error('Navbar nav not found');
         return;
@@ -147,7 +157,9 @@ function createUserMenu(user) {
     `;
     
     // Find where to insert (before login/register buttons)
-    const loginItem = navbarNav.querySelector('.nav-item:has(#loginBtn)');
+    const loginBtn = navbarNav.querySelector('#loginBtn');
+    const loginItem = loginBtn ? loginBtn.closest('.nav-item') : null;
+    
     if (loginItem) {
         loginItem.insertAdjacentHTML('beforebegin', userMenuHTML);
     } else {
@@ -193,7 +205,10 @@ function createAdminMenu(user) {
         return;
     }
     
-    const navbarNav = document.querySelector('#navbarNav .navbar-nav');
+    let navbarNav = document.querySelector('#navbarNav .navbar-nav');
+    if (!navbarNav) {
+        navbarNav = document.querySelector('.navbar-nav');
+    }
     if (!navbarNav) return;
     
     const adminMenuHTML = `
@@ -211,6 +226,7 @@ function createAdminMenu(user) {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Global auth helper loaded');
+    console.log('API_BASE_URL available:', window.API_BASE_URL);
     
     // Wait a bit for auth.js and utils.js to initialize
     setTimeout(function() {

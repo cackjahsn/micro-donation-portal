@@ -1,9 +1,15 @@
 // auth.js - Updated with Backend API Integration (FIXED REGISTRATION)
+
+// Define API_BASE_URL at the TOP of the file so it's available globally
 const API_BASE_URL = '/micro-donation-portal/backend/api';
+
+// Also set it globally so other scripts can access it
+window.API_BASE_URL = API_BASE_URL;
 
 class AuthManager {
     constructor() {
         console.log('AuthManager constructor called - Page:', window.location.pathname);
+        console.log('API Base URL set to:', window.API_BASE_URL);
         
         this.currentUser = null;
         this.tokenKey = 'micro_donation_token';
@@ -84,7 +90,7 @@ class AuthManager {
     setupEventListeners() {
         console.log('Setting up event listeners');
 
-            // Login button click (opens modal)
+        // Login button click (opens modal)
         document.addEventListener('click', (e) => {
             // Check if login button was clicked
             if (e.target.id === 'loginBtn' || e.target.closest('#loginBtn')) {
@@ -101,37 +107,33 @@ class AuthManager {
             }
         });
 
-        // ========== ADD MODAL CLOSE HANDLERS ==========
-    // Setup modal hidden event listeners
-    setTimeout(() => {
-        const loginModal = document.getElementById('loginModal');
-        const registerModal = document.getElementById('registerModal');
-        
-        if (loginModal) {
-            loginModal.addEventListener('hidden.bs.modal', () => {
-                console.log('Login modal hidden - cleaning up');
-                this.cleanupModalBackdrop();
-            });
-        }
-        
-        if (registerModal) {
-            registerModal.addEventListener('hidden.bs.modal', () => {
-                console.log('Register modal hidden - cleaning up');
-                this.cleanupModalBackdrop();
-            });
-        }
-    }, 100);
+        // Setup modal hidden event listeners
+        setTimeout(() => {
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+            
+            if (loginModal) {
+                loginModal.addEventListener('hidden.bs.modal', () => {
+                    console.log('Login modal hidden - cleaning up');
+                    this.cleanupModalBackdrop();
+                });
+            }
+            
+            if (registerModal) {
+                registerModal.addEventListener('hidden.bs.modal', () => {
+                    console.log('Register modal hidden - cleaning up');
+                    this.cleanupModalBackdrop();
+                });
+            }
+        }, 100);
 
-    // Add emergency escape key handler
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            console.log('Escape pressed - emergency modal cleanup');
-            this.emergencyModalCleanup();
-        }
-    });
-    // ========== END ADDED CODE ==========
-
-        
+        // Add emergency escape key handler
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                console.log('Escape pressed - emergency modal cleanup');
+                this.emergencyModalCleanup();
+            }
+        });
         
         // Login form submission
         const loginForm = document.getElementById('loginForm');
@@ -231,7 +233,7 @@ class AuthManager {
         });
     }
 
-        showLoginModal() {
+    showLoginModal() {
         console.log('showLoginModal called');
         const loginModal = document.getElementById('loginModal');
         
@@ -286,7 +288,7 @@ class AuthManager {
         }
     }
 
-        cleanupModalBackdrop() {
+    cleanupModalBackdrop() {
         console.log('Cleaning up modal backdrop');
         
         // Remove modal backdrop if exists
@@ -331,6 +333,7 @@ class AuthManager {
     async handleLogin(email, password) {
         console.log('=== LOGIN START ===');
         console.log('Email:', email);
+        console.log('API URL:', `${API_BASE_URL}/auth/login.php`);
         
         // Find login button
         let loginBtn = document.querySelector('#loginForm button[type="submit"]');
@@ -456,6 +459,7 @@ class AuthManager {
     
     async handleRegister(userData) {
         console.log('Registration attempt for:', userData.email);
+        console.log('API URL:', `${API_BASE_URL}/auth/register.php`);
         
         // Find register button
         let registerBtn = document.querySelector('#registerForm button[type="submit"]');
@@ -868,6 +872,7 @@ class AuthManager {
 
 // Initialize auth manager
 console.log('Initializing auth manager...');
+console.log('Global API_BASE_URL set to:', window.API_BASE_URL);
 const auth = new AuthManager();
 
 // Make auth available globally

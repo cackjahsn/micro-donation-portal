@@ -3,6 +3,11 @@ class Utils {
     constructor() {
         this.initialized = false;
         this.storagePrefix = 'micro_donation_'; // Consistent storage prefix
+        
+        // Ensure API_BASE_URL is available globally
+        if (typeof window.API_BASE_URL === 'undefined') {
+            window.API_BASE_URL = '/micro-donation-portal/backend/api';
+        }
     }
     
     init() {
@@ -119,6 +124,13 @@ class Utils {
         console.log('Cleared all app storage');
     }
     
+    // Clear user session
+    clearSession() {
+        this.removeStorage('user');
+        this.removeStorage('token');
+        console.log('User session cleared');
+    }
+    
     // Get storage statistics
     getStorageStats() {
         const stats = {
@@ -184,6 +196,157 @@ class Utils {
         }));
         
         return true;
+    }
+    
+    // ==================== API & FETCH UTILITIES ====================
+    
+    // Get properly formatted API URL
+    getApiUrl(endpoint) {
+        // Ensure endpoint doesn't start with a slash
+        if (endpoint.startsWith('/')) {
+            endpoint = endpoint.substring(1);
+        }
+        
+        // Use window.API_BASE_URL if available
+        if (window.API_BASE_URL) {
+            // Remove trailing slash from base URL if present
+            const baseUrl = window.API_BASE_URL.endsWith('/') 
+                ? window.API_BASE_URL.slice(0, -1) 
+                : window.API_BASE_URL;
+            return `${baseUrl}/${endpoint}`;
+        }
+        
+        // Fallback for local development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return `/micro-donation-portal/backend/api/${endpoint}`;
+        }
+        
+        // Default relative path
+        return `backend/api/${endpoint}`;
+    }
+    
+    // Enhanced fetch method with better error handling
+    async fetchAPI(endpoint, options = {}) {
+        const url = this.getApiUrl(endpoint);
+        console.log('Fetch request:', url, options.method || 'GET');
+        
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            timeout: 10000 // 10 second timeout
+        };
+        
+        // Add auth token if available
+        const token = this.getAuthToken();
+        if (token) {
+            defaultOptions.headers.Authorization = `Bearer ${token}`;
+        }
+        
+        const mergedOptions = {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...(options.headers || {})
+            }
+        };
+        
+        // Create timeout controller
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), mergedOptions.timeout);
+        mergedOptions.signal = controller.signal;
+        
+        try {
+            const response = await fetch(url, mergedOptions);
+            clearTimeout(timeoutId);
+            
+            console.log('Fetch response:', url, response.status);
+            
+            // Handle HTTP errors
+            if (!response.ok) {
+                let errorText = 'Unknown error';
+                try {
+                    errorText = await response.text();
+                } catch (e) {
+                    // Ignore if we can't read response
+                }
+                throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`);
+            }
+            
+            // Try to parse JSON response
+            try {
+                const data = await response.json();
+                return data;
+            } catch (jsonError) {
+                console.error('JSON parse error:', jsonError);
+                throw new Error('Invalid JSON response from server');
+            }
+            
+        } catch (error) {
+            clearTimeout(timeoutId);
+            console.error('Fetch error:', url, error);
+            
+            // Handle specific error types
+            if (error.name === 'AbortError') {
+                throw new Error('Request timeout. Server not responding.');
+            }
+            
+            // Auto logout on 401 Unauthorized
+            if (error.message.includes('401')) {
+                this.clearSession();
+                window.location.href = 'index.html';
+            }
+            
+            throw error;
+        }
+    }
+    
+    // Handle API errors with user-friendly messages
+    handleApiError(error, fallbackMessage = 'An error occurred') {
+        let userMessage = fallbackMessage;
+        
+        if (error.message.includes('404')) {
+            userMessage = 'Service not found. Please try again later.';
+        } else if (error.message.includes('500')) {
+            userMessage = 'Server error. Please try again later.';
+        } else if (error.message.includes('timeout')) {
+            userMessage = 'Request timeout. Please check your connection.';
+        } else if (error.message.includes('Failed to fetch')) {
+            userMessage = 'Network error. Please check your internet connection.';
+        } else if (error.message.includes('Invalid JSON')) {
+            userMessage = 'Server returned invalid data.';
+        } else {
+            userMessage = error.message || fallbackMessage;
+        }
+        
+        this.showNotification(userMessage, 'error');
+        return { success: false, message: userMessage };
+    }
+    
+    // Test API endpoint
+    async testApi(endpoint) {
+        console.log(`Testing API: ${endpoint}`);
+        
+        try {
+            const response = await fetch(this.getApiUrl(endpoint));
+            console.log(`API ${endpoint} status: ${response.status}`);
+            
+            const text = await response.text();
+            console.log(`API ${endpoint} response (first 200 chars):`, text.substring(0, 200));
+            
+            try {
+                const json = JSON.parse(text);
+                console.log(`API ${endpoint} parsed data:`, json);
+                return json;
+            } catch (e) {
+                console.log(`API ${endpoint} returned non-JSON response`);
+                return { text: text.substring(0, 200) };
+            }
+        } catch (error) {
+            console.error(`API ${endpoint} error:`, error);
+            throw error;
+        }
     }
     
     // ==================== FORMATTING UTILITIES ====================
@@ -884,125 +1047,26 @@ class Utils {
         });
     }
     
-    // ==================== API UTILITIES ====================
-    
-    // Make API request with authentication
-    async apiRequest(endpoint, options = {}) {
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        };
-        
-        // Add auth token if available
-        const token = this.getAuthToken();
-        if (token) {
-            defaultOptions.headers.Authorization = `Bearer ${token}`;
-        }
-        
-        const mergedOptions = {
-            ...defaultOptions,
-            ...options,
-            headers: {
-                ...defaultOptions.headers,
-                ...(options.headers || {})
-            }
-        };
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/${endpoint}`, mergedOptions);
-            
-            // Handle HTTP errors
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`);
-            }
-            
-            // Try to parse JSON response
-            try {
-                return await response.json();
-            } catch (jsonError) {
-                return { success: false, message: 'Invalid JSON response' };
-            }
-            
-        } catch (error) {
-            console.error('API request failed:', error);
-            throw error;
-        }
-    }
-    
-    // Handle API errors
-    handleApiError(error, fallbackMessage = 'An error occurred') {
-        const message = error.message || fallbackMessage;
-        this.showNotification(message, 'error');
-        
-        // Auto logout on 401 Unauthorized
-        if (error.message.includes('401')) {
-            this.removeStorage('user');
-            this.removeStorage('token');
-            window.location.href = 'index.html';
-        }
-        
-        return { success: false, message };
-    }
-
-        // Add to utils.js
+    // Setup API debugging
     setupAPIDebugging() {
         // Log all fetch requests
         const originalFetch = window.fetch;
         window.fetch = function(...args) {
-            console.log('Fetch request:', args[0], args[1]);
+            const url = args[0];
+            console.log('Fetch request:', url, args[1]?.method || 'GET');
+            
             return originalFetch.apply(this, args)
                 .then(response => {
-                    console.log('Fetch response:', args[0], response.status);
+                    console.log('Fetch response:', url, response.status, response.statusText);
                     return response;
                 })
                 .catch(error => {
-                    console.error('Fetch error:', args[0], error);
+                    console.error('Fetch error:', url, error);
                     throw error;
                 });
         };
-    }
-
-        getApiUrl(endpoint) {
-        // Check if we have a global API base URL
-        if (window.API_BASE_URL) {
-            return `${window.API_BASE_URL}${endpoint}`;
-        }
         
-        const currentPath = window.location.pathname;
-        
-        // If path contains micro-donation-portal, use it as base
-        if (currentPath.includes('/micro-donation-portal/')) {
-            // Extract the base path up to /micro-donation-portal/
-            const baseMatch = currentPath.match(/(.*\/micro-donation-portal\/)/);
-            if (baseMatch && baseMatch[1]) {
-                return `${baseMatch[1]}backend/api/${endpoint}`;
-            }
-        }
-        
-        // Fallback for local development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return `/micro-donation-portal/backend/api/${endpoint}`;
-        }
-        
-        // Default relative path
-        return `backend/api/${endpoint}`;
-    }
-
-        // Also add this utility method:
-    async testApi(endpoint) {
-        const url = this.getApiUrl(endpoint);
-        console.log(`Testing API: ${url}`);
-        
-        try {
-            const response = await fetch(url);
-            console.log(`API ${endpoint} status: ${response.status}`);
-            return response;
-        } catch (error) {
-            console.error(`API ${endpoint} error:`, error);
-            throw error;
-        }
+        console.log('API debugging enabled');
     }
 }
 
@@ -1017,6 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.utils = utils;
     
     console.log('Utils initialized with storage management');
+    console.log('API Base URL:', window.API_BASE_URL);
     console.log('Storage stats:', utils.getStorageStats());
 });
 

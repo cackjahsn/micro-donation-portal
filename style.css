@@ -748,3 +748,14 @@ h1 {
 .navbar.fixed-top {
     z-index: 1030 !important;
 }
+
+/* Add to your donation-page.css or main CSS file */
+.btn.processing {
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+}
+
+#confirmDonation:disabled {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}

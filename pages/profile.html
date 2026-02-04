@@ -142,36 +142,80 @@
     
     <script>
     
-         document.addEventListener('DOMContentLoaded', async function() {
+
+        // Add debug logging
+        console.log('Profile page loaded');
+        console.log('API Base URL:', API_BASE_URL);
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM Content Loaded');
+            
             // Check if user is logged in
             if (!auth.isAuthenticated()) {
-                window.location.href = 'index.html';
+                console.log('User not authenticated, redirecting to home');
+                window.location.href = '../index.html';
                 return;
             }
             
             const user = auth.getCurrentUser();
+            console.log('Current user from auth:', user);
             
             // Show loading spinner
             document.getElementById('loadingSpinner').style.display = 'block';
             
             try {
-                // 1. Fetch user profile from backend
-                const profileResponse = await fetch(`${API_BASE_URL}/user/profile.php?id=${user.id}`);
-                const profileData = await profileResponse.json();
+                // 1. Fetch user profile
+                const profileUrl = `${API_BASE_URL}/user/profile.php?id=${user.id}`;
+                console.log('Fetching profile from:', profileUrl);
+                
+                const profileResponse = await fetch(profileUrl);
+                console.log('Profile response status:', profileResponse.status);
+                
+                if (!profileResponse.ok) {
+                    throw new Error(`Profile API error: ${profileResponse.status}`);
+                }
+                
+                // Check response type
+                const contentType = profileResponse.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+                
+                const responseText = await profileResponse.text();
+                console.log('Response text (first 500 chars):', responseText.substring(0, 500));
+                
+                let profileData;
+                try {
+                    profileData = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('JSON parse error:', jsonError);
+                    console.error('Full response text:', responseText);
+                    throw new Error('Invalid JSON response from server. Response: ' + responseText.substring(0, 200));
+                }
+                
+                console.log('Profile data parsed:', profileData);
                 
                 if (!profileData.success) {
                     throw new Error(profileData.message || 'Failed to load profile');
                 }
                 
                 // 2. Fetch user donations
-                const donationsResponse = await fetch(`${API_BASE_URL}/user/donations.php?user_id=${user.id}`);
-                const donationsData = await donationsResponse.json();
+                let donationsData;
+                try {
+                    donationsData = await fetchUserDonations(user.id);
+                } catch (donationsError) {
+                    console.warn('Could not fetch donations, using fallback:', donationsError.message);
+                    donationsData = {
+                        success: true,
+                        donations: [],
+                        total_donated: 0,
+                        count: 0
+                    };
+                }
                 
                 // Hide loading, show profile
                 document.getElementById('loadingSpinner').style.display = 'none';
                 document.getElementById('profileContent').style.display = 'block';
                 
-                // Populate profile data from backend
+                // Populate profile data
                 populateProfileData(profileData.user, donationsData);
                 
             } catch (error) {
@@ -180,7 +224,7 @@
                 // Hide loading, show error
                 document.getElementById('loadingSpinner').style.display = 'none';
                 document.getElementById('errorMessage').style.display = 'block';
-                document.getElementById('errorText').textContent = error.message;
+                document.getElementById('errorText').textContent = error.message || 'Failed to load profile data';
                 
                 // Fallback: Use local storage data
                 fallbackToLocalData(user);
@@ -191,41 +235,96 @@
                 auth.handleLogout();
             });
         });
-        
+
+        async function fetchUserDonations(userId) {
+            console.log('Fetching donations for user ID:', userId);
+            
+            try {
+                const donationsUrl = `${API_BASE_URL}/user/donations.php?user_id=${userId}`;
+                console.log('Donations URL:', donationsUrl);
+                
+                const response = await fetch(donationsUrl);
+                console.log('Donations response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Donations API error: ${response.status}`);
+                }
+                
+                const responseText = await response.text();
+                console.log('Donations response (first 500 chars):', responseText.substring(0, 500));
+                
+                if (!responseText.trim()) {
+                    throw new Error('Empty response from donations API');
+                }
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('Failed to parse donations JSON:', e);
+                    console.error('Raw response:', responseText);
+                    throw new Error('Invalid JSON received from donations API');
+                }
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load donations');
+                }
+                
+                console.log('Donations data received:', data);
+                return data;
+                
+            } catch (error) {
+                console.error('Error fetching donations:', error);
+                throw error;
+            }
+        }
+
         function populateProfileData(userData, donationsData) {
+            console.log('Populating profile with user data:', userData);
+            console.log('Using donations data:', donationsData);
+            
             // Basic user info
-            document.getElementById('userName').textContent = userData.name;
-            document.getElementById('userEmail').textContent = userData.email;
+            document.getElementById('userName').textContent = userData.name || 'User';
+            document.getElementById('userEmail').textContent = userData.email || 'No email';
             document.getElementById('joinDate').textContent = formatDate(userData.date_joined);
             
             // User role with badge
             const roleBadge = document.getElementById('userRole');
-            roleBadge.textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
-            roleBadge.className = userData.role === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
+            const userRole = userData.role || 'user';
+            roleBadge.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+            roleBadge.className = userRole === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
             
-            // Financial info
-            document.getElementById('totalDonated').textContent = 
-                `RM ${parseFloat(userData.total_donated || 0).toFixed(2)}`;
+            // Financial info - use donations data if available, otherwise user data
+            let totalDonated = 0;
+            if (donationsData.success && donationsData.total_donated) {
+                totalDonated = donationsData.total_donated;
+            } else if (userData.total_donated) {
+                totalDonated = userData.total_donated;
+            }
+            document.getElementById('totalDonated').textContent = `RM ${parseFloat(totalDonated).toFixed(2)}`;
             
-            // Donations
+            // Donations table
             const tableBody = document.querySelector('#donationsTable tbody');
             const campaignsCount = document.getElementById('campaignsCount');
             
             if (donationsData.success && donationsData.donations && donationsData.donations.length > 0) {
                 // Count unique campaigns
-                const uniqueCampaigns = [...new Set(donationsData.donations.map(d => d.campaign_id))];
+                const uniqueCampaigns = [...new Set(donationsData.donations
+                    .filter(d => d.campaign_id)
+                    .map(d => d.campaign_id))];
                 campaignsCount.textContent = uniqueCampaigns.length;
                 
                 // Populate donations table
+                tableBody.innerHTML = '';
                 donationsData.donations.forEach(donation => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(donation.created_at)}</td>
                         <td>${donation.campaign_title || 'General Donation'}</td>
-                        <td class="text-success fw-bold">RM ${parseFloat(donation.amount).toFixed(2)}</td>
+                        <td class="text-success fw-bold">RM ${parseFloat(donation.amount || 0).toFixed(2)}</td>
                         <td>
                             <span class="badge ${getStatusBadgeClass(donation.status)}">
-                                ${donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
+                                ${donation.status ? donation.status.charAt(0).toUpperCase() + donation.status.slice(1) : 'Unknown'}
                             </span>
                         </td>
                     `;
@@ -238,29 +337,32 @@
                         <td colspan="4" class="text-center text-muted py-4">
                             <i class="fas fa-donate fa-2x mb-2 d-block"></i>
                             No donations yet. 
-                            <a href="pages/campaigns.html">Browse campaigns</a>
+                            <a href="../pages/campaigns.html">Browse campaigns</a>
                         </td>
                     </tr>
                 `;
             }
         }
-        
+
         function fallbackToLocalData(user) {
+            console.log('Using fallback local data for user:', user);
+            
             // Hide error, show profile with local data
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('profileContent').style.display = 'block';
             
             // Use local storage data
-            document.getElementById('userName').textContent = user.name;
-            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userName').textContent = user.name || 'User';
+            document.getElementById('userEmail').textContent = user.email || 'No email';
             document.getElementById('joinDate').textContent = user.dateJoined || 'Unknown';
             
             const roleBadge = document.getElementById('userRole');
-            roleBadge.textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
-            roleBadge.className = user.role === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
+            const userRole = user.role || 'user';
+            roleBadge.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+            roleBadge.className = userRole === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
             
-            document.getElementById('totalDonated').textContent = 
-                `RM ${parseFloat(user.totalDonated || 0).toFixed(2)}`;
+            const totalDonated = user.totalDonated || 0;
+            document.getElementById('totalDonated').textContent = `RM ${parseFloat(totalDonated).toFixed(2)}`;
             
             const campaignsCount = document.getElementById('campaignsCount');
             const tableBody = document.querySelector('#donationsTable tbody');
@@ -285,25 +387,34 @@
                         <td colspan="4" class="text-center text-muted py-4">
                             <i class="fas fa-donate fa-2x mb-2 d-block"></i>
                             No donations yet. 
-                            <a href="pages/campaigns.html">Browse campaigns</a>
+                            <a href="../pages/campaigns.html">Browse campaigns</a>
                         </td>
                     </tr>
                 `;
             }
         }
-        
+
         function formatDate(dateString) {
             if (!dateString) return 'Unknown';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-MY', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return 'Invalid Date';
+                }
+                return date.toLocaleDateString('en-MY', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } catch (e) {
+                return 'Invalid Date';
+            }
         }
-        
+
         function getStatusBadgeClass(status) {
-            switch(status) {
+            if (!status) return 'bg-secondary';
+            
+            switch(status.toLowerCase()) {
                 case 'completed': return 'bg-success';
                 case 'pending': return 'bg-warning';
                 case 'failed': return 'bg-danger';
