@@ -141,17 +141,16 @@ async function loadHomepageCampaigns() {
         addDonationButtonListeners();
     }
 
+    // Update the createCampaignCard function in your homepage-campaigns.js
+    // Replace your existing createCampaignCard function with this one:
+
     function createCampaignCard(campaign) {
         // Debug: Check what data we have
         console.log('Creating card with campaign data:', {
             id: campaign.id,
             title: campaign.title,
             raised: campaign.raised,
-            current_amount: campaign.current_amount,
-            target: campaign.target,
-            target_amount: campaign.target_amount,
-            donors: campaign.donors,
-            donors_count: campaign.donors_count
+            target: campaign.target
         });
         
         // Get the correct values
@@ -168,15 +167,13 @@ async function loadHomepageCampaigns() {
             ? utils.formatCurrency(targetAmount)
             : `RM ${targetAmount.toFixed(2)}`;
         
-        // Change from Math.round to show 1 decimal place like campaigns page
+        // Calculate progress
         const progress = targetAmount > 0 
             ? Math.min(100, (raisedAmount / targetAmount) * 100)
             : 0;
-
-        // Then format it to show 1 decimal place
         const displayProgress = Math.round(progress * 10) / 10;
         
-        // Format date if utils available
+        // Format date
         let dateText = '';
         if (campaign.dateCreated || campaign.created_at) {
             const date = campaign.dateCreated || campaign.created_at;
@@ -187,24 +184,33 @@ async function loadHomepageCampaigns() {
             }
         }
         
-        // Fix image path - remove extra slashes
+        // Fix image path
         let imageUrl = campaign.image || campaign.image_url || 'assets/images/default-campaign.jpg';
         imageUrl = imageUrl.replace(/\\/g, '');
-        
-        // Ensure correct path for homepage
-        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-            imageUrl = imageUrl.startsWith('assets/') ? imageUrl : 'assets/' + imageUrl;
+        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.startsWith('assets/')) {
+            imageUrl = 'assets/' + imageUrl;
         }
         
         return `
             <div class="col-md-6 col-lg-4">
                 <div class="card campaign-card h-100">
-                    <div class="card-img-container">
+                    <div class="card-img-container position-relative">
                         <img src="${imageUrl}" 
                             class="card-img-top" 
                             alt="${campaign.title}"
+                            style="height: 200px; object-fit: cover;"
                             onerror="this.src='assets/images/default-campaign.jpg'">
-                        <span class="campaign-category badge bg-primary">${campaign.category || 'General'}</span>
+                        <span class="campaign-category badge bg-primary position-absolute top-0 start-0 m-2">
+                            ${campaign.category || 'General'}
+                        </span>
+                        
+                        <!-- Quick View Button -->
+                        <button onclick="viewCampaignDetails(${campaign.id})" 
+                                class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
+                                title="Quick View"
+                                style="border-radius: 50%; width: 36px; height: 36px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
                     </div>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">${campaign.title || 'Untitled Campaign'}</h5>
@@ -250,21 +256,26 @@ async function loadHomepageCampaigns() {
                         <!-- Action buttons -->
                         <div class="mt-auto">
                             <div class="d-grid gap-2">
-                                <a href="donation-page.html?campaign=${campaign.id}" 
-                                class="btn btn-primary btn-donate"
-                                data-campaign-id="${campaign.id}"
-                                data-campaign-title="${campaign.title}">
-                                    <i class="fas fa-heart me-2"></i>Donate Now
-                                </a>
-                                <a href="pages/campaigns.html#campaign-${campaign.id}" 
-                                class="btn btn-outline-primary">
-                                    <i class="fas fa-info-circle me-2"></i>View Details
-                                </a>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <button onclick="viewCampaignDetails(${campaign.id})" 
+                                                class="btn btn-outline-primary w-100">
+                                            <i class="fas fa-info-circle me-2"></i>View Details
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <a href="donation-page.html?campaign=${campaign.id}" 
+                                        class="btn btn-primary w-100 btn-donate"
+                                        data-campaign-id="${campaign.id}">
+                                            <i class="fas fa-heart me-2"></i>Donate
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Footer -->
-                        <div class="card-footer bg-transparent border-0 mt-3 pt-0">
+                        <div class="card-footer bg-transparent border-0 mt-3 pt-0 px-0">
                             <small class="text-muted">
                                 <i class="far fa-clock me-1"></i>${dateText || 'Recently'}
                                 ${campaign.organizer ? 
@@ -718,6 +729,31 @@ async function testApiResponse() {
         console.error('Test failed:', error);
     }
 }
+
+// Add this function to js/homepage-campaigns.js
+
+/**
+ * View campaign details - opens modal with campaign information
+ * @param {number|string} campaignId - The campaign ID
+ */
+window.viewCampaignDetails = async function(campaignId) {
+    console.log('Viewing campaign details from homepage:', campaignId);
+    
+    if (typeof CampaignModal !== 'undefined') {
+        await CampaignModal.showCampaignDetails(campaignId);
+    } else {
+        console.error('CampaignModal not loaded yet');
+        // Load the script dynamically
+        const script = document.createElement('script');
+        script.src = 'js/campaign-modal.js';
+        script.onload = async function() {
+            if (typeof CampaignModal !== 'undefined') {
+                await CampaignModal.showCampaignDetails(campaignId);
+            }
+        };
+        document.head.appendChild(script);
+    }
+};
 
 // Call it for debugging (remove after fixing)
 document.addEventListener('DOMContentLoaded', function() {

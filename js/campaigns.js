@@ -425,12 +425,11 @@ class CampaignManager {
         return tempCampaigns;
     }
     
-    // campaigns.js - Update renderCampaignCard method
+    // Replace your existing renderCampaignCard method with this one
     renderCampaignCard(campaign) {
         const categoryLabel = this.getCategoryLabel(campaign.category);
         const categoryColor = this.getCategoryColor(campaign.category);
         
-        // Determine if campaign is active
         const isActive = campaign.status === 'active';
         const isPending = campaign.status === 'pending';
         const isCancelled = campaign.status === 'cancelled';
@@ -446,27 +445,43 @@ class CampaignManager {
             statusBadge = '<span class="badge bg-info ms-2">Completed</span>';
         }
         
-        // Use utils.formatCurrency if available
+        // Format currency
         const raisedAmount = typeof utils !== 'undefined' && utils.formatCurrency ? 
             utils.formatCurrency(campaign.raised) : `RM ${campaign.raised.toLocaleString()}`;
         const targetAmount = typeof utils !== 'undefined' && utils.formatCurrency ? 
             utils.formatCurrency(campaign.target) : `RM ${campaign.target.toLocaleString()}`;
         
+        // Fix image path
+        let imageUrl = campaign.image;
+        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.startsWith('assets/')) {
+            imageUrl = 'assets/' + imageUrl;
+        }
+        
         return `
             <div class="col-md-6 col-lg-4 mb-4 stagger-item">
-                <div class="card campaign-card h-100 hover-lift ${!isActive ? 'opacity-75' : ''}">
-                    <img src="${campaign.image}" class="card-img-top" alt="${campaign.title}" height="200">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <span class="badge bg-${categoryColor}">${categoryLabel}</span>
-                                ${statusBadge}
-                            </div>
-                            ${isActive ? `<small class="text-muted">${campaign.daysLeft} days left</small>` : ''}
-                        </div>
+                <div class="card campaign-card h-100 ${!isActive ? 'opacity-75' : ''}">
+                    <div class="position-relative">
+                        <img src="${imageUrl}" class="card-img-top" alt="${campaign.title}" 
+                            style="height: 200px; object-fit: cover;"
+                            onerror="this.src='assets/images/default-campaign.jpg'">
+                        <span class="badge bg-${categoryColor} position-absolute top-0 start-0 m-2">
+                            ${categoryLabel}
+                        </span>
                         
+                        <!-- Quick View Button -->
+                        <button onclick="campaignManager.viewCampaignDetails(${campaign.id})" 
+                                class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
+                                title="Quick View"
+                                style="border-radius: 50%; width: 36px; height: 36px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        
+                        ${!isActive ? `<span class="badge bg-secondary position-absolute bottom-0 end-0 m-2">${campaign.status}</span>` : ''}
+                        ${statusBadge}
+                    </div>
+                    <div class="card-body d-flex flex-column">
                         <h5 class="card-title">${campaign.title}</h5>
-                        <p class="card-text text-muted">${campaign.description.substring(0, 100)}...</p>
+                        <p class="card-text text-muted flex-grow-1">${campaign.description.substring(0, 80)}...</p>
                         
                         ${isActive ? `
                         <div class="mb-3">
@@ -479,40 +494,75 @@ class CampaignManager {
                             </div>
                         </div>
                         
-                        <div class="row align-items-center">
+                        <div class="row align-items-center mt-auto">
                             <div class="col-7">
                                 <div class="fw-bold text-success">${raisedAmount}</div>
                                 <small class="text-muted">raised of ${targetAmount}</small>
                             </div>
-                            <div class="col-5 text-end">
-                                <a href="donation-page.html?campaign=${campaign.id}" 
-                                class="btn btn-success btn-sm">
-                                    <i class="fas fa-heart"></i> Donate
-                                </a>
+                            <div class="col-5">
+                                <div class="d-grid gap-2">
+                                    <button onclick="campaignManager.viewCampaignDetails(${campaign.id})" 
+                                            class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-info-circle"></i> View
+                                    </button>
+                                    <a href="donation-page.html?campaign=${campaign.id}" 
+                                    class="btn btn-success btn-sm">
+                                        <i class="fas fa-heart"></i> Donate
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         ` : `
-                        <div class="alert alert-${isCompleted ? 'info' : 'secondary'} mb-3">
+                        <div class="alert alert-${campaign.status === 'completed' ? 'info' : 'secondary'} mb-3">
                             <small><i class="fas fa-info-circle me-1"></i>This campaign is ${campaign.status}.</small>
                         </div>
-                        
-                        <div class="row align-items-center">
-                            <div class="col-12">
-                                <div class="fw-bold text-muted">${raisedAmount}</div>
-                                <small class="text-muted">raised of ${targetAmount}</small>
-                            </div>
+                        <div class="mt-auto">
+                            <button onclick="campaignManager.viewCampaignDetails(${campaign.id})" 
+                                    class="btn btn-outline-primary w-100">
+                                <i class="fas fa-info-circle me-2"></i>View Details
+                            </button>
                         </div>
                         `}
                         
                         <div class="mt-3 pt-3 border-top">
                             <small class="text-muted">
-                                <i class="fas fa-user-circle"></i> Organized by ${campaign.organizer}
+                                <i class="fas fa-user-circle"></i> ${campaign.organizer}
                             </small>
                         </div>
                     </div>
                 </div>
             </div>
         `;
+    }
+
+    // Add this method to the CampaignManager class in js/campaigns.js
+    /**
+     * View campaign details - opens modal with campaign information
+     * @param {number|string} campaignId - The campaign ID
+     */
+    async viewCampaignDetails(campaignId) {
+        console.log('Viewing campaign details from campaigns page:', campaignId);
+        
+        try {
+            if (typeof CampaignModal !== 'undefined') {
+                await CampaignModal.showCampaignDetails(campaignId);
+            } else {
+                // Load the modal script
+                const script = document.createElement('script');
+                script.src = '../js/campaign-modal.js';
+                script.onload = async () => {
+                    if (typeof CampaignModal !== 'undefined') {
+                        await CampaignModal.showCampaignDetails(campaignId);
+                    }
+                };
+                document.head.appendChild(script);
+            }
+        } catch (error) {
+            console.error('Error viewing campaign details:', error);
+            if (typeof utils !== 'undefined' && utils.showNotification) {
+                utils.showNotification('Failed to load campaign details', 'error');
+            }
+        }
     }
     
     // campaigns.js - Update renderCampaigns method
@@ -702,6 +752,8 @@ class CampaignManager {
             el.textContent = `RM${(stats.total_funded || 0).toFixed(2)}`;
         });
     }
+
+    
 
 // Initialize campaign manager
 const campaignManager = new CampaignManager();
