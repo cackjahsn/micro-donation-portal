@@ -66,160 +66,58 @@ class CampaignManager {
         });
     }
     
-    // In campaigns.js, update the getAllCampaigns method:
+    // campaigns.js - Update getAllCampaigns method
     async getAllCampaigns() {
         try {
             // Show loading state
             console.log('Fetching campaigns from API...');
             
-            const response = await fetch(utils.getApiUrl('campaigns/get-all.php'));
+            // Use utils.fetchAPI with only_active parameter
+            const data = await utils.fetchAPI('campaigns/get-all.php?only_active=true');
             
-            if (!response.ok) {
-                throw new Error(`API returned ${response.status}`);
-            }
+            console.log('Parsed result:', data);
             
-            const responseText = await response.text();
-            console.log('Raw API response:', responseText);
-            
-            // Check if response is empty
-            if (!responseText.trim()) {
-                throw new Error('Empty response from server');
-            }
-            
-            const result = JSON.parse(responseText);
-            console.log('Parsed result:', result);
-            
-            if (result.success && result.campaigns) {
-                // Transform and return campaigns
-                this.campaigns = result.campaigns.map(campaign => ({
-                    id: campaign.id || campaign.campaign_id,
-                    title: campaign.title || campaign.campaign_title,
-                    description: campaign.description || campaign.campaign_description,
-                    category: campaign.category || 'community',
-                    target: parseFloat(campaign.target || campaign.target_amount || 10000),
-                    raised: parseFloat(campaign.raised || campaign.raised_amount || 0),
-                    progress: parseFloat(campaign.progress || 0),
-                    donors: parseInt(campaign.donors || campaign.donor_count || 0),
-                    daysLeft: parseInt(campaign.days_left || 30),
-                    image: campaign.image || campaign.image_url || '/micro-donation-portal/assets/images/default-campaign.jpg',
-                    organizer: campaign.organizer || 'Anonymous',
-                    dateCreated: campaign.created_at || campaign.date_created || new Date().toISOString().split('T')[0],
-                    featured: campaign.featured || false,
-                    status: campaign.status || 'active'
-                }));
-                
+            if (data.success && Array.isArray(data.campaigns)) {
+                // Transform database campaigns to match frontend format
+                this.campaigns = data.campaigns.map(campaign => this.transformCampaignData(campaign));
                 return this.campaigns;
             } else {
-                throw new Error(result.message || 'Invalid response format');
+                console.log('No campaigns data in response, returning empty array');
+                this.campaigns = [];
+                return [];
             }
             
         } catch (error) {
-            console.warn('API call failed, using sample data:', error.message);
-            return this.loadSampleCampaigns();
+            console.error('Error fetching campaigns from API:', error);
+            // Use utils to handle the error
+            utils.handleApiError(error, 'Failed to load campaigns');
+            this.campaigns = [];
+            return [];
         }
     }
-    
-    loadSampleCampaigns() {
-        this.campaigns = [
-            {
-                id: 1,
-                title: "Emergency Relief Fund",
-                description: "Support families affected by recent floods in Johor. Help provide food, shelter, and medical supplies.",
-                category: "emergency",
-                target: 50000,
-                raised: 32500,
-                progress: 65,
-                donors: 423,
-                daysLeft: 15,
-                image: "/micro-donation-portal/assets/images/campaign1.jpg",
-                organizer: "MPP KPTM",
-                dateCreated: "2025-11-01",
-                featured: true,
-                status: "active"
-            },
-            {
-                id: 2,
-                title: "Student Scholarship Program",
-                description: "Provide scholarships for underprivileged students to continue their education at KPTM.",
-                category: "education",
-                target: 30000,
-                raised: 18500,
-                progress: 62,
-                donors: 287,
-                daysLeft: 30,
-                image: "/micro-donation-portal/assets/images/campaign2.jpg",
-                organizer: "Student Affairs",
-                dateCreated: "2025-11-15",
-                featured: true,
-                status: "active"
-            },
-            {
-                id: 3,
-                title: "Community Health Center",
-                description: "Renovate and equip the local health center with modern medical equipment.",
-                category: "health",
-                target: 75000,
-                raised: 42000,
-                progress: 56,
-                donors: 512,
-                daysLeft: 45,
-                image: "/micro-donation-portal/assets/images/campaign3.jpg",
-                organizer: "Community Council",
-                dateCreated: "2025-10-20",
-                featured: true,
-                status: "active"
-            },
-            {
-                id: 4,
-                title: "Animal Shelter Support",
-                description: "Help build a new shelter and provide care for stray animals in our community.",
-                category: "community",
-                target: 20000,
-                raised: 12500,
-                progress: 63,
-                donors: 198,
-                daysLeft: 20,
-                image: "/micro-donation-portal/assets/images/campaign4.jpg",
-                organizer: "Animal Welfare Club",
-                dateCreated: "2025-11-10",
-                featured: false,
-                status: "active"
-            },
-            {
-                id: 5,
-                title: "Community Garden Project",
-                description: "Create a sustainable community garden to provide fresh produce for local families.",
-                category: "environment",
-                target: 15000,
-                raised: 8900,
-                progress: 59,
-                donors: 156,
-                daysLeft: 25,
-                image: "/micro-donation-portal/assets/images/campaign5.jpg",
-                organizer: "Green Society",
-                dateCreated: "2025-11-05",
-                featured: false,
-                status: "active"
-            },
-            {
-                id: 6,
-                title: "Digital Learning Lab",
-                description: "Set up a computer lab for underprivileged children to access digital education.",
-                category: "education",
-                target: 40000,
-                raised: 21000,
-                progress: 53,
-                donors: 234,
-                daysLeft: 40,
-                image: "/micro-donation-portal/assets/images/campaign6.jpg",
-                organizer: "Tech Club KPTM",
-                dateCreated: "2025-10-30",
-                featured: false,
-                status: "active"
+
+    // Optional: Create a separate method to get ALL campaigns (including cancelled) for admin
+    async getAllCampaignsForAdmin() {
+        try {
+            // Don't use only_active parameter for admin
+            const data = await utils.fetchAPI('campaigns/get-all.php');
+            
+            if (data.success && Array.isArray(data.campaigns)) {
+                return data.campaigns.map(campaign => this.transformCampaignData(campaign));
             }
-        ];
+            return [];
+            
+        } catch (error) {
+            console.error('Error fetching all campaigns:', error);
+            return [];
+        }
+    }
         
-        return this.campaigns;
+    // campaigns.js - Remove or modify loadSampleCampaigns
+    loadSampleCampaigns() {
+        // Return empty array instead of fake data
+        console.log('No campaigns available');
+        return [];
     }
     
     async getCampaignById(id) {
@@ -474,24 +372,38 @@ class CampaignManager {
     }
     
     transformCampaignData(dbCampaign) {
+        const target = parseFloat(dbCampaign.target_amount || dbCampaign.target || 0);
+        const current = parseFloat(dbCampaign.current_amount || dbCampaign.raised || 0);
+        
+        // PRIORITIZE database progress_percentage (now it will be correct)
+        let progress = parseFloat(dbCampaign.progress_percentage || 0);
+        
+        // Only calculate if database value is 0 or missing, AND we have valid target
+        if ((!progress || progress === 0) && target > 0) {
+            progress = Math.min(100, (current / target) * 100);
+        }
+        
+        // Always round to 1 decimal place for consistency
+        progress = Math.round(progress * 10) / 10;
+        
         return {
             id: dbCampaign.id,
             title: dbCampaign.title,
             description: dbCampaign.description,
             category: dbCampaign.category,
-            target: parseFloat(dbCampaign.target_amount || dbCampaign.target || 0),
-            raised: parseFloat(dbCampaign.current_amount || dbCampaign.raised || 0),
-            progress: parseFloat(dbCampaign.progress_percentage || dbCampaign.progress || 0),
+            target: target,
+            raised: current,
+            progress: progress, // Now uses corrected database value first
             donors: parseInt(dbCampaign.donors_count || dbCampaign.donors || 0),
-            daysLeft: parseInt(dbCampaign.days_left || dbCampaign.daysLeft || 30),
-            image: dbCampaign.image_url || dbCampaign.image || '/micro-donation-portal/assets/images/default-campaign.jpg',
+            daysLeft: parseInt(dbCampaign.days_left || 30),
+            image: dbCampaign.image_url || dbCampaign.image || 'assets/images/default-campaign.jpg',
             organizer: dbCampaign.organizer || 'Anonymous',
-            dateCreated: dbCampaign.created_at || dbCampaign.dateCreated || new Date().toISOString().split('T')[0],
+            dateCreated: dbCampaign.created_at || dbCampaign.dateCreated || new Date().toISOString(),
             featured: dbCampaign.featured || false,
             status: dbCampaign.status || 'active'
         };
     }
-    
+            
     saveTempCampaign(campaign) {
         const tempCampaigns = this.utils.getStorage('temp_campaigns') || [];
         tempCampaigns.push(campaign);
@@ -513,18 +425,26 @@ class CampaignManager {
         return tempCampaigns;
     }
     
-    // Render campaign card HTML
+    // campaigns.js - Update renderCampaignCard method
     renderCampaignCard(campaign) {
         const categoryLabel = this.getCategoryLabel(campaign.category);
         const categoryColor = this.getCategoryColor(campaign.category);
         
-        // Add temporary badge for locally saved campaigns
-        const temporaryBadge = campaign.isTemporary ? 
-            '<span class="badge bg-warning ms-2">Local</span>' : '';
+        // Determine if campaign is active
+        const isActive = campaign.status === 'active';
+        const isPending = campaign.status === 'pending';
+        const isCancelled = campaign.status === 'cancelled';
+        const isCompleted = campaign.status === 'completed';
         
-        // Add pending badge for campaigns awaiting approval
-        const pendingBadge = campaign.status === 'pending' ? 
-            '<span class="badge bg-secondary ms-2">Pending Approval</span>' : '';
+        // Status badge
+        let statusBadge = '';
+        if (isPending) {
+            statusBadge = '<span class="badge bg-warning ms-2">Pending</span>';
+        } else if (isCancelled) {
+            statusBadge = '<span class="badge bg-secondary ms-2">Cancelled</span>';
+        } else if (isCompleted) {
+            statusBadge = '<span class="badge bg-info ms-2">Completed</span>';
+        }
         
         // Use utils.formatCurrency if available
         const raisedAmount = typeof utils !== 'undefined' && utils.formatCurrency ? 
@@ -534,21 +454,21 @@ class CampaignManager {
         
         return `
             <div class="col-md-6 col-lg-4 mb-4 stagger-item">
-                <div class="card campaign-card h-100 hover-lift">
+                <div class="card campaign-card h-100 hover-lift ${!isActive ? 'opacity-75' : ''}">
                     <img src="${campaign.image}" class="card-img-top" alt="${campaign.title}" height="200">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
                                 <span class="badge bg-${categoryColor}">${categoryLabel}</span>
-                                ${temporaryBadge}
-                                ${pendingBadge}
+                                ${statusBadge}
                             </div>
-                            <small class="text-muted">${campaign.daysLeft} days left</small>
+                            ${isActive ? `<small class="text-muted">${campaign.daysLeft} days left</small>` : ''}
                         </div>
                         
                         <h5 class="card-title">${campaign.title}</h5>
                         <p class="card-text text-muted">${campaign.description.substring(0, 100)}...</p>
                         
+                        ${isActive ? `
                         <div class="mb-3">
                             <div class="progress" style="height: 8px;">
                                 <div class="progress-bar bg-success" style="width: ${campaign.progress}%"></div>
@@ -566,11 +486,23 @@ class CampaignManager {
                             </div>
                             <div class="col-5 text-end">
                                 <a href="donation-page.html?campaign=${campaign.id}" 
-                                class="btn btn-success btn-sm ${campaign.status !== 'active' ? 'disabled' : ''}">
-                                    <i class="fas fa-heart"></i> ${campaign.status === 'active' ? 'Donate' : 'Pending'}
+                                class="btn btn-success btn-sm">
+                                    <i class="fas fa-heart"></i> Donate
                                 </a>
                             </div>
                         </div>
+                        ` : `
+                        <div class="alert alert-${isCompleted ? 'info' : 'secondary'} mb-3">
+                            <small><i class="fas fa-info-circle me-1"></i>This campaign is ${campaign.status}.</small>
+                        </div>
+                        
+                        <div class="row align-items-center">
+                            <div class="col-12">
+                                <div class="fw-bold text-muted">${raisedAmount}</div>
+                                <small class="text-muted">raised of ${targetAmount}</small>
+                            </div>
+                        </div>
+                        `}
                         
                         <div class="mt-3 pt-3 border-top">
                             <small class="text-muted">
@@ -583,7 +515,7 @@ class CampaignManager {
         `;
     }
     
-    // Render campaigns to container
+    // campaigns.js - Update renderCampaigns method
     async renderCampaigns(containerId, filter = {}) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -599,28 +531,23 @@ class CampaignManager {
         `;
         
         try {
-            let campaigns;
+            let campaigns = await this.getAllCampaigns();
             
-            // Always load campaigns first (now includes API call)
-            campaigns = await this.getAllCampaigns();
+            // IMPORTANT: Filter out cancelled and completed campaigns
+            campaigns = campaigns.filter(c => 
+                c.status !== 'cancelled' && 
+                c.status !== 'completed'
+            );
             
-            // Load any temporary campaigns from storage
-            const tempCampaigns = this.loadTempCampaigns();
-            
-            // Apply category filter if specified
+            // Apply additional filters if specified
             if (filter.category) {
                 campaigns = campaigns.filter(c => c.category === filter.category);
             }
             
-            // Apply featured filter if specified
             if (filter.featured) {
                 campaigns = campaigns.filter(c => c.featured);
             }
             
-            // Apply status filter - by default show only active and pending
-            campaigns = campaigns.filter(c => c.status === 'active' || c.status === 'pending');
-            
-            // Apply search filter
             if (filter.search) {
                 const term = filter.search.toLowerCase();
                 campaigns = campaigns.filter(campaign => 
@@ -630,7 +557,6 @@ class CampaignManager {
                 );
             }
             
-            // Apply sorting
             if (filter.sort) {
                 campaigns = this.sortCampaigns(filter.sort, campaigns);
             }
@@ -641,7 +567,7 @@ class CampaignManager {
                     <div class="col-12 text-center py-5">
                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                         <h4>No campaigns found</h4>
-                        <p class="text-muted">Try adjusting your search or filter criteria</p>
+                        <p class="text-muted">There are currently no active campaigns. Check back soon!</p>
                     </div>
                 `;
             } else {
@@ -651,11 +577,12 @@ class CampaignManager {
             }
             
         } catch (error) {
+            console.error('Error rendering campaigns:', error);
             container.innerHTML = `
                 <div class="col-12 text-center py-5">
                     <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
                     <h4>Error loading campaigns</h4>
-                    <p class="text-muted">${error.message}</p>
+                    <p class="text-muted">Please try again later</p>
                     <button class="btn btn-outline-primary mt-2" onclick="window.location.reload()">
                         <i class="fas fa-redo"></i> Try Again
                     </button>
@@ -663,7 +590,7 @@ class CampaignManager {
             `;
         }
     }
-    
+        
     // Overloaded sortCampaigns for external array
     sortCampaigns(sortBy, campaigns = null) {
         const sorted = campaigns ? [...campaigns] : [...this.campaigns];
@@ -732,6 +659,49 @@ class CampaignManager {
         });
     }
 }
+
+    // campaigns.js - Add this function
+    async function loadCampaignsStats() {
+        try {
+            // Get statistics without filtering (to get all stats)
+            const data = await utils.fetchAPI('campaigns/get-all.php');
+            
+            if (data.success && data.stats) {
+                const stats = data.stats;
+                
+                // Update the stats display on campaigns page
+                updateStatsDisplay(stats);
+                
+                return stats;
+            }
+        } catch (error) {
+            console.error('Error loading campaign stats:', error);
+            utils.handleApiError(error, 'Could not load statistics');
+        }
+    }
+
+    function updateStatsDisplay(stats) {
+        // Update campaigns page stats
+        const campaignCountElement = document.querySelector('.stats-item:first-child strong');
+        const totalFundedElement = document.querySelector('.stats-item:nth-child(2) strong');
+        
+        if (campaignCountElement) {
+            campaignCountElement.textContent = stats.total_active || 0;
+        }
+        
+        if (totalFundedElement) {
+            totalFundedElement.textContent = `RM${(stats.total_funded || 0).toFixed(2)}`;
+        }
+        
+        // Also update any other stats displays
+        document.querySelectorAll('.campaign-count').forEach(el => {
+            el.textContent = stats.total_active || 0;
+        });
+        
+        document.querySelectorAll('.total-funded').forEach(el => {
+            el.textContent = `RM${(stats.total_funded || 0).toFixed(2)}`;
+        });
+    }
 
 // Initialize campaign manager
 const campaignManager = new CampaignManager();

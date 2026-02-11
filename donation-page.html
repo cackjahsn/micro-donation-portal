@@ -221,6 +221,68 @@
         .new-donation {
             animation: pulse 1s ease-in-out;
         }
+
+        /* Add to your existing styles */
+        .payment-method-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #f8f9fa;
+        }
+
+        .payment-method-card.disabled:hover {
+            border-color: #dee2e6;
+            background-color: #f8f9fa;
+            transform: none;
+        }
+
+        .payment-method-card input[type="radio"]:checked + label {
+            cursor: pointer;
+        }
+
+        .payment-method-card.disabled input[type="radio"]:disabled + label {
+            cursor: not-allowed;
+        }
+
+        /* Add to your existing styles in donation-page.html */
+        #donationProcessingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(3px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        #donationProcessingOverlay .spinner-border {
+            width: 4rem;
+            height: 4rem;
+        }
+
+        #donationProcessingOverlay h5 {
+            color: #4e73df;
+            font-weight: 600;
+        }
+
+        #donationProcessingOverlay .progress {
+            width: 200px;
+            height: 6px;
+            margin: 0 auto;
+        }
+
+        #donationProcessingOverlay .progress-bar {
+            background-color: #4e73df;
+        }
+
+        /* Also add this for body when overlay is active */
+        body.overlay-active {
+            overflow: hidden !important;
+        }
     </style>
 </head>
 <body>
@@ -424,15 +486,15 @@
                                 </button>
                             </div>
 
-                            <!-- Step 2: Payment Method -->
+                            <!-- Step 2: Payment Method (QR Only) -->
                             <div id="step2" style="display: none;">
-                                <h4 class="mb-3">Choose Payment Method</h4>
+                                <h4 class="mb-3">Payment Method</h4>
                                 
-                                <!-- Payment Method Options -->
+                                <!-- Payment Method Options (QR Only) -->
                                 <div class="mb-4">
                                     <div class="payment-method-card active" data-method="qr">
                                         <div class="form-check mb-0">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" id="qrPayment" value="qr" checked>
+                                            <input class="form-check-input" type="radio" name="paymentMethod" id="qrPayment" value="qr" checked disabled style="display: none;">
                                             <label class="form-check-label w-100" for="qrPayment">
                                                 <div class="d-flex align-items-center">
                                                     <i class="fas fa-qrcode fa-2x text-success me-3"></i>
@@ -440,67 +502,41 @@
                                                         <strong class="d-block">QR Code Payment</strong>
                                                         <p class="text-muted mb-0">Simulated QR scan for testing</p>
                                                     </div>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="payment-method-card" data-method="fpx">
-                                        <div class="form-check mb-0">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" id="onlineBanking" value="fpx">
-                                            <label class="form-check-label w-100" for="onlineBanking">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fas fa-university fa-2x text-primary me-3"></i>
-                                                    <div>
-                                                        <strong class="d-block">Online Banking (FPX)</strong>
-                                                        <p class="text-muted mb-0">Simulated bank transfer</p>
+                                                    <div class="ms-auto">
+                                                        <span class="badge bg-success">Default</span>
                                                     </div>
                                                 </div>
                                             </label>
                                         </div>
                                     </div>
                                     
-                                    <div class="payment-method-card disabled" data-method="card">
-                                        <div class="form-check mb-0">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" id="cardPayment" value="card" disabled>
-                                            <label class="form-check-label w-100" for="cardPayment">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fas fa-credit-card fa-2x text-warning me-3"></i>
-                                                    <div>
-                                                        <strong class="d-block">Credit/Debit Card</strong>
-                                                        <p class="text-muted mb-0">(Coming Soon)</p>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
+                                    <div class="alert alert-info mt-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Note:</strong> Only QR code payments are available in this demo version.
+                                        This is a simulated payment system for testing purposes.
                                     </div>
                                 </div>
                                 
                                 <!-- QR Code Display Area -->
                                 <div class="text-center mb-4" id="qrCodeArea">
-                                    <h5>Simulated QR Code</h5>
-                                    <div class="qr-container border p-3 d-inline-block mb-3">
+                                    <h5>Scan QR Code to Complete Donation</h5>
+                                    <div class="qr-container border p-4 d-inline-block mb-3">
                                         <img src="assets/qr-codes/sample-qr.png" alt="QR Code" id="qrCodeImage" style="width: 200px; height: 200px;">
                                     </div>
-                                    <p class="text-muted">Click "Complete Donation" to simulate QR scan</p>
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        <small>This is a simulated QR code for testing purposes only.</small>
+                                    <div class="alert alert-light border">
+                                        <i class="fas fa-mobile-alt me-2"></i>
+                                        <strong>How to Pay:</strong>
+                                        <ol class="text-start small mt-2 mb-0">
+                                            <li>Click "Complete Donation" button below</li>
+                                            <li>System will simulate QR code scanning</li>
+                                            <li>Payment will be processed automatically</li>
+                                            <li>Receipt will be generated and sent to your email</li>
+                                        </ol>
                                     </div>
-                                </div>
-                                
-                                <!-- Bank Selection (for FPX) -->
-                                <div class="mb-4" id="bankSelection" style="display: none;">
-                                    <label for="bankSelect" class="form-label">Select Your Bank (Simulated)</label>
-                                    <select class="form-select" id="bankSelect">
-                                        <option value="">Choose bank</option>
-                                        <option value="maybank">Maybank</option>
-                                        <option value="cimb">CIMB Bank</option>
-                                        <option value="public">Public Bank</option>
-                                        <option value="rhb">RHB Bank</option>
-                                        <option value="hongleong">Hong Leong Bank</option>
-                                        <option value="simulated">Simulated Bank (for testing)</option>
-                                    </select>
+                                    <p class="text-muted mt-3">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Simulated payment takes 3-5 seconds to process
+                                    </p>
                                 </div>
                                 
                                 <!-- Navigation Buttons -->
@@ -604,6 +640,7 @@
                                             <i class="fas fa-check-circle me-2"></i>
                                             Donation Confirmed
                                         </h5>
+                                        <p class="mb-1">Campaign: <strong id="campaignTitleSuccess">Campaign Title</strong></p>
                                         <p class="mb-1">Transaction ID: <strong id="transactionId">DON-123456</strong></p>
                                         <p class="mb-1">Amount: <strong id="finalAmount">RM 0.00</strong></p>
                                         <p class="mb-0">Date: <strong id="transactionDate">18 Dec 2025</strong></p>
@@ -746,18 +783,49 @@
     <script>
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            // Check if donationPage is already defined (in donation.js)
-            if (typeof window.donationPage === 'undefined') {
-                const donationPage = new DonationPage();
-                donationPage.init();
-                window.donationPage = donationPage;
-            }
+            console.log('Donation page initializing...');
             
             // Initialize authentication if auth.js is loaded
             if (typeof AuthManager !== 'undefined') {
+                console.log('AuthManager found, initializing...');
                 const authManager = new AuthManager();
                 authManager.init();
+            } else {
+                console.log('AuthManager not found, continuing without auth');
             }
+
+            // Don't create multiple instances
+            if (!window.donationPage) {
+                window.donationPage = new DonationPage();
+                window.donationPage.init();
+            } else {
+                console.log('DonationPage already exists, using existing instance');
+            }
+            
+            // Initialize donation page
+            setTimeout(() => {
+                if (typeof DonationPage !== 'undefined') {
+                    console.log('DonationPage class found, creating instance...');
+                    window.donationPage = new DonationPage();
+                    window.donationPage.init();
+                } else {
+                    console.error('DonationPage class not found!');
+                    // Show error message
+                    const campaignCard = document.getElementById('campaignInfoCard');
+                    if (campaignCard) {
+                        campaignCard.innerHTML = `
+                            <div class="card-body text-center text-danger py-5">
+                                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                                <h4>JavaScript Error</h4>
+                                <p class="text-muted">Unable to load donation system. Please refresh the page.</p>
+                                <button onclick="window.location.reload()" class="btn btn-outline-primary">
+                                    <i class="fas fa-redo me-2"></i> Refresh Page
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            }, 100);
         });
     </script>
 </body>

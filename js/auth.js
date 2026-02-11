@@ -578,6 +578,11 @@ class AuthManager {
         // Setup auth header for API calls
         this.setupAuthHeader(token);
         
+        // Also store token in sessionStorage for quick access
+        if (token) {
+            sessionStorage.setItem('auth_token', token);
+        }
+        
         // Update UI
         this.updateUI();
         
@@ -610,13 +615,58 @@ class AuthManager {
         }));
     }
     
+    // In your AuthManager class, update setupAuthHeader:
     setupAuthHeader(token) {
-        // This would be used for authenticated API calls
-        // axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        console.log('Setting up auth header with token:', token ? 'Exists' : 'Missing');
+        
+        // Store token globally for fetch requests
+        window.authToken = token;
+        
+        // Override global fetch to add auth header
+        if (!window.originalFetch) {
+            window.originalFetch = window.fetch;
+            
+            window.fetch = async function(...args) {
+                const [resource, config = {}] = args;
+                
+                // Skip for auth endpoints (they don't need token)
+                const isAuthEndpoint = resource.includes('/auth/') || 
+                                    resource.includes('login.php') || 
+                                    resource.includes('register.php');
+                
+                // Get token from localStorage or global
+                const token = window.authToken || 
+                            localStorage.getItem('micro_donation_token') ||
+                            localStorage.getItem('communitygive_token');
+                
+                // Add auth header if we have a token and it's not an auth endpoint
+                if (token && !isAuthEndpoint) {
+                    config.headers = {
+                        ...config.headers,
+                        'Authorization': `Bearer ${token}`
+                    };
+                }
+                
+                console.log('Fetch with auth:', {
+                    resource: typeof resource === 'string' ? resource.substring(0, 50) : 'Request object',
+                    hasToken: !!token,
+                    isAuthEndpoint: isAuthEndpoint
+                });
+                
+                return window.originalFetch(resource, config);
+            };
+        }
     }
     
     clearAuthHeader() {
-        // axios.defaults.headers.common['Authorization'] = null;
+        // Clear global token
+        window.authToken = null;
+        
+        // Restore original fetch if we overrode it
+        if (window.originalFetch) {
+            window.fetch = window.originalFetch;
+            window.originalFetch = null;
+        }
     }
     
     updateUI() {
@@ -988,3 +1038,11 @@ document.addEventListener('DOMContentLoaded', function() {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { AuthManager, auth };
 }
+
+// Add at the bottom of auth.js for debugging
+console.log('=== AUTH DEBUG ===');
+console.log('Token from localStorage:', localStorage.getItem('micro_donation_token'));
+console.log('User from localStorage:', localStorage.getItem('micro_donation_user'));
+console.log('Current user object:', auth?.currentUser);
+console.log('Is authenticated:', auth?.isAuthenticated());
+console.log('==================');

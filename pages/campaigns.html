@@ -288,6 +288,8 @@
                 // User is logged in, show campaign creation modal
                 startCampaignModal.show();
             });
+
+    
         }
         
         // Load campaigns
@@ -359,7 +361,17 @@
                 }
             });
         });
-        
+
+        // Call this in your campaigns page initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof loadAllCampaigns === 'function') {
+                loadAllCampaigns();
+            }
+            
+            // Load statistics
+            loadCampaignsStats();
+        });
+                        
         // Handle new campaign form submission
         const newCampaignForm = document.getElementById('newCampaignForm');
         if (newCampaignForm) {

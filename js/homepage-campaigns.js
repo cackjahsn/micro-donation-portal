@@ -51,162 +51,232 @@ async function loadHomepageCampaigns() {
     }
 }
 
-    // In homepage-campaigns.js, replace the getAllCampaigns function with:
     async function getAllCampaigns() {
         console.log('Fetching campaigns for homepage...');
         
         try {
-            // Use utils.fetchAPI for consistent API calls
-            const data = await utils.fetchAPI('campaigns/get-all.php');
+            const data = await utils.fetchAPI('campaigns/get-all.php?only_active=true');
             
             console.log('API response data:', data);
             
             if (data.success) {
-                return data.campaigns || [];
+                const campaigns = data.campaigns || data.data || [];
+                
+                console.log('Active campaigns:', campaigns.length);
+                
+                const transformedCampaigns = campaigns.map(campaign => {
+                    const target = parseFloat(campaign.target_amount || campaign.target || 0);
+                    const current = parseFloat(campaign.current_amount || campaign.raised || 0);
+                    
+                    // PRIORITIZE database progress_percentage
+                    let progress = parseFloat(campaign.progress_percentage || 0);
+                    
+                    // Only calculate if database value is 0 or missing
+                    if ((!progress || progress === 0) && target > 0) {
+                        progress = Math.min(100, (current / target) * 100);
+                    }
+                    
+                    // Round to 1 decimal place
+                    progress = Math.round(progress * 10) / 10;
+                    
+                    return {
+                        id: campaign.id,
+                        title: campaign.title,
+                        description: campaign.description,
+                        category: campaign.category,
+                        target: target,
+                        raised: current,
+                        progress: progress, // Use database value first
+                        donors: parseInt(campaign.donors_count || campaign.donors || 0),
+                        daysLeft: parseInt(campaign.days_left || 30),
+                        image: campaign.image_url || campaign.image || 'assets/images/default-campaign.jpg',
+                        organizer: campaign.organizer || 'Anonymous',
+                        dateCreated: campaign.created_at || campaign.dateCreated || new Date().toISOString(),
+                        status: campaign.status || 'active'
+                    };
+                });
+                                
+                return transformedCampaigns;
+                
             } else {
                 throw new Error(data.message || 'Failed to load campaigns');
             }
             
         } catch (error) {
             console.error('Error fetching campaigns:', error);
-            utils.showNotification('Could not load campaigns. Using sample data.', 'warning');
-            return getSampleCampaigns();
+            utils.showNotification('Could not load campaigns.', 'warning');
+            return [];
         }
     }
 
-function displayCampaigns(campaigns, container) {
-    if (!campaigns || campaigns.length === 0) {
-        showNoCampaignsMessage(container);
-        return;
-    }
-    
-    let html = '';
-    
-    campaigns.forEach(campaign => {
-        html += createCampaignCard(campaign);
-    });
-    
-    container.innerHTML = html;
-    
-    // Add event listeners to donation buttons
-    addDonationButtonListeners();
-}
-
-function createCampaignCard(campaign) {
-    // Format currency
-    const raised = typeof utils !== 'undefined' && utils.formatCurrency 
-        ? utils.formatCurrency(campaign.raised || 0)
-        : `RM ${(campaign.raised || 0).toFixed(2)}`;
-    
-    const target = typeof utils !== 'undefined' && utils.formatCurrency 
-        ? utils.formatCurrency(campaign.target || 1000)
-        : `RM ${(campaign.target || 1000).toFixed(2)}`;
-    
-    // Calculate progress
-    const progress = campaign.target > 0 
-        ? Math.min(100, Math.round((campaign.raised / campaign.target) * 100))
-        : 0;
-    
-    // Format date if utils available
-    let dateText = '';
-    if (campaign.dateCreated) {
-        if (typeof utils !== 'undefined' && utils.formatRelativeTime) {
-            dateText = utils.formatRelativeTime(campaign.dateCreated);
-        } else {
-            dateText = new Date(campaign.dateCreated).toLocaleDateString();
+    function displayCampaigns(campaigns, container) {
+        console.log('Displaying campaigns:', campaigns);
+        
+        if (!campaigns || campaigns.length === 0) {
+            showNoCampaignsMessage(container);
+            return;
         }
+        
+        // Filter out non-active campaigns for homepage (extra safety)
+        const activeCampaigns = campaigns.filter(campaign => campaign.status === 'active');
+        
+        console.log('Active campaigns after filter:', activeCampaigns.length);
+        
+        if (activeCampaigns.length === 0) {
+            showNoCampaignsMessage(container);
+            return;
+        }
+        
+        let html = '';
+        
+        // Display only active campaigns (limit to 6 for homepage)
+        activeCampaigns.slice(0, 6).forEach(campaign => {
+            console.log('Creating card for campaign:', campaign.title, 'ID:', campaign.id);
+            html += createCampaignCard(campaign);
+        });
+        
+        container.innerHTML = html;
+        
+        // Add event listeners to donation buttons
+        addDonationButtonListeners();
     }
-    
-    // Fix image path - remove extra slashes
-    let imageUrl = campaign.image || 'assets/images/default-campaign.jpg';
-    imageUrl = imageUrl.replace(/\\/g, '');
-    
-    // Ensure correct path for homepage
-    if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-        imageUrl = imageUrl.startsWith('assets/') ? imageUrl : 'assets/' + imageUrl;
-    }
-    
-    return `
-        <div class="col-md-6 col-lg-4">
-            <div class="card campaign-card h-100">
-                <div class="card-img-container">
-                    <img src="${imageUrl}" 
-                         class="card-img-top" 
-                         alt="${campaign.title}"
-                         onerror="this.src='assets/images/default-campaign.jpg'">
-                    <span class="campaign-category badge bg-primary">${campaign.category || 'General'}</span>
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">${campaign.title || 'Untitled Campaign'}</h5>
-                    <p class="card-text text-muted flex-grow-1">
-                        ${campaign.description ? 
-                            (campaign.description.length > 100 
-                                ? campaign.description.substring(0, 100) + '...' 
-                                : campaign.description) 
-                            : 'No description available.'}
-                    </p>
-                    
-                    <!-- Progress bar -->
-                    <div class="campaign-progress mb-3">
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-success" 
-                                 role="progressbar" 
-                                 style="width: ${progress}%"
-                                 aria-valuenow="${progress}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100">
+
+    function createCampaignCard(campaign) {
+        // Debug: Check what data we have
+        console.log('Creating card with campaign data:', {
+            id: campaign.id,
+            title: campaign.title,
+            raised: campaign.raised,
+            current_amount: campaign.current_amount,
+            target: campaign.target,
+            target_amount: campaign.target_amount,
+            donors: campaign.donors,
+            donors_count: campaign.donors_count
+        });
+        
+        // Get the correct values
+        const raisedAmount = campaign.raised !== undefined ? campaign.raised : (campaign.current_amount || 0);
+        const targetAmount = campaign.target !== undefined ? campaign.target : (campaign.target_amount || 1000);
+        const donorCount = campaign.donors !== undefined ? campaign.donors : (campaign.donors_count || 0);
+        
+        // Format currency
+        const raised = typeof utils !== 'undefined' && utils.formatCurrency 
+            ? utils.formatCurrency(raisedAmount)
+            : `RM ${raisedAmount.toFixed(2)}`;
+        
+        const target = typeof utils !== 'undefined' && utils.formatCurrency 
+            ? utils.formatCurrency(targetAmount)
+            : `RM ${targetAmount.toFixed(2)}`;
+        
+        // Change from Math.round to show 1 decimal place like campaigns page
+        const progress = targetAmount > 0 
+            ? Math.min(100, (raisedAmount / targetAmount) * 100)
+            : 0;
+
+        // Then format it to show 1 decimal place
+        const displayProgress = Math.round(progress * 10) / 10;
+        
+        // Format date if utils available
+        let dateText = '';
+        if (campaign.dateCreated || campaign.created_at) {
+            const date = campaign.dateCreated || campaign.created_at;
+            if (typeof utils !== 'undefined' && utils.formatRelativeTime) {
+                dateText = utils.formatRelativeTime(date);
+            } else {
+                dateText = new Date(date).toLocaleDateString();
+            }
+        }
+        
+        // Fix image path - remove extra slashes
+        let imageUrl = campaign.image || campaign.image_url || 'assets/images/default-campaign.jpg';
+        imageUrl = imageUrl.replace(/\\/g, '');
+        
+        // Ensure correct path for homepage
+        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+            imageUrl = imageUrl.startsWith('assets/') ? imageUrl : 'assets/' + imageUrl;
+        }
+        
+        return `
+            <div class="col-md-6 col-lg-4">
+                <div class="card campaign-card h-100">
+                    <div class="card-img-container">
+                        <img src="${imageUrl}" 
+                            class="card-img-top" 
+                            alt="${campaign.title}"
+                            onerror="this.src='assets/images/default-campaign.jpg'">
+                        <span class="campaign-category badge bg-primary">${campaign.category || 'General'}</span>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">${campaign.title || 'Untitled Campaign'}</h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            ${campaign.description ? 
+                                (campaign.description.length > 100 
+                                    ? campaign.description.substring(0, 100) + '...' 
+                                    : campaign.description) 
+                                : 'No description available.'}
+                        </p>
+                        
+                        <!-- Progress bar -->
+                        <div class="campaign-progress mb-3">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" 
+                                    role="progressbar" 
+                                    style="width: ${displayProgress}%"
+                                    aria-valuenow="${displayProgress}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <small class="text-muted">${displayProgress}% funded</small>
+                                <small class="text-muted">${donorCount} donors</small>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between mt-2">
-                            <small class="text-muted">${progress}% funded</small>
-                            <small class="text-muted">${campaign.donors || 0} donors</small>
-                        </div>
-                    </div>
-                    
-                    <!-- Funding info -->
-                    <div class="funding-info mb-3">
-                        <div class="row">
-                            <div class="col-6">
-                                <small class="text-muted d-block">Raised</small>
-                                <strong class="text-success">${raised}</strong>
-                            </div>
-                            <div class="col-6 text-end">
-                                <small class="text-muted d-block">Goal</small>
-                                <strong>${target}</strong>
+                        
+                        <!-- Funding info -->
+                        <div class="funding-info mb-3">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Raised</small>
+                                    <strong class="text-success">${raised}</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <small class="text-muted d-block">Goal</small>
+                                    <strong>${target}</strong>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Action buttons -->
-                    <div class="mt-auto">
-                        <div class="d-grid gap-2">
-                            <a href="donation-page.html?id=${campaign.id}" 
-                               class="btn btn-primary btn-donate"
-                               data-campaign-id="${campaign.id}"
-                               data-campaign-title="${campaign.title}">
-                                <i class="fas fa-heart me-2"></i>Donate Now
-                            </a>
-                            <a href="pages/campaigns.html#campaign-${campaign.id}" 
-                               class="btn btn-outline-primary">
-                                <i class="fas fa-info-circle me-2"></i>View Details
-                            </a>
+                        
+                        <!-- Action buttons -->
+                        <div class="mt-auto">
+                            <div class="d-grid gap-2">
+                                <a href="donation-page.html?campaign=${campaign.id}" 
+                                class="btn btn-primary btn-donate"
+                                data-campaign-id="${campaign.id}"
+                                data-campaign-title="${campaign.title}">
+                                    <i class="fas fa-heart me-2"></i>Donate Now
+                                </a>
+                                <a href="pages/campaigns.html#campaign-${campaign.id}" 
+                                class="btn btn-outline-primary">
+                                    <i class="fas fa-info-circle me-2"></i>View Details
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Footer -->
-                    <div class="card-footer bg-transparent border-0 mt-3 pt-0">
-                        <small class="text-muted">
-                            <i class="far fa-clock me-1"></i>${dateText || 'Recently'}
-                            ${campaign.organizer ? 
-                                `<span class="ms-2"><i class="fas fa-users me-1"></i>${campaign.organizer}</span>` 
-                                : ''}
-                        </small>
+                        
+                        <!-- Footer -->
+                        <div class="card-footer bg-transparent border-0 mt-3 pt-0">
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i>${dateText || 'Recently'}
+                                ${campaign.organizer ? 
+                                    `<span class="ms-2"><i class="fas fa-users me-1"></i>${campaign.organizer}</span>` 
+                                    : ''}
+                            </small>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
 
 function addDonationButtonListeners() {
     // Remove any existing listeners first
@@ -628,6 +698,32 @@ function showErrorMessage(container, error) {
         </div>
     `;
 }
+
+// Add this function to test the API response
+async function testApiResponse() {
+    try {
+        console.log('Testing API response structure...');
+        const response = await fetch(utils.getApiUrl('campaigns/get-all.php?only_active=true'));
+        const text = await response.text();
+        console.log('Raw API response:', text);
+        
+        const data = JSON.parse(text);
+        console.log('Parsed API response:', data);
+        
+        if (data.success) {
+            console.log('Campaigns array:', data.campaigns || data.data);
+            console.log('First campaign:', data.campaigns ? data.campaigns[0] : data.data[0]);
+        }
+    } catch (error) {
+        console.error('Test failed:', error);
+    }
+}
+
+// Call it for debugging (remove after fixing)
+document.addEventListener('DOMContentLoaded', function() {
+    // Run test after a short delay
+    setTimeout(testApiResponse, 1000);
+});
 
 // Make functions available globally for retry functionality
 window.loadHomepageCampaigns = loadHomepageCampaigns;

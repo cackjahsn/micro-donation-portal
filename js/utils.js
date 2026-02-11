@@ -348,6 +348,45 @@ class Utils {
             throw error;
         }
     }
+
+        // Add this to your AuthManager class
+    async makeAuthenticatedRequest(url, options = {}) {
+        try {
+            // Get token
+            const token = window.authToken || 
+                        localStorage.getItem('micro_donation_token') ||
+                        localStorage.getItem('communitygive_token');
+            
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+            
+            // Add auth header
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`
+            };
+            
+            console.log('Making authenticated request to:', url);
+            
+            const response = await fetch(url, options);
+            
+            // Check for authentication errors
+            if (response.status === 401) {
+                console.warn('Authentication failed (401), clearing session');
+                this.clearSession();
+                this.showNotification('Your session has expired. Please login again.', 'error');
+                window.location.href = 'index.html';
+                return null;
+            }
+            
+            return response;
+            
+        } catch (error) {
+            console.error('Authenticated request failed:', error);
+            throw error;
+        }
+    }
     
     // ==================== FORMATTING UTILITIES ====================
     

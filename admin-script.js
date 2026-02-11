@@ -1,15 +1,17 @@
 // Admin Dashboard JavaScript with full functionality
 class AdminDashboard {
     constructor() {
+        this.allCampaigns = [];      // Store ALL campaigns (never changes)
+        this.currentCampaigns = [];  // Currently displayed campaigns (changes with filters)
+        this.currentFilter = 'all';  // Track current filter
+        this.currentSearchTerm = '';  // Track current search term
         this.currentUser = null;
         this.sidebarCollapsed = false;
         this.dataTable = null;
         this.currentPage = 'overview';
         this.charts = {};
         this.init();
-        this.allCampaigns = [];      // Store ALL campaigns (never changes)
-        this.currentCampaigns = [];  // Currently displayed campaigns (changes with filters)
-        this.currentFilter = 'all';  // Track current filter
+        
     }
     
     init() {
@@ -783,7 +785,7 @@ class AdminDashboard {
         const container = document.getElementById('recentCampaignsContainer');
         if (!container) return;
         
-        if (campaigns.length === 0) {
+        if (displayCampaigns.length === 0) {
             this.showNoRecentCampaigns();
             return;
         }
@@ -1173,7 +1175,7 @@ class AdminDashboard {
                     totalCampaigns = campaigns.length;
                     
                     // Calculate statistics
-                    campaigns.forEach(campaign => {
+                    displayCampaigns.forEach(campaign => {
                         totalRaised += parseFloat(campaign.current_amount || 0);
                         totalDonations += parseInt(campaign.donors_count || 0);
                         
@@ -1225,7 +1227,7 @@ class AdminDashboard {
         const container = document.getElementById('topCampaignsList');
         if (!container) return;
         
-        if (campaigns.length === 0) {
+        if (displayCampaigns.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-4">
                     <i class="fas fa-chart-bar fa-2x text-muted mb-3"></i>
@@ -1535,15 +1537,18 @@ class AdminDashboard {
             const result = await response.json();
             console.log('All campaigns API result:', result);
             
-        if (result.success && Array.isArray(result.campaigns)) {
-            // Store ALL campaigns
-            this.allCampaigns = result.campaigns;
-            // Set current campaigns to all campaigns initially
-            this.currentCampaigns = [...result.campaigns];
-            this.currentFilter = 'all';
-            
-            // Render with proper counts
-            this.renderCampaignsTable(this.currentCampaigns);
+            if (result.success && Array.isArray(result.campaigns)) {
+                // Store ALL campaigns
+                this.allCampaigns = result.campaigns;
+                // Set current campaigns to all campaigns initially
+                this.currentCampaigns = [...result.campaigns];
+                this.currentFilter = 'all';
+                
+                console.log('Campaigns loaded. Total:', this.allCampaigns.length);
+                console.log('Current campaigns:', this.currentCampaigns.length);
+                
+                // Render WITHOUT parameter - it will use this.currentCampaigns
+                this.renderCampaignsTable();
             } else {
                 this.showNotification('No campaigns found or API error: ' + (result.message || 'Unknown error'), 'warning');
             }
@@ -1570,38 +1575,71 @@ class AdminDashboard {
         }
     }
 
-    renderCampaignsTable(campaigns) {
+    renderCampaignsTable() { // REMOVE THE PARAMETER!
         const container = document.getElementById('campaignsTableContainer');
         if (!container) return;
-        
-        // Store campaigns for filtering/sorting
-        this.allCampaigns = campaigns;
 
-        // Use provided campaigns or currentCampaigns
-        const displayCampaigns = campaigns || this.currentCampaigns;
+        console.log('renderCampaignsTable called');
+        console.log('this.allCampaigns:', this.allCampaigns);
+        console.log('this.currentCampaigns:', this.currentCampaigns);
         
-        if (!displayCampaigns || displayCampaigns.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-5">
-                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                    <h5>No campaigns created yet</h5>
-                    <p class="text-muted">Create your first campaign to get started</p>
-                    <button class="btn btn-primary mt-3" onclick="adminDashboard.loadPage('create-campaign')">
-                        <i class="fas fa-plus me-2"></i> Create Campaign
-                    </button>
-                </div>
-            `;
+        // Initialize arrays if needed
+        if (!this.allCampaigns) {
+            this.allCampaigns = [];
+        }
+        if (!this.currentCampaigns) {
+            this.currentCampaigns = [];
+        }
+
+        // ALWAYS use this.currentCampaigns - NO parameter logic!
+        const displayCampaigns = this.currentCampaigns;
+        
+        console.log('displayCampaigns to render:', displayCampaigns);
+
+        // Ensure displayCampaigns is an array
+        if (!Array.isArray(displayCampaigns)) {
+            console.error('currentCampaigns is not an array:', displayCampaigns);
+            this.currentCampaigns = [];
             return;
         }
         
-        // Count ALL campaigns (not just displayed ones)
-        const allCount = this.allCampaigns.length;
-        const activeCount = this.allCampaigns.filter(c => c.status === 'active').length;
-        const completedCount = this.allCampaigns.filter(c => c.status === 'completed').length;
-        const cancelledCount = this.allCampaigns.filter(c => 
+        // Handle empty state
+        if (!displayCampaigns || displayCampaigns.length === 0) {
+            // Check if we have data but it's filtered out
+            if (this.allCampaigns && this.allCampaigns.length > 0 && this.currentFilter !== 'all') {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-filter fa-3x text-muted mb-3"></i>
+                        <h5>No ${this.currentFilter} campaigns found</h5>
+                        <p class="text-muted">No campaigns match the current filter</p>
+                        <button class="btn btn-primary mt-3" onclick="adminDashboard.filterCampaigns('all')">
+                            <i class="fas fa-list me-2"></i> Show All Campaigns
+                        </button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5>No campaigns created yet</h5>
+                        <p class="text-muted">Create your first campaign to get started</p>
+                        <button class="btn btn-primary mt-3" onclick="adminDashboard.loadPage('create-campaign')">
+                            <i class="fas fa-plus me-2"></i> Create Campaign
+                        </button>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        // Now it's safe to calculate counts
+        const allCount = this.allCampaigns ? this.allCampaigns.length : 0;
+        const activeCount = this.allCampaigns ? this.allCampaigns.filter(c => c.status === 'active').length : 0;
+        const completedCount = this.allCampaigns ? this.allCampaigns.filter(c => c.status === 'completed').length : 0;
+        const cancelledCount = this.allCampaigns ? this.allCampaigns.filter(c => 
             c.status.toLowerCase() === 'cancelled' || 
             c.status.toLowerCase() === 'canceled'
-        ).length;
+        ).length : 0;
         
         // Debug: Check what data we're receiving
         console.log('Campaigns data received for table:', displayCampaigns);
@@ -1788,7 +1826,7 @@ class AdminDashboard {
         `;
     
         
-        campaigns.forEach(campaign => {
+        displayCampaigns.forEach(campaign => {
             // Get values with defaults
             const targetAmount = campaign.target_amount || 0;
             const currentAmount = campaign.current_amount || 0;
@@ -1939,14 +1977,14 @@ class AdminDashboard {
                 </div>
                 <div class="mt-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <strong>Total:</strong> ${campaigns.length} campaign${campaigns.length !== 1 ? 's' : ''}
+                        <strong>Total:</strong> ${displayCampaigns.length} campaign${displayCampaigns.length !== 1 ? 's' : ''}
                         <span class="text-muted ms-3">
                             <i class="fas fa-circle text-success me-1"></i> Active: 
-                            ${campaigns.filter(c => c.status === 'active').length}
+                            ${displayCampaigns.filter(c => c.status === 'active').length}
                         </span>
                         <span class="text-muted ms-3">
                             <i class="fas fa-circle text-info me-1"></i> Completed: 
-                            ${campaigns.filter(c => c.status === 'completed').length}
+                            ${displayCampaigns.filter(c => c.status === 'completed').length}
                         </span>
                     </div>
                     <div class="btn-group">
@@ -1966,7 +2004,7 @@ class AdminDashboard {
                             <div class="card-body text-center">
                                 <h5 class="text-muted">Total Target</h5>
                                 <h3 class="text-primary">
-                                    ${formatCurrency(campaigns.reduce((sum, c) => sum + (parseFloat(c.target_amount) || 0), 0))}
+                                    ${formatCurrency(displayCampaigns.reduce((sum, c) => sum + (parseFloat(c.target_amount) || 0), 0))}
                                 </h3>
                             </div>
                         </div>
@@ -1976,7 +2014,7 @@ class AdminDashboard {
                             <div class="card-body text-center">
                                 <h5 class="text-muted">Total Raised</h5>
                                 <h3 class="text-success">
-                                    ${formatCurrency(campaigns.reduce((sum, c) => sum + (parseFloat(c.current_amount) || 0), 0))}
+                                    ${formatCurrency(displayCampaigns.reduce((sum, c) => sum + (parseFloat(c.current_amount) || 0), 0))}
                                 </h3>
                             </div>
                         </div>
@@ -1986,7 +2024,7 @@ class AdminDashboard {
                             <div class="card-body text-center">
                                 <h5 class="text-muted">Total Donors</h5>
                                 <h3 class="text-info">
-                                    ${campaigns.reduce((sum, c) => sum + (parseInt(c.donors_count) || 0), 0)}
+                                    ${displayCampaigns.reduce((sum, c) => sum + (parseInt(c.donors_count) || 0), 0)}
                                 </h3>
                             </div>
                         </div>
@@ -1996,11 +2034,11 @@ class AdminDashboard {
                             <div class="card-body text-center">
                                 <h5 class="text-muted">Avg. Progress</h5>
                                 <h3 class="text-warning">
-                                    ${(campaigns.reduce((sum, c) => {
+                                    ${(displayCampaigns.reduce((sum, c) => {
                                         const progress = c.progress_percentage || 
                                                         (parseFloat(c.current_amount || 0) / parseFloat(c.target_amount || 1) * 100);
                                         return sum + progress;
-                                    }, 0) / campaigns.length).toFixed(1)}%
+                                    }, 0) / displayCampaigns.length).toFixed(1)}%
                                 </h3>
                             </div>
                         </div>
@@ -2056,7 +2094,7 @@ class AdminDashboard {
         this.currentCampaigns = searchedCampaigns;
         
         // Re-render
-        this.renderCampaignsTable();
+        this.renderCampaignsTable(); // NO parameter!
         
         // Show notification
         if (term) {
@@ -2073,23 +2111,40 @@ class AdminDashboard {
                 return campaigns.filter(c => c.status === 'completed');
             case 'cancelled':
                 return campaigns.filter(c => 
-                    c.status.toLowerCase() === 'cancelled' || 
-                    c.status.toLowerCase() === 'canceled'
-                );
+                c.status.toLowerCase() === 'cancelled' || 
+                c.status.toLowerCase() === 'canceled'
+            );
             default:
                 return campaigns;
         }
     }
 
-        clearSearch() {
+    clearSearch() {
         this.currentSearchTerm = '';
         
         // Re-apply current filter
         this.filterCampaigns(this.currentFilter);
     }
 
+    // SINGLE filterCampaigns method (remove the duplicate!)
     filterCampaigns(status) {
-        if (!this.allCampaigns || this.allCampaigns.length === 0) return;
+        console.log('filterCampaigns called with:', status);
+        
+        // Initialize if not already
+        if (!this.allCampaigns) {
+            this.allCampaigns = [];
+        }
+        
+        // If no campaigns loaded yet, load them first
+        if (this.allCampaigns.length === 0) {
+            console.log('No campaigns loaded yet, loading...');
+            this.showNotification('Loading campaigns first...', 'info');
+            this.loadAllCampaignsTable().then(() => {
+                // After loading, apply the filter
+                this.filterCampaigns(status);
+            });
+            return;
+        }
         
         // Update current filter
         this.currentFilter = status;
@@ -2105,14 +2160,16 @@ class AdminDashboard {
                 break;
             case 'cancelled':
                 filteredCampaigns = this.allCampaigns.filter(c => 
-                    c.status.toLowerCase() === 'cancelled' || 
-                    c.status.toLowerCase() === 'canceled'
-                );
+                c.status.toLowerCase() === 'cancelled' || 
+                c.status.toLowerCase() === 'canceled'
+            );
                 break;
             default:
                 filteredCampaigns = this.allCampaigns;
                 break;
         }
+        
+        console.log('Filtered to:', filteredCampaigns.length, 'campaigns');
         
         // Update current campaigns
         this.currentCampaigns = filteredCampaigns;
@@ -2124,7 +2181,10 @@ class AdminDashboard {
             searchInput.value = '';
         }
         
-        // Re-render the table
+        // Update active filter button
+        this.updateActiveFilter(status);
+        
+        // Re-render the table WITHOUT parameter
         this.renderCampaignsTable();
         
         // Show notification
@@ -2133,22 +2193,10 @@ class AdminDashboard {
         }
     }
 
-    // Render filtered campaigns
-    renderFilteredCampaigns(campaigns, filterType) {
-        // Clear search input if filtering (not searching)
-        if (filterType !== 'search') {
-            const searchInput = document.getElementById('campaignSearchInput');
-            if (searchInput) {
-                searchInput.value = '';
-            }
-        }
-        
-        // Update active filter button
-        this.updateActiveFilter(filterType);
-        
-        // Re-render the table
-        this.renderCampaignsTable(campaigns);
-    }
+    // REMOVE this duplicate method completely:
+    // renderFilteredCampaigns(campaigns, filterType) {
+    //     // ... delete this entire method ...
+    // }
 
     // Update active filter button
     updateActiveFilter(activeFilter) {
@@ -2167,7 +2215,9 @@ class AdminDashboard {
 
     // Sort functionality
     sortCampaigns(field, direction = 'asc') {
-        if (!this.allCampaigns) return;
+        if (!this.allCampaigns || this.allCampaigns.length === 0) return;
+        
+        console.log('Sorting by', field, direction);
         
         // Create a copy to avoid modifying the original array
         const sortedCampaigns = [...this.allCampaigns];
@@ -2205,8 +2255,15 @@ class AdminDashboard {
         // Update allCampaigns with sorted array
         this.allCampaigns = sortedCampaigns;
         
-        // Re-render the table
-        this.renderCampaignsTable(sortedCampaigns);
+        // Also update currentCampaigns to maintain same filtered set
+        if (this.currentFilter !== 'all') {
+            this.currentCampaigns = this.filterCampaignsByStatus(sortedCampaigns, this.currentFilter);
+        } else {
+            this.currentCampaigns = sortedCampaigns;
+        }
+        
+        // Re-render the table WITHOUT parameter
+        this.renderCampaignsTable();
         
         // Show sorting notification
         const fieldNames = {

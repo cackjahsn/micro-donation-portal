@@ -1,6 +1,13 @@
 // Enhanced Donation Page Logic
 class DonationPage {
     constructor() {
+
+        // Prevent duplicate instances
+        if (window._donationPageInstance) {
+            return window._donationPageInstance;
+        }
+        window._donationPageInstance = this;
+        
         this.basePath = this.getBasePath();
         this.isProcessing = false;
         
@@ -13,21 +20,24 @@ class DonationPage {
             this.paymentProcessor = this.createFallbackPaymentProcessor();
         }
         
+        // In constructor, update donationData defaults:
         this.donationData = {
             campaignId: 1,
             amount: 5,
             fees: 0,
             total: 0,
-            paymentMethod: 'qr',
+            paymentMethod: 'qr', // Default to QR only
             donorName: '',
             donorEmail: '',
             anonymous: false,
             coverFees: false,
             selectedTier: 'helper',
             donationId: null,
-            transactionId: null
+            transactionId: null,
+            // REMOVED: selectedBank
+            termsAgreed: false
         };
-        this.steps = {
+                this.steps = {
             current: 1,
             total: 4
         
@@ -76,125 +86,294 @@ class DonationPage {
     }
     
     async init() {
-        // Get URL parameters
+        console.log('Auth token:', localStorage.getItem('auth_token'));
+        console.log('User data:', localStorage.getItem('user'));
+        console.log('All localStorage:', { ...localStorage });
+        // Prevent duplicate initialization
+        if (this.initialized) {
+            console.log('DonationPage already initialized, skipping...');
+            return;
+        }
+        
+        this.initialized = true;
+        
+        // Get URL parameters correctly
         const urlParams = new URLSearchParams(window.location.search);
-        const campaignId = urlParams.get('campaign') || 1;
+        const campaignId = urlParams.get('id') || urlParams.get('campaign') || 1;
+        
+        console.log('URL parameters:', {
+            id: urlParams.get('id'),
+            campaign: urlParams.get('campaign'),
+            allParams: Object.fromEntries(urlParams.entries())
+        });
+        
+        // Convert to number
         this.donationData.campaignId = parseInt(campaignId);
         
-        // Load campaign info
-        await this.loadCampaignInfo(campaignId);
+        // Load campaign info FIRST (with proper error handling)
+        try {
+            await this.loadCampaignInfo(this.donationData.campaignId);
+            
+            // Debug: Log what campaign was loaded
+            console.log('Campaign loaded:', {
+                id: this.donationData.campaignId,
+                info: this.campaignInfo,
+                title: this.campaignInfo?.title || 'No title'
+            });
+        } catch (error) {
+            console.error('Failed to load campaign info:', error);
+            this.showCampaignError(this.donationData.campaignId);
+            return; // Stop initialization if campaign can't be loaded
+        }
+        
         this.setupEventListeners();
         this.showStep(1);
         this.updateAmount(5);
-        await this.generateQRCode();
+        
+        // Wait a bit before generating QR code
+        setTimeout(() => {
+            this.generateQRCode();
+        }, 500);
+        
         this.initLiveDonationsFeed();
     }
     
     async loadCampaignInfo(id) {
         try {
-            // Try to fetch from API first
-            const response = await fetch(utils.getApiUrl('campaigns/get-single.php?id=${id}'));
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    this.displayCampaignInfo(result.data || result);
+            console.log('Loading campaign info for ID:', id);
+            
+            // First, check if we have utils available
+            if (typeof utils !== 'undefined' && utils.fetchAPI) {
+                // Use utils.fetchAPI with proper endpoint
+                const data = await utils.fetchAPI(`campaigns/get-single.php?id=${id}`);
+                
+                console.log('API response for campaign:', data);
+                
+                if (data.success && data.campaign) {
+                    // Your API returns data.campaign with formatted properties
+                    const campaign = data.campaign;
+                    console.log('Real campaign loaded:', campaign.title);
+                    
+                    // Display the campaign info
+                    this.displayCampaignInfo(campaign);
+                    
+                    // Store the real campaign data
+                    this.campaignInfo = campaign;
+                    
+                    // Update donation data with real campaign ID
+                    this.donationData.campaignId = campaign.id;
+                    return;
+                } else {
+                    console.warn('API returned but no campaign data:', data);
+                    throw new Error(data.message || 'No campaign data received');
+                }
+            } else {
+                // Fallback to direct fetch if utils not available
+                const response = await fetch(`backend/api/campaigns/get-single.php?id=${id}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.campaign) {
+                        const campaign = result.campaign;
+                        console.log('Real campaign loaded via direct fetch:', campaign.title);
+                        this.displayCampaignInfo(campaign);
+                        this.campaignInfo = campaign;
+                        this.donationData.campaignId = campaign.id;
+                        return;
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('API fetch failed:', error.message);
+            
+            // Try one more time with absolute URL
+            try {
+                const response = await fetch(`/micro-donation-portal/backend/api/campaigns/get-single.php?id=${id}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.campaign) {
+                        const campaign = result.campaign;
+                        console.log('Real campaign loaded via absolute URL:', campaign.title);
+                        this.displayCampaignInfo(campaign);
+                        this.campaignInfo = campaign;
+                        this.donationData.campaignId = campaign.id;
+                        return;
+                    }
+                }
+            } catch (secondError) {
+                console.warn('Second fetch attempt failed:', secondError.message);
+            }
+        }
+        
+        // LAST RESORT: Check localStorage for campaigns
+        try {
+            const savedCampaigns = localStorage.getItem('micro_donation_campaigns');
+            if (savedCampaigns) {
+                const campaigns = JSON.parse(savedCampaigns);
+                const campaign = campaigns.find(c => c.id === parseInt(id));
+                if (campaign) {
+                    console.log('Campaign loaded from localStorage:', campaign.title);
+                    this.displayCampaignInfo(campaign);
+                    this.campaignInfo = campaign;
+                    this.donationData.campaignId = campaign.id;
                     return;
                 }
             }
         } catch (error) {
-            console.log('Using fallback campaign data:', error.message);
+            console.warn('LocalStorage check failed:', error);
         }
         
-        // Fallback to static data
-        const campaigns = {
-            1: {
-                id: 1,
-                title: "Emergency Relief Fund",
-                description: "Support families affected by recent floods",
-                target_amount: 50000,
-                current_amount: 32500,
-                image_url: this.basePath + "assets/images/campaign1.jpg",
-                days_left: 7,
-                donor_count: 127
-            },
-            2: {
-                id: 2,
-                title: "Student Scholarship Program",
-                description: "Help underprivileged students continue their education",
-                target_amount: 30000,
-                current_amount: 18500,
-                image_url: this.basePath + "assets/images/campaign2.jpg",
-                days_left: 14,
-                donor_count: 89
-            },
-            3: {
-                id: 3,
-                title: "Community Health Center",
-                description: "Renovate and equip local health center",
-                target_amount: 75000,
-                current_amount: 42000,
-                image_url: this.basePath + "assets/images/campaign3.jpg",
-                days_left: 21,
-                donor_count: 156
-            },
-            4: {
-                id: 4,
-                title: "Animal Shelter Support",
-                description: "Help build a new shelter and provide care for stray animals",
-                target_amount: 20000,
-                current_amount: 12500,
-                image_url: this.basePath + "assets/images/campaign4.jpg",
-                days_left: 5,
-                donor_count: 203
-            }
-        };
-        
-        this.displayCampaignInfo(campaigns[id] || campaigns[1]);
+        // ULTIMATE FALLBACK: Show error message
+        console.error('Could not load campaign. ID:', id);
+        this.showCampaignError(id);
     }
     
-    displayCampaignInfo(campaign) {
+    // Add processing overlay during donation
+    addProcessingOverlay() {
+        console.log('Adding processing overlay...');
+        
+        // Remove existing overlay if any
+        this.removeProcessingOverlay();
+        
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'donationProcessingOverlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(3px);
+        `;
+        
+        overlay.innerHTML = `
+            <div class="text-center" style="max-width: 400px;">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Processing donation...</span>
+                </div>
+                <h5 class="mb-2">Processing Your Donation</h5>
+                <p class="text-muted mb-3">Please wait while we process your payment...</p>
+                <div class="progress" style="height: 6px; width: 200px; margin: 0 auto;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                        role="progressbar" 
+                        style="width: 100%">
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+        
+        console.log('Processing overlay added');
+    }
+
+    // Remove processing overlay
+    removeProcessingOverlay() {
+        console.log('Removing processing overlay...');
+        
+        const overlay = document.getElementById('donationProcessingOverlay');
+        if (overlay) {
+            // Add fade-out animation
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s ease';
+            
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+                document.body.style.overflow = ''; // Restore scrolling
+            }, 300);
+        }
+        
+        console.log('Processing overlay removed');
+    }
+
+    // Add this method to your DonationPage class
+    showCampaignError(id) {
         const card = document.getElementById('campaignInfoCard');
         if (!card) return;
         
-        const progressPercent = ((campaign.current_amount / campaign.target_amount) * 100).toFixed(1);
+        card.innerHTML = `
+            <div class="card-body text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h4>Campaign Not Found</h4>
+                <p class="text-muted mb-3">Campaign ID: ${id}</p>
+                <p class="text-muted mb-4">The campaign you're trying to donate to could not be loaded. It may have been removed or is currently unavailable.</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="pages/campaigns.html" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Browse Campaigns
+                    </a>
+                    <button onclick="window.location.reload()" class="btn btn-outline-primary">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                    <a href="index.html" class="btn btn-outline-secondary">
+                        <i class="fas fa-home me-2"></i>Go to Homepage
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+    displayCampaignInfo(campaign) {
+        const card = document.getElementById('campaignInfoCard');
+        if (!card) {
+            console.error('Campaign card container not found');
+            return;
+        }
+        
+        // Use properties from your API response
+        const progressPercent = campaign.progress || 
+            ((campaign.raised / campaign.target) * 100).toFixed(1);
+        
+        const raisedAmount = campaign.raised || campaign.current_amount || 0;
+        const targetAmount = campaign.target || campaign.target_amount || 0;
+        const donorsCount = campaign.donors || campaign.donors_count || 0;
+        const daysLeft = campaign.daysLeft || campaign.days_left || 30;
+        const imageUrl = campaign.image || campaign.image_url || 
+            'assets/images/default-campaign.jpg';
         
         card.innerHTML = `
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-3">
-                        <img src="${campaign.image_url}" 
-                             class="img-fluid rounded" 
-                             alt="${campaign.title}"
-                             onerror="this.onerror=null; this.src='${this.basePath}assets/images/default-campaign.jpg'">
+                        <img src="${imageUrl}" 
+                            class="img-fluid rounded" 
+                            alt="${campaign.title}"
+                            onerror="this.onerror=null; this.src='${this.basePath}assets/images/default-campaign.jpg'">
                     </div>
                     <div class="col-md-9">
                         <h3 class="card-title mb-2">${campaign.title}</h3>
-                        <p class="text-muted mb-3">${campaign.description}</p>
+                        <p class="text-muted mb-3">${campaign.description || 'No description available'}</p>
                         
                         <!-- Donation Impact Visualizer -->
                         <div class="donation-impact-visual">
                             <div class="donation-goal-tracker">
                                 <div class="progress" style="height: 20px; border-radius: 10px;">
                                     <div class="progress-bar" role="progressbar" 
-                                         style="width: ${progressPercent}%; background: linear-gradient(90deg, #4e73df, #6f42c1);"
-                                         aria-valuenow="${progressPercent}" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100">
+                                        style="width: ${progressPercent}%; background: linear-gradient(90deg, #4e73df, #6f42c1);"
+                                        aria-valuenow="${progressPercent}" 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100">
                                         ${progressPercent}%
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between mt-2">
-                                    <small>RM ${campaign.current_amount.toLocaleString()}</small>
-                                    <small>Goal: RM ${campaign.target_amount.toLocaleString()}</small>
+                                    <small>RM ${raisedAmount.toLocaleString()}</small>
+                                    <small>Goal: RM ${targetAmount.toLocaleString()}</small>
                                 </div>
                             </div>
                             <div class="impact-stats d-flex justify-content-around mt-3">
                                 <div class="stat text-center">
-                                    <span class="stat-value d-block fw-bold">${campaign.donor_count || 0}</span>
+                                    <span class="stat-value d-block fw-bold">${donorsCount}</span>
                                     <span class="stat-label text-muted small">Donors</span>
                                 </div>
                                 <div class="stat text-center">
-                                    <span class="stat-value d-block fw-bold">${campaign.days_left || 30}</span>
+                                    <span class="stat-value d-block fw-bold">${daysLeft}</span>
                                     <span class="stat-label text-muted small">Days left</span>
                                 </div>
                                 <div class="stat text-center">
@@ -211,7 +390,7 @@ class DonationPage {
         // Store campaign data for receipt generation
         this.campaignInfo = campaign;
     }
-    
+        
     setupEventListeners() {
         // Amount buttons
         document.querySelectorAll('.amount-btn').forEach(btn => {
@@ -264,44 +443,41 @@ class DonationPage {
             });
         }
         
-        // Payment method selection
-        document.querySelectorAll('.payment-method-card').forEach(card => {
+        // Payment method selection (QR Only)
+        document.querySelectorAll('.payment-method-card:not(.disabled)').forEach(card => {
             card.addEventListener('click', () => {
-                if (card.dataset.method === 'card') return; // Disabled
+                if (card.dataset.method !== 'qr') return; // Only allow QR
                 
                 document.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('active'));
                 card.classList.add('active');
                 
-                this.donationData.paymentMethod = card.dataset.method;
-                const qrCodeArea = document.getElementById('qrCodeArea');
-                const bankSelection = document.getElementById('bankSelection');
+                this.donationData.paymentMethod = 'qr'; // Always set to QR
                 
-                if (card.dataset.method === 'qr') {
-                    if (qrCodeArea) qrCodeArea.style.display = 'block';
-                    if (bankSelection) bankSelection.style.display = 'none';
-                    this.generateQRCode();
-                } else if (card.dataset.method === 'fpx') {
-                    if (qrCodeArea) qrCodeArea.style.display = 'none';
-                    if (bankSelection) bankSelection.style.display = 'block';
-                }
+                const qrCodeArea = document.getElementById('qrCodeArea');
+                if (qrCodeArea) qrCodeArea.style.display = 'block';
+                
+                this.generateQRCode();
             });
         });
         
-        // Payment method radio buttons
+        // Payment method radio buttons (Only QR is available)
         document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
-                this.donationData.paymentMethod = e.target.value;
-                const qrCodeArea = document.getElementById('qrCodeArea');
-                const bankSelection = document.getElementById('bankSelection');
-                
-                if (e.target.value === 'qr') {
-                    if (qrCodeArea) qrCodeArea.style.display = 'block';
-                    if (bankSelection) bankSelection.style.display = 'none';
-                    this.generateQRCode();
-                } else if (e.target.value === 'fpx') {
-                    if (qrCodeArea) qrCodeArea.style.display = 'none';
-                    if (bankSelection) bankSelection.style.display = 'block';
+                // Only QR is supported
+                if (e.target.value !== 'qr') {
+                    e.target.checked = false;
+                    // Re-check the QR option
+                    const qrRadio = document.querySelector('input[name="paymentMethod"][value="qr"]');
+                    if (qrRadio) qrRadio.checked = true;
+                    this.showNotification('Only QR code payments are available', 'info');
+                    return;
                 }
+                
+                this.donationData.paymentMethod = 'qr';
+                const qrCodeArea = document.getElementById('qrCodeArea');
+                if (qrCodeArea) qrCodeArea.style.display = 'block';
+                
+                this.generateQRCode();
             });
         });
         
@@ -312,13 +488,7 @@ class DonationPage {
         document.getElementById('backStep3')?.addEventListener('click', () => this.showStep(2));
         document.getElementById('confirmDonation')?.addEventListener('click', () => this.processDonation());
         
-        // Bank selection
-        const bankSelect = document.getElementById('bankSelect');
-        if (bankSelect) {
-            bankSelect.addEventListener('change', () => {
-                this.donationData.selectedBank = bankSelect.value;
-            });
-        }
+        // REMOVED: Bank selection listener
         
         // Terms agreement
         const termsCheckbox = document.getElementById('termsAgreement');
@@ -336,7 +506,7 @@ class DonationPage {
             });
         }
         
-        // NEW: Handle receipt download button
+        // Handle receipt download button
         document.getElementById('downloadReceipt')?.addEventListener('click', (e) => {
             e.preventDefault();
             if (this.donationData.donationId) {
@@ -344,19 +514,19 @@ class DonationPage {
             }
         });
     }
-    
+
     resetTierSelection() {
         document.querySelectorAll('.tier-card').forEach(card => {
             card.classList.remove('active');
         });
         this.donationData.selectedTier = '';
     }
-    
+
     updateAmount(amount) {
         this.donationData.amount = amount || 0;
         this.updateSummary();
     }
-    
+
     updateSummary() {
         // Calculate fees (1.9% + RM0.20)
         const percentageFee = this.donationData.amount * 0.019;
@@ -376,10 +546,10 @@ class DonationPage {
         if (summaryTotal) summaryTotal.textContent = `RM ${this.donationData.total.toFixed(2)}`;
         if (summaryTier && this.donationData.selectedTier) {
             summaryTier.textContent = this.donationData.selectedTier.charAt(0).toUpperCase() + 
-                                     this.donationData.selectedTier.slice(1) + ' Tier';
+                                    this.donationData.selectedTier.slice(1) + ' Tier';
         }
     }
-    
+
     showStep(stepNumber) {
         // Hide all steps
         for (let i = 1; i <= this.steps.total; i++) {
@@ -409,7 +579,7 @@ class DonationPage {
         // Scroll to top of step
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
+
     validateStep(currentStep) {
         switch(currentStep) {
             case 1:
@@ -420,10 +590,8 @@ class DonationPage {
                 break;
                 
             case 2:
-                if (this.donationData.paymentMethod === 'fpx' && !this.donationData.selectedBank) {
-                    this.showNotification('Please select your bank', 'warning');
-                    return false;
-                }
+                // REMOVED: FPX bank validation
+                // Only QR is available, always valid
                 break;
                 
             case 3:
@@ -450,20 +618,21 @@ class DonationPage {
         }
         return true;
     }
-    
+
     nextStep(currentStep) {
         if (!this.validateStep(currentStep)) {
             return;
         }
         
-        // Special handling for QR code generation
-        if (currentStep === 2 && this.donationData.paymentMethod === 'qr') {
+        // Always generate QR code for step 2
+        if (currentStep === 2) {
+            this.donationData.paymentMethod = 'qr'; // Force QR method
             this.generateQRCode();
         }
         
         this.showStep(currentStep + 1);
     }
-    
+
     async generateQRCode() {
         const qrCodeImage = document.getElementById('qrCodeImage');
         if (!qrCodeImage) return;
@@ -473,7 +642,8 @@ class DonationPage {
             amount: this.donationData.total,
             campaignId: this.donationData.campaignId,
             timestamp: new Date().toISOString(),
-            reference: 'DON-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase()
+            reference: 'DON-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            paymentMethod: 'qr' // Always QR
         };
         
         // In production, this would call a payment gateway API
@@ -484,6 +654,12 @@ class DonationPage {
             qrCodeImage.alt = `QR Code for donation of RM${this.donationData.total}`;
             
             this.donationData.transactionReference = qrData.reference;
+            
+            // Show QR code area if hidden
+            const qrCodeArea = document.getElementById('qrCodeArea');
+            if (qrCodeArea) {
+                qrCodeArea.style.display = 'block';
+            }
         } catch (error) {
             console.error('Error generating QR code:', error);
             // Fallback to static image
@@ -535,175 +711,346 @@ class DonationPage {
         }
     }
     
-        async processDonation() {
-            // Prevent multiple clicks
-            if (this.isProcessingDonation) {
-                console.log('Donation already processing, please wait...');
-                return;
-            }
-            
-            if (!this.validateStep(3)) return;
-            
-            const confirmBtn = document.getElementById('confirmDonation');
-            const originalText = confirmBtn.innerHTML;
-            
-            try {
-                // Set processing flag
-                this.isProcessingDonation = true;
-                
-                // Update donation data
-                this.donationData.donorName = document.getElementById('donorName')?.value || '';
-                this.donationData.donorEmail = document.getElementById('donorEmail')?.value;
-                this.donationData.anonymous = document.getElementById('anonymousDonation')?.checked || false;
-                this.donationData.termsAgreed = document.getElementById('termsAgreement')?.checked || false;
-                
-                // Show loading with better visual feedback
-                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-                confirmBtn.disabled = true;
-                confirmBtn.classList.add('processing');
-                
-                // Add overlay to prevent any clicks
-                this.addProcessingOverlay();
-                
-                // NEW: Process payment with simulated system
-                console.log('Processing donation:', this.donationData);
-                
-                // Use the PaymentProcessor's simulated method
-                const paymentResult = await this.paymentProcessor.processDonation(
-                    {
-                        amount: this.donationData.amount,
-                        campaignId: this.donationData.campaignId,
-                        donorEmail: this.donationData.donorEmail,
-                        donorName: this.donationData.anonymous ? 'Anonymous' : this.donationData.donorName,
-                        paymentMethod: this.donationData.paymentMethod,
-                        coverFees: this.donationData.coverFees,
-                        userId: auth?.getCurrentUser()?.id || 0 // Add user ID if available
-                    }, 
-                    true // Use simulation mode
-                );
-                
-                if (!paymentResult.success) {
-                    throw new Error(paymentResult.error || paymentResult.message || 'Payment failed');
-                }
-                
-                // Store donation and transaction IDs for receipt generation
-                this.donationData.donationId = paymentResult.donationId;
-                this.donationData.transactionId = paymentResult.transactionId;
-                
-                // Show success step
-                this.showStep(4);
-                
-                // Update success details
-                const now = new Date();
-                document.getElementById('transactionId').textContent = this.donationData.transactionId || 
-                    paymentResult.transactionId || 
-                    'DON-' + Date.now();
-                document.getElementById('finalAmount').textContent = `RM ${this.donationData.total.toFixed(2)}`;
-                document.getElementById('transactionDate').textContent = now.toLocaleDateString('en-GB', {
-                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
-                document.getElementById('receiptEmail').textContent = this.donationData.donorEmail;
-                
-                // Update receipt download button
-                const downloadReceiptBtn = document.getElementById('downloadReceipt');
-                if (downloadReceiptBtn) {
-                    downloadReceiptBtn.onclick = (e) => {
-                        e.preventDefault();
-                        if (this.donationData.donationId) {
-                            this.generateReceipt(this.donationData.donationId);
-                        }
-                    };
-                }
-                
-                // Send to analytics or backend
-                this.trackDonationSuccess();
-                
-                // Add to live donations feed
-                this.addToLiveFeed();
-                
-                // Reset processing flag after a delay to prevent immediate re-submission
-                setTimeout(() => {
-                    this.isProcessingDonation = false;
-                }, 3000); // 3 second cooldown
-                
-            } catch (error) {
-                console.error('Donation error:', error);
-                this.showNotification(error.message || 'Payment failed. Please try again.', 'error');
-                
-                // Reset processing flag on error
-                this.isProcessingDonation = false;
-            } finally {
-                confirmBtn.innerHTML = originalText;
-                confirmBtn.disabled = false;
-                confirmBtn.classList.remove('processing');
-                
-                // Remove overlay
-                this.removeProcessingOverlay();
-            }
-        }
-
-        // Add these helper methods to your class
-        addProcessingOverlay() {
-            const overlay = document.createElement('div');
-            overlay.id = 'donationProcessingOverlay';
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(255, 255, 255, 0.7);
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            `;
-            overlay.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                        <span class="visually-hidden">Processing donation...</span>
-                    </div>
-                    <div class="mt-3 fw-bold">Processing your donation...</div>
-                    <div class="mt-1 text-muted small">Please don't close this window</div>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-        }
-
-        removeProcessingOverlay() {
-            const overlay = document.getElementById('donationProcessingOverlay');
-            if (overlay) {
-                overlay.remove();
-            }
-        }
+async processDonation() {
+    // Prevent multiple clicks
+    if (this.isProcessingDonation) {
+        console.log('Donation already processing, please wait...');
+        return;
+    }
     
-    // NEW: Generate receipt using simulated system
-    async generateReceipt(donationId) {
-        if (!donationId) {
-            this.showNotification('No donation ID found. Please contact support.', 'warning');
-            return;
+    if (!this.validateStep(3)) return;
+    
+    // Check if we have real campaign data
+    if (!this.campaignInfo || !this.campaignInfo.id) {
+        this.showNotification('Campaign information is missing. Please refresh the page.', 'error');
+        return;
+    }
+    
+    const confirmBtn = document.getElementById('confirmDonation');
+    const originalText = confirmBtn.innerHTML;
+    
+    try {
+        // Set processing flag
+        this.isProcessingDonation = true;
+        
+        // Update donation data with REAL campaign ID
+        this.donationData.donorName = document.getElementById('donorName')?.value || '';
+        this.donationData.donorEmail = document.getElementById('donorEmail')?.value;
+        this.donationData.anonymous = document.getElementById('anonymousDonation')?.checked || false;
+        this.donationData.termsAgreed = document.getElementById('termsAgreement')?.checked || false;
+        
+        // Use REAL campaign ID and force QR method
+        this.donationData.campaignId = this.campaignInfo.id;
+        this.donationData.campaignTitle = this.campaignInfo.title;
+        this.donationData.paymentMethod = 'qr'; // Always QR
+        
+        console.log('Processing donation for:', {
+            campaignId: this.donationData.campaignId,
+            amount: this.donationData.amount,
+            paymentMethod: this.donationData.paymentMethod,
+            donorName: this.donationData.anonymous ? 'Anonymous' : this.donationData.donorName
+        });
+        
+        // Show loading
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('processing');
+        
+        // Add overlay
+        this.addProcessingOverlay();
+        
+        // Get current user ID
+        let userId = null;
+        if (auth?.getCurrentUser) {
+            const user = auth.getCurrentUser();
+            userId = user?.id;
         }
         
-        try {
-            // Use PaymentProcessor to generate receipt
-            const receiptResult = await this.paymentProcessor.generateSimulatedReceipt(donationId);
-            
-            if (!receiptResult.success) {
-                throw new Error(receiptResult.message || 'Failed to generate receipt');
+        if (!userId) {
+            // Try localStorage as fallback
+            try {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    userId = user?.id;
+                }
+            } catch (e) {
+                console.error('Error getting user from localStorage:', e);
             }
+        }
+        
+        console.log('Current user ID:', userId);
+        
+            // Process donation (DATABASE MODE - NO SIMULATION)
+            const paymentResult = await this.paymentProcessor.processDonation(
+                {
+                    amount: this.donationData.amount,
+                    campaignId: this.donationData.campaignId,
+                    donorEmail: this.donationData.donorEmail,
+                    donorName: this.donationData.anonymous ? 'Anonymous' : this.donationData.donorName,
+                    paymentMethod: 'qr', // Always QR
+                    coverFees: this.donationData.coverFees,
+                    anonymous: this.donationData.anonymous,
+                    userId: userId || 0
+                }
+                // REMOVED: No simulation mode parameter - always use database
+            );
             
-            // Receipt will open in new window automatically
-            this.showNotification('Receipt generated successfully', 'success');
+            if (!paymentResult.success) {
+                throw new Error(paymentResult.error || paymentResult.message || 'Payment failed');
+            }
+
+            console.log('Payment result:', paymentResult);
+            
+            // Store donation and transaction IDs (REAL DATABASE IDs)
+            this.donationData.donationId = paymentResult.donationId;
+            this.donationData.transactionId = paymentResult.transactionId;
+            
+            // Show QR code if returned (for display purposes)
+            if (paymentResult.qrCodeUrl) {
+                const qrImg = document.getElementById('qrCodeImage');
+                if (qrImg) {
+                    qrImg.src = paymentResult.qrCodeUrl;
+                    qrImg.alt = `QR Code for donation of RM${this.donationData.amount}`;
+                }
+            }
+
+            // Show success step
+            this.showStep(4);
+
+            // SAFELY update success details - check if elements exist first
+            const now = new Date();
+
+            // Check and update transaction ID
+            const transactionIdElement = document.getElementById('transactionId');
+            if (transactionIdElement) {
+                transactionIdElement.textContent = this.donationData.transactionId || 
+                    paymentResult.transactionId || 
+                    'DON-' + Date.now();
+            }
+
+            // Check and update final amount
+            const finalAmountElement = document.getElementById('finalAmount');
+            if (finalAmountElement) {
+                finalAmountElement.textContent = `RM ${this.donationData.total.toFixed(2)}`;
+            }
+
+            // Check and update transaction date
+            const transactionDateElement = document.getElementById('transactionDate');
+            if (transactionDateElement) {
+                transactionDateElement.textContent = now.toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+            }
+
+            // Check and update receipt email
+            const receiptEmailElement = document.getElementById('receiptEmail');
+            if (receiptEmailElement) {
+                receiptEmailElement.textContent = this.donationData.donorEmail;
+            }
+
+            // Check and update campaign title in success step
+            const campaignTitleElement = document.getElementById('campaignTitleSuccess');
+            if (campaignTitleElement) {
+                campaignTitleElement.textContent = this.donationData.campaignTitle || this.campaignInfo?.title || 'Campaign';
+            }
+
+            // Check and update donation ID display
+            const donationIdElement = document.getElementById('donationIdSuccess');
+            if (donationIdElement && this.donationData.donationId) {
+                donationIdElement.textContent = `#${this.donationData.donationId}`;
+            }
+
+            // Update download receipt button
+            const downloadReceiptBtn = document.getElementById('downloadReceipt');
+            if (downloadReceiptBtn) {
+                // Store reference to current donation data
+                const currentDonationId = this.donationData.donationId;
+                
+                downloadReceiptBtn.onclick = async (e) => {
+                    e.preventDefault(); // PREVENT DEFAULT ACTION
+                    e.stopPropagation(); // STOP EVENT BUBBLING
+                    
+                    console.log('Downloading receipt for donation:', currentDonationId);
+                    
+                    if (currentDonationId) {
+                        try {
+                            // Show loading state
+                            const originalHtml = downloadReceiptBtn.innerHTML;
+                            downloadReceiptBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
+                            downloadReceiptBtn.disabled = true;
+                            
+                            // Generate receipt (opens in new tab only)
+                            await this.generateReceipt(currentDonationId);
+                            
+                        } catch (error) {
+                            console.error('Receipt error:', error);
+                            this.showNotification('Failed to open receipt: ' + error.message, 'error');
+                        } finally {
+                            // Reset button state after delay
+                            setTimeout(() => {
+                                downloadReceiptBtn.disabled = false;
+                                downloadReceiptBtn.innerHTML = '<i class="fas fa-download"></i> Download Receipt';
+                            }, 1000);
+                        }
+                    } else {
+                        this.showNotification('No donation ID found', 'error');
+                    }
+                };
+            }
+
+            // Update campaign stats in database (if you have this feature)
+            await this.updateCampaignStats();
+
+            // Add to live donations feed
+            this.addToLiveFeed();
+
+            // Track donation success
+            this.trackDonationSuccess();
+            
+            // Verify payment (optional - marks as verified in database)
+            if (paymentResult.donationId) {
+                setTimeout(async () => {
+                    try {
+                        const verifyResult = await this.paymentProcessor.verifyPayment(paymentResult.donationId);
+                        console.log('Payment verification:', verifyResult);
+                    } catch (verifyError) {
+                        console.warn('Payment verification failed (non-critical):', verifyError);
+                    }
+                }, 1000);
+            }
+
+            // Reset processing flag
+            this.isProcessingDonation = false;
+            
+            // Show success message
+            this.showNotification('Donation completed successfully! Receipt is now available.', 'success');
             
         } catch (error) {
-            console.error('Receipt generation error:', error);
-            this.showNotification('Could not generate receipt. Please try again later.', 'error');
+            console.error('Donation error:', error);
+            this.showNotification(error.message || 'Payment failed. Please try again.', 'error');
             
-            // Fallback: Open generic receipt page
-            window.open(`${this.basePath}backend/api/payment/download-receipt.php?donation_id=${donationId}`, '_blank');
+            // Reset processing flag on error
+            this.isProcessingDonation = false;
+            
+            // Reset button state
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('processing');
+            
+        } finally {
+            // Remove overlay
+            this.removeProcessingOverlay();
+        }
+    }
+
+    // Add this helper method
+    async updateCampaignStats() {
+        try {
+            console.log('Updating campaign stats for campaign:', {
+                campaignId: this.donationData.campaignId,
+                amount: this.donationData.amount,
+                currentDonors: this.campaignInfo?.donors || 0,
+                currentRaised: this.campaignInfo?.raised || 0
+            });
+            
+            // In a real implementation, call your API here
+            // await utils.fetchAPI('campaigns/update-stats.php', {...});
+            
+        } catch (error) {
+            console.warn('Failed to update campaign stats (simulation mode):', error);
         }
     }
     
+    async generateReceipt(donationId) {
+        try {
+            console.log(`Generating receipt for donation: ${donationId}`);
+            
+            // Get user ID
+            let userId = null;
+            try {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    userId = user.id;
+                }
+            } catch (e) {
+                console.error('Error parsing user:', e);
+            }
+            
+            // Build receipt URL
+            const params = new URLSearchParams({
+                donation_id: donationId,
+                autoprint: 'true'
+            });
+            
+            if (userId) {
+                params.append('user_id', userId);
+            }
+            
+            let receiptUrl;
+            if (typeof utils !== 'undefined' && utils.getApiUrl) {
+                receiptUrl = utils.getApiUrl(`payment/download-receipt.php?${params.toString()}`);
+            } else {
+                receiptUrl = `backend/api/payment/download-receipt.php?${params.toString()}`;
+            }
+            
+            console.log('Opening receipt in new tab:', receiptUrl);
+            
+            // SIMPLIFIED: Just open in new tab, no fallback navigation
+            const newWindow = window.open(receiptUrl, '_blank');
+            
+            if (!newWindow) {
+                // Only show notification, DON'T navigate current window
+                this.showNotification('Popup blocked! Please allow popups or right-click and "Open in new tab".', 'warning');
+                
+                // Optionally show the URL for manual copy
+                console.log('Popup blocked. URL for manual copy:', receiptUrl);
+            }
+            
+            return { success: true, url: receiptUrl };
+            
+        } catch (error) {
+            console.error('Receipt generation error:', error);
+            
+            // Show error but DON'T navigate
+            this.showNotification('Error: ' + error.message, 'error');
+            return { success: false, error: error.message };
+        }
+    }
+
+        debugUserInfo() {
+        console.log('=== USER DATA DEBUG ===');
+        
+        // Check localStorage
+        console.log('LocalStorage contents:');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            console.log(`  ${key}:`, localStorage.getItem(key));
+        }
+        
+        // Check auth system
+        if (window.auth) {
+            console.log('Auth system:', window.auth);
+            if (window.auth.getCurrentUser) {
+                console.log('Current user from auth:', window.auth.getCurrentUser());
+            }
+        }
+        
+        // Check for user ID in common locations
+        const userId = 
+            localStorage.getItem('user_id') ||
+            (JSON.parse(localStorage.getItem('user') || '{}').id) ||
+            (JSON.parse(localStorage.getItem('auth_data') || '{}').user?.id);
+        
+        console.log('Extracted user ID:', userId);
+        console.log('=== END DEBUG ===');
+        
+        return userId;
+    }
+
+    // Call this from console: donationPage.debugUserInfo()
+            
     // NEW: Add current donation to live feed
     addToLiveFeed() {
         const feed = document.querySelector('.donation-feed');

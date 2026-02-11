@@ -1,4 +1,4 @@
-// Enhanced Payment Processing Functions
+// Enhanced Payment Processing Functions (QR Only)
 class PaymentProcessor {
     constructor() {
         // Initialize config FIRST
@@ -15,26 +15,15 @@ class PaymentProcessor {
         this.config.apiBaseUrl = this.getApiBaseUrl();
         this.config.apiKey = this.getApiKey();
         
-        // Payment methods
+        // Payment methods (QR ONLY)
         this.paymentMethods = {
             qr: {
                 name: 'QR Code Payment',
                 supported: true,
                 fee: 0.019, // 1.9%
                 fixedFee: 0.20
-            },
-            fpx: {
-                name: 'Online Banking (FPX)',
-                supported: true,
-                fee: 0.015, // 1.5%
-                fixedFee: 0.15
-            },
-            card: {
-                name: 'Credit/Debit Card',
-                supported: false, // Coming soon
-                fee: 0.025, // 2.5%
-                fixedFee: 0.30
             }
+            // Removed: fpx and card methods
         };
         
         // NEW: Duplicate prevention
@@ -103,61 +92,100 @@ class PaymentProcessor {
         return hash.toString(36);
     }
     
-    // ==================== SIMULATED PAYMENT METHODS ====================
+    // ==================== DATABASE-BASED PAYMENT METHODS ====================
     
-    // Simulated payment method - generates fake QR and records in database
-    async processSimulatedPayment(donationData) {
+    // Process donation and save to database
+    async processDonation(donationData, useSimulation = true) {
+        // Enhanced validation and duplicate prevention
+        const { amount } = donationData;
+        
+        // Basic validation
+        if (!amount || amount < 1) {
+            return { success: false, error: 'Minimum donation is RM1' };
+        }
+        
+        if (amount > 10000) {
+            return { success: false, error: 'Maximum donation is RM10,000' };
+        }
+        
+        if (!donationData.donorEmail) {
+            return { success: false, error: 'Email is required for receipt' };
+        }
+        
+        // Add timestamp to donation data for duplicate checking
+        donationData.timestamp = Date.now();
+        donationData.userId = this.getCurrentUserId() || 0;
+        donationData.paymentMethod = 'qr'; // Force QR method
+        
+        // Check for duplicate before processing
+        if (this.checkForDuplicateDonation(donationData)) {
+            return { 
+                success: false, 
+                error: 'Duplicate donation detected. Please wait a moment before trying again.' 
+            };
+        }
+        
         try {
-            // NEW: Check for duplicate before processing
-            if (this.checkForDuplicateDonation(donationData)) {
-                throw new Error('Duplicate donation detected. Please wait a moment before trying again.');
-            }
-            
-            const { amount, campaignId, donorEmail, donorName, paymentMethod = 'qr' } = donationData;
-            
-            // Step 1: Generate simulated QR code via PHP API
-            const qrResponse = await this.generateSimulatedQRCode({
+            // Step 1: Generate QR code via PHP API
+            console.log('Step 1: Generating QR code...');
+            const qrResponse = await this.generateQRCode({
                 amount: amount,
-                campaign_id: campaignId,
+                campaign_id: donationData.campaignId,
                 user_id: this.getCurrentUserId(),
-                donor_name: donorName || 'Anonymous',
-                donor_email: donorEmail,
-                payment_method: paymentMethod
+                donor_name: donationData.donorName || 'Anonymous',
+                donor_email: donationData.donorEmail,
+                payment_method: 'qr',
+                anonymous: donationData.anonymous || false,
+                cover_fees: donationData.coverFees || false
             });
             
             if (!qrResponse.success) {
                 throw new Error(qrResponse.message || 'Failed to generate QR code');
             }
             
-            // Return data for QR display
+            // Step 2: Save donation to database
+            console.log('Step 2: Saving donation to database...');
+            const saveResponse = await this.saveDonationToDatabase(donationData);
+            
+            if (!saveResponse.success) {
+                throw new Error(saveResponse.message || 'Failed to save donation to database');
+            }
+            
+            // Update last donation time
+            this.lastDonationTime = Date.now();
+            
+            // Return success with REAL database data
             return {
                 success: true,
-                type: 'simulated',
+                type: 'database',
                 qrCodeUrl: qrResponse.qr_code_image,
                 qrCodeData: qrResponse.qr_data,
-                transactionId: qrResponse.transaction_id,
-                donationId: qrResponse.donation_id,
-                reference: qrResponse.transaction_id,
-                fees: this.calculateFees(amount, paymentMethod),
-                message: 'Simulated QR code generated successfully'
+                transactionId: saveResponse.transactionId,
+                donationId: saveResponse.donationId, // REAL ID from database
+                amount: donationData.amount,
+                message: 'Donation processed and saved to database successfully',
+                timestamp: new Date().toISOString()
             };
             
         } catch (error) {
-            console.error('Simulated payment error:', error);
+            console.error('Donation processing error:', error);
             return {
                 success: false,
-                error: error.message || 'Simulated payment failed'
+                error: error.message || 'Donation processing failed'
             };
         }
     }
     
-    // Generate simulated QR code via PHP API
-    async generateSimulatedQRCode(paymentData) {
+    // Generate QR code via PHP API
+    async generateQRCode(paymentData) {
         try {
+            console.log('Generating QR code for payment:', paymentData);
+            
             const response = await fetch(`${this.config.simulatedApiBase}/generate-qr.php`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
                 },
                 body: JSON.stringify(paymentData)
             });
@@ -166,7 +194,9 @@ class PaymentProcessor {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            return await response.json();
+            const result = await response.json();
+            console.log('QR code generated:', result);
+            return result;
             
         } catch (error) {
             console.error('QR generation API error:', error);
@@ -174,13 +204,82 @@ class PaymentProcessor {
         }
     }
     
-    // Verify simulated payment (simulates QR scan)
-    async verifySimulatedPayment(donationId) {
+    // Save donation to database
+    async saveDonationToDatabase(donationData) {
         try {
+            console.log('Saving donation to database:', donationData);
+            
+            // Build URL using utils if available
+            let saveUrl;
+            if (typeof utils !== 'undefined' && utils.getApiUrl) {
+                saveUrl = utils.getApiUrl('payment/save-donations.php');
+            } else {
+                saveUrl = 'backend/api/payment/save-donations.php';
+            }
+            
+            console.log('Using save URL:', saveUrl);
+            
+            // Get auth token
+            const authToken = localStorage.getItem('auth_token') || 
+                             localStorage.getItem('token') ||
+                             localStorage.getItem('micro_donation_token');
+            
+            console.log('Auth token available:', !!authToken);
+            
+            const response = await fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    campaignId: donationData.campaignId,
+                    amount: donationData.amount,
+                    paymentMethod: donationData.paymentMethod || 'qr',
+                    donorName: donationData.donorName || '',
+                    donorEmail: donationData.donorEmail || '',
+                    anonymous: donationData.anonymous || false
+                    // Note: cover_fees column doesn't exist, so skip it
+                })
+            });
+            
+            console.log('Save response status:', response.status);
+            
+            // Parse response
+            const responseText = await response.text();
+            console.log('Save response text:', responseText.substring(0, 200));
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${responseText}`);
+            }
+            
+            const result = JSON.parse(responseText);
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to save donation');
+            }
+            
+            console.log('Donation saved successfully:', result);
+            return result;
+            
+        } catch (error) {
+            console.error('[PaymentProcessor] Database save error:', error);
+            
+            // Re-throw with descriptive message
+            throw new Error(`Failed to save donation to database: ${error.message}`);
+        }
+    }
+    
+    // Verify payment (simulates QR scan and marks as completed)
+    async verifyPayment(donationId) {
+        try {
+            console.log('Verifying payment for donation:', donationId);
+            
             const response = await fetch(`${this.config.simulatedApiBase}/verify.php`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
                 },
                 body: JSON.stringify({ donation_id: donationId })
             });
@@ -189,7 +288,9 @@ class PaymentProcessor {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            return await response.json();
+            const result = await response.json();
+            console.log('Payment verification result:', result);
+            return result;
             
         } catch (error) {
             console.error('Payment verification error:', error);
@@ -200,101 +301,25 @@ class PaymentProcessor {
         }
     }
     
-    // Generate receipt for simulated payment
-    async generateSimulatedReceipt(donationId) {
+    // Generate receipt for a donation
+    async generateReceipt(donationId) {
+        console.log(`[PaymentProcessor] Generating receipt for donation: ${donationId}`);
+        
         try {
-            const response = await fetch(`${this.config.simulatedApiBase}/generate-receipt.php?donation_id=${donationId}`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // Open receipt in new window
-                window.open(`${this.config.simulatedApiBase}/download-receipt.php?donation_id=${donationId}`, '_blank');
-                
-                return {
-                    success: true,
-                    receiptUrl: `${this.config.simulatedApiBase}/download-receipt.php?donation_id=${donationId}`,
-                    receiptData: data.donation
-                };
-            } else {
-                throw new Error(data.message || 'Failed to generate receipt');
-            }
-            
-        } catch (error) {
-            console.error('Receipt generation error:', error);
-            return {
-                success: false,
-                message: error.message
-            };
-        }
-    }
-    
-    // Complete simulated donation flow with duplicate prevention
-    async completeSimulatedDonation(donationData) {
-        try {
-            // NEW: Check time between donations
-            const now = Date.now();
-            if (now - this.lastDonationTime < this.minDonationInterval) {
-                return {
-                    success: false,
-                    error: 'Please wait a moment before making another donation',
-                    message: 'Too many donation attempts'
-                };
-            }
-            
-            this.lastDonationTime = now;
-            
-            // Step 1: Generate QR code
-            const qrResult = await this.processSimulatedPayment(donationData);
-            
-            if (!qrResult.success) {
-                return qrResult;
-            }
-            
-            // Step 2: Simulate scanning delay (3 seconds)
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            
-            // Step 3: Verify payment
-            const verifyResult = await this.verifySimulatedPayment(qrResult.donationId);
-            
-            if (!verifyResult.success) {
-                return verifyResult;
-            }
-            
-            // Step 4: Generate receipt
-            const receiptResult = await this.generateSimulatedReceipt(qrResult.donationId);
-            
-            if (!receiptResult.success) {
-                // Payment was successful but receipt generation failed
-                console.warn('Receipt generation failed:', receiptResult.message);
-            }
-            
-            // Return complete result
+            // The receipt will be generated by download-receipt.php
             return {
                 success: true,
-                type: 'simulated',
-                transactionId: qrResult.transactionId,
-                donationId: qrResult.donationId,
-                amount: donationData.amount,
-                campaignId: donationData.campaignId,
-                receiptUrl: receiptResult.receiptUrl,
-                message: 'Simulated donation completed successfully!'
+                receiptUrl: `backend/api/payment/download-receipt.php?donation_id=${donationId}&print=true`,
+                message: 'Receipt generated successfully'
             };
             
         } catch (error) {
-            console.error('Complete donation error:', error);
-            return {
-                success: false,
-                error: error.message || 'Donation process failed'
-            };
+            console.error('[PaymentProcessor] Receipt generation error:', error);
+            throw new Error('Failed to generate receipt: ' + error.message);
         }
     }
     
-    // ==================== EXISTING METHODS (UPDATED) ====================
+    // ==================== HELPER METHODS ====================
     
     // Calculate fees for a payment method
     calculateFees(amount, method = 'qr') {
@@ -317,139 +342,6 @@ class PaymentProcessor {
         return `DON-${campaignId}-${timestamp}-${random}`;
     }
     
-    // Main donation processing method with enhanced duplicate prevention
-    async processDonation(donationData, useSimulation = true) {
-        // NEW: Enhanced validation and duplicate prevention
-        const { amount, paymentMethod } = donationData;
-        
-        // Basic validation
-        if (!amount || amount < 1) {
-            return { success: false, error: 'Minimum donation is RM1' };
-        }
-        
-        if (amount > 10000) {
-            return { success: false, error: 'Maximum donation is RM10,000' };
-        }
-        
-        if (!donationData.donorEmail) {
-            return { success: false, error: 'Email is required for receipt' };
-        }
-        
-        // NEW: Add timestamp to donation data for duplicate checking
-        donationData.timestamp = Date.now();
-        donationData.userId = this.getCurrentUserId() || 0;
-        
-        // If using simulation mode, use simulated payment
-        if (useSimulation || (this.config && this.config.sandboxMode)) {
-            return await this.completeSimulatedDonation(donationData);
-        }
-        
-        // Otherwise use original payment methods
-        try {
-            switch (paymentMethod) {
-                case 'qr':
-                    return await this.generateQRPayment(donationData);
-                    
-                case 'fpx':
-                    const bankSelect = document.getElementById('bankSelect');
-                    const bankCode = bankSelect?.value;
-                    if (!bankCode) {
-                        return { success: false, error: 'Please select your bank' };
-                    }
-                    return await this.processFPXPayment(donationData, bankCode);
-                    
-                case 'card':
-                    return { 
-                        success: false, 
-                        error: 'Credit card payments are coming soon' 
-                    };
-                    
-                default:
-                    return { 
-                        success: false, 
-                        error: 'Invalid payment method selected' 
-                    };
-            }
-        } catch (error) {
-            console.error('Payment processing error:', error);
-            return {
-                success: false,
-                error: 'Payment processing failed. Please try again.'
-            };
-        }
-    }
-    
-    // Updated QR payment to optionally use simulation
-    async generateQRPayment(donationData, useSimulation = true) {
-        if (useSimulation || (this.config && this.config.sandboxMode)) {
-            return await this.processSimulatedPayment(donationData);
-        }
-        
-        // Original QR payment logic (kept for reference)
-        try {
-            // NEW: Check for duplicate
-            if (this.checkForDuplicateDonation(donationData)) {
-                return {
-                    success: false,
-                    error: 'Duplicate donation detected. Please wait and try again.'
-                };
-            }
-            
-            const { amount, campaignId, donorEmail, donorName } = donationData;
-            
-            // Generate payment reference
-            const reference = this.generatePaymentReference(campaignId);
-            
-            // Calculate fees
-            const fees = this.calculateFees(amount, 'qr');
-            
-            // Create payment data
-            const paymentData = {
-                userSecretKey: this.config.apiKey,
-                categoryCode: this.config.merchantCode,
-                billName: `Donation - Campaign ${campaignId}`,
-                billDescription: `Thank you for your donation to campaign ${campaignId}`,
-                billPriceSetting: 1,
-                billPayorInfo: 1,
-                billAmount: fees.finalAmount * 100, // Convert to cents
-                billReturnUrl: this.config.callbackUrl,
-                billCallbackUrl: this.config.callbackUrl,
-                billExternalReferenceNo: reference,
-                billTo: donorName || 'Anonymous Donor',
-                billEmail: donorEmail,
-                billPhone: '',
-                billSplitPayment: 0,
-                billSplitPaymentArgs: '',
-                billPaymentChannel: '0',
-                billDisplayMerchant: 1,
-                billContentEmail: 'Thank you for your donation!',
-                billChargeToCustomer: fees.totalFee * 100 // Charge fee to customer
-            };
-            
-            // In production, this would make an actual API call to ToyyibPay
-            // For demo purposes, simulate API response
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Mock successful response
-            return {
-                success: true,
-                qrCodeUrl: this.generateMockQRCode(paymentData),
-                reference: reference,
-                billCode: `BILL-${Date.now()}`,
-                fees: fees,
-                paymentUrl: `${this.config.apiBaseUrl}/index.php/api/createBill`,
-                message: 'QR code generated successfully'
-            };
-            
-        } catch (error) {
-            console.error('QR Payment generation error:', error);
-            return {
-                success: false,
-                error: error.message || 'Failed to generate QR payment'
-            };
-        }
-    }
-    
     // Helper method to get current user ID from localStorage
     getCurrentUserId() {
         try {
@@ -467,7 +359,10 @@ class PaymentProcessor {
             }
             
             // Try localStorage directly as last resort
-            const userData = localStorage.getItem('communitygive_user');
+            const userData = localStorage.getItem('communitygive_user') || 
+                           localStorage.getItem('micro_donation_user') ||
+                           localStorage.getItem('user');
+            
             if (userData) {
                 const user = JSON.parse(userData);
                 return user ? user.id : null;
@@ -480,60 +375,19 @@ class PaymentProcessor {
         }
     }
     
-    // Generate mock QR code for demo
+    // Generate mock QR code for demo (only used if PHP API fails)
     generateMockQRCode(paymentData) {
         const qrData = {
             type: 'payment',
-            amount: paymentData.billAmount / 100,
-            reference: paymentData.billExternalReferenceNo,
+            amount: paymentData.amount || 0,
+            reference: paymentData.transaction_id || 'MOCK-' + Date.now(),
             merchant: 'CommunityGive',
             timestamp: new Date().toISOString(),
-            campaignId: paymentData.billExternalReferenceNo.split('-')[1]
+            campaignId: paymentData.campaign_id || 1
         };
         
         const encodedData = encodeURIComponent(JSON.stringify(qrData));
         return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedData}&format=png&bgcolor=ffffff&color=4e73df&qzone=2`;
-    }
-    
-    // Process FPX (online banking) payment with duplicate prevention
-    async processFPXPayment(donationData, bankCode) {
-        try {
-            // NEW: Check for duplicate
-            if (this.checkForDuplicateDonation(donationData)) {
-                return {
-                    success: false,
-                    error: 'Duplicate donation detected. Please wait and try again.'
-                };
-            }
-            
-            const { amount, campaignId, donorEmail } = donationData;
-            
-            // Generate payment reference
-            const reference = this.generatePaymentReference(campaignId);
-            
-            // Calculate fees
-            const fees = this.calculateFees(amount, 'fpx');
-            
-            // In production, this would integrate with FPX
-            // For demo, simulate processing
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            return {
-                success: true,
-                reference: reference,
-                bankCode: bankCode,
-                fees: fees,
-                redirectUrl: `${this.config.callbackUrl}?reference=${reference}&status=pending`,
-                message: 'Redirecting to bank portal...'
-            };
-            
-        } catch (error) {
-            console.error('FPX Payment error:', error);
-            return {
-                success: false,
-                error: 'Bank payment service is currently unavailable'
-            };
-        }
     }
     
     // Get payment method details
@@ -541,7 +395,7 @@ class PaymentProcessor {
         return this.paymentMethods[method] || null;
     }
     
-    // Get all supported payment methods
+    // Get all supported payment methods (only QR now)
     getSupportedPaymentMethods() {
         return Object.entries(this.paymentMethods)
             .filter(([key, value]) => value.supported)
@@ -557,19 +411,19 @@ class PaymentProcessor {
         }).format(amount);
     }
     
-    // NEW: Reset donation cooldown (useful for testing)
+    // Reset donation cooldown (useful for testing)
     resetCooldown() {
         this.lastDonationTime = 0;
         this.lastProcessedDonations.clear();
     }
     
-    // NEW: Check if donation is allowed (for UI feedback)
+    // Check if donation is allowed (for UI feedback)
     canMakeDonation() {
         const now = Date.now();
         return now - this.lastDonationTime >= this.minDonationInterval;
     }
     
-    // NEW: Get time until next allowed donation (for UI feedback)
+    // Get time until next allowed donation (for UI feedback)
     getTimeUntilNextDonation() {
         const now = Date.now();
         const timeDiff = now - this.lastDonationTime;
@@ -578,6 +432,9 @@ class PaymentProcessor {
         }
         return 0;
     }
+    
+    // ==================== SIMULATION FALLBACK (REMOVED) ====================
+    // Removed the simulation fallback methods since we're using database now
 }
 
 // Export for use in other files
@@ -585,7 +442,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = PaymentProcessor;
 }
 
-// NEW: Global payment processor instance with safety wrapper
+// Global payment processor instance with safety wrapper
 if (typeof window !== 'undefined') {
     window.createPaymentProcessor = function() {
         if (!window._paymentProcessorInstance) {

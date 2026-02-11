@@ -32,32 +32,89 @@ try {
     $db->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Get limit parameter if provided (for admin dashboard)
+    // Get parameters with defaults
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 0;
+    $status = isset($_GET['status']) ? $_GET['status'] : null;
+    $exclude_cancelled = isset($_GET['exclude_cancelled']) ? filter_var($_GET['exclude_cancelled'], FILTER_VALIDATE_BOOLEAN) : false;
+    $only_active = isset($_GET['only_active']) ? filter_var($_GET['only_active'], FILTER_VALIDATE_BOOLEAN) : false;
     
-    // Build query - Admin dashboard needs to see all campaigns regardless of status
+    // Build base query
+    $query = "SELECT * FROM campaigns WHERE 1=1";
+    $params = [];
+    
+    // Apply status filter if specified
+    if ($status !== null) {
+        $query .= " AND status = :status";
+        $params[':status'] = $status;
+    }
+    
+    // Exclude cancelled campaigns if requested
+    if ($exclude_cancelled) {
+        $query .= " AND status != 'cancelled'";
+    }
+    
+    // Only show active campaigns if requested (for frontend)
+    if ($only_active) {
+        $query .= " AND status = 'active'";
+    }
+    
+    // Apply sorting
+    $query .= " ORDER BY created_at DESC";
+    
+    // Apply limit if specified
     if ($limit > 0) {
-        // For admin dashboard widget (recent campaigns)
-        $query = "SELECT * FROM campaigns ORDER BY created_at DESC LIMIT :limit";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-    } else {
-        // For admin campaigns management page (all campaigns)
-        $query = "SELECT * FROM campaigns ORDER BY created_at DESC";
-        $stmt = $db->prepare($query);
+        $query .= " LIMIT :limit";
+        $params[':limit'] = $limit;
+    }
+    
+    $stmt = $db->prepare($query);
+    
+    // Bind parameters
+    foreach ($params as $key => $value) {
+        if ($key === ':limit') {
+            $stmt->bindValue($key, $value, PDO::PARAM_INT);
+        } else {
+            $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
     }
     
     $stmt->execute();
     
     $campaigns = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Calculate statistics for active campaigns
+    $statsStmt = $db->prepare("
+        SELECT 
+            COUNT(*) as total_active,
+            SUM(current_amount) as total_funded,
+            SUM(target_amount) as total_target
+        FROM campaigns 
+        WHERE status = 'active'
+    ");
+    $statsStmt->execute();
+    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+    
     // Always return an array, even if empty
     $formatted = [];
     foreach ($campaigns as $campaign) {
-        // Calculate progress percentage if it's 0 but we have amounts
-        $progress_percentage = (float)$campaign['progress_percentage'];
-        if ($progress_percentage == 0 && $campaign['target_amount'] > 0) {
-            $progress_percentage = ($campaign['current_amount'] / $campaign['target_amount']) * 100;
+        // With this ALWAYS recalculation:
+    $progress_percentage = 0;
+    if ($campaign['target_amount'] > 0) {
+        $progress_percentage = ($campaign['current_amount'] / $campaign['target_amount']) * 100;
+    }
+    // Round it
+    $progress_percentage = round($progress_percentage, 1);
+        
+        // Calculate days left if not set
+        $days_left = (int)$campaign['days_left'];
+        if ($campaign['end_date'] && !$days_left) {
+            $end_date = new DateTime($campaign['end_date']);
+            $today = new DateTime();
+            $interval = $today->diff($end_date);
+            $days_left = $interval->days;
+            if ($interval->invert) {
+                $days_left = 0; // Campaign has ended
+            }
         }
         
         $formatted[] = [
@@ -74,7 +131,7 @@ try {
             
             // Donor info
             'donors_count' => (int)$campaign['donors_count'],
-            'days_left' => (int)$campaign['days_left'],
+            'days_left' => $days_left,
             
             // Media & organizer
             'image_url' => $campaign['image_url'] ?: 'assets/images/default-campaign.jpg',
@@ -101,10 +158,21 @@ try {
         'success' => true,
         'campaigns' => $formatted,
         'count' => count($formatted),
+        'stats' => [
+            'total_active' => (int)($stats['total_active'] ?? 0),
+            'total_funded' => (float)($stats['total_funded'] ?? 0),
+            'total_target' => (float)($stats['total_target'] ?? 0)
+        ],
         'message' => count($formatted) . ' campaigns found',
+        'filters' => [
+            'status' => $status,
+            'exclude_cancelled' => $exclude_cancelled,
+            'only_active' => $only_active,
+            'limit' => $limit > 0 ? $limit : 'none'
+        ],
         'debug' => [
             'query_used' => $query,
-            'limit_applied' => $limit > 0 ? $limit : 'none'
+            'params' => $params
         ]
     ];
     
