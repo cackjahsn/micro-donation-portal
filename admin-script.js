@@ -997,10 +997,18 @@ class AdminDashboard {
             this.showNotification('Access denied. Admin privileges required.', 'error');
             return;
         }
+
+        // Add to formData - change deadline to end_date
+        const end_date = formData.get('deadline');  // Get from deadline input
+        formData.delete('deadline');                // Remove old name
+        formData.append('end_date', end_date);      // Add as end_date
         
         // Add additional fields to formData
         formData.append('created_by', user.id);
         formData.append('created_by_name', user.name || 'Admin');
+
+        // Add updated_by (same as created_by for new campaigns)
+        formData.append('updated_by', user.id);
         
         // Add organizer field (default to user name if not specified)
         if (!formData.get('organizer')) {
@@ -1976,7 +1984,8 @@ class AdminDashboard {
             const targetAmount = campaign.target_amount || 0;
             const currentAmount = campaign.current_amount || 0;
             const donorsCount = campaign.donors_count || 0;
-            const daysLeft = campaign.days_left || 0;
+            const daysLeft = campaign.end_date ? 
+                Math.ceil((new Date(campaign.end_date) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
             const status = campaign.status || 'active';
             const createdDate = campaign.created_at;
             
@@ -2872,9 +2881,9 @@ class AdminDashboard {
                                                 <td class="fw-bold text-success">${formatCurrency(currentAmount)}</td>
                                             </tr>
                                             <tr>
-                                                <th>Deadline:</th>
+                                                <th>End Date:</th>
                                                 <td>
-                                                    ${campaign.deadline ? formatDate(campaign.deadline) : 'No deadline'}
+                                                    ${campaign.end_date ? formatDate(campaign.end_date) : 'No end date'}
                                                     ${campaign.days_left ? `<span class="badge ${campaign.days_left < 7 ? 'bg-danger' : 'bg-secondary'} ms-2">
                                                         ${campaign.days_left} days left
                                                     </span>` : ''}
@@ -3085,11 +3094,11 @@ class AdminDashboard {
                                         min="100" step="100" required>
                                 </div>
                                 
-                                <!-- Deadline -->
+                                <!-- End Date -->
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Deadline</label>
-                                    <input type="date" class="form-control" name="deadline" 
-                                        value="${formatDateForInput(campaign.deadline)}"
+                                    <label class="form-label fw-bold">End Date</label>
+                                    <input type="date" class="form-control" name="end-date" 
+                                        value="${formatDateForInput(campaign.end_date)}"
                                         min="${new Date().toISOString().split('T')[0]}">
                                 </div>
                             </div>

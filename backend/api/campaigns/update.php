@@ -72,7 +72,7 @@ try {
     $category = $_POST['category'] ?? '';
     $description = $_POST['description'] ?? '';
     $goal_amount = isset($_POST['goal_amount']) ? floatval($_POST['goal_amount']) : 0;
-    $deadline = $_POST['deadline'] ?? null;
+    $end_date = $_POST['end_date'] ?? null;  // Changed from deadline
     $status = $_POST['status'] ?? 'active';
     $organizer = $_POST['organizer'] ?? '';
     $featured = isset($_POST['featured']) ? 1 : 0;
@@ -117,9 +117,9 @@ try {
         $target_path = $upload_dir . $file_name;
         
         // Validate file type
-        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
+        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         if (!in_array(strtolower($file_extension), $allowed_types)) {
-            throw new Exception('Invalid file type. Only JPG, PNG, GIF, SVG allowed.');
+            throw new Exception('Invalid file type. Only JPG, PNG, GIF, WebP allowed.');
         }
         
         // Validate file size (5MB max)
@@ -139,17 +139,18 @@ try {
         }
     }
     
-    // Update campaign
+    // UPDATED: Remove comments from SQL, add updated_by
     $update_query = "UPDATE campaigns 
                      SET title = :title,
                          category = :category,
                          description = :description,
                          target_amount = :target_amount,
-                         deadline = :deadline,
+                         end_date = :end_date,
                          status = :status,
                          organizer = :organizer,
                          featured = :featured,
                          image_url = :image_url,
+                         updated_by = :updated_by,
                          updated_at = NOW()
                      WHERE id = :id";
     
@@ -158,23 +159,37 @@ try {
     $stmt->bindParam(':category', $category);
     $stmt->bindParam(':description', $description);
     $stmt->bindParam(':target_amount', $goal_amount);
-    $stmt->bindParam(':deadline', $deadline);
+    $stmt->bindParam(':end_date', $end_date);
     $stmt->bindParam(':status', $status);
     $stmt->bindParam(':organizer', $organizer);
     $stmt->bindParam(':featured', $featured, PDO::PARAM_INT);
     $stmt->bindParam(':image_url', $image_url);
+    $stmt->bindParam(':updated_by', $userId, PDO::PARAM_INT);
     $stmt->bindParam(':id', $campaign_id, PDO::PARAM_INT);
     
     if (!$stmt->execute()) {
         throw new Exception('Failed to update campaign');
     }
     
-    // Fetch updated campaign
-    $select_query = "SELECT * FROM campaigns WHERE id = :id";
+    // Fetch updated campaign with creator info
+    $select_query = "SELECT c.*, u.name as creator_name 
+                     FROM campaigns c
+                     LEFT JOIN users u ON c.created_by = u.id
+                     WHERE c.id = :id";
     $select_stmt = $db->prepare($select_query);
     $select_stmt->bindParam(':id', $campaign_id, PDO::PARAM_INT);
     $select_stmt->execute();
     $updated_campaign = $select_stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Calculate days left for the response
+    if ($updated_campaign['end_date']) {
+        $endDate = new DateTime($updated_campaign['end_date']);
+        $today = new DateTime();
+        $interval = $today->diff($endDate);
+        $updated_campaign['days_left'] = $endDate > $today ? $interval->days : 0;
+    } else {
+        $updated_campaign['days_left'] = 0;
+    }
     
     echo json_encode([
         'success' => true,

@@ -89,8 +89,9 @@ try {
     $check_stmt = $db->prepare($check_query);
     $check_stmt->bindParam(':id', $campaign_id, PDO::PARAM_INT);
     $check_stmt->execute();
+    $campaign = $check_stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$check_stmt->fetch()) {
+    if (!$campaign) {
         http_response_code(404);
         echo json_encode([
             'success' => false,
@@ -98,6 +99,16 @@ try {
         ]);
         exit;
     }
+    
+    // NEW: Update campaign with who deleted it before deletion
+    $update_query = "UPDATE campaigns 
+                     SET updated_by = :updated_by, 
+                         updated_at = NOW() 
+                     WHERE id = :id";
+    $update_stmt = $db->prepare($update_query);
+    $update_stmt->bindParam(':updated_by', $userId, PDO::PARAM_INT);
+    $update_stmt->bindParam(':id', $campaign_id, PDO::PARAM_INT);
+    $update_stmt->execute();
     
     // Delete related donations first (foreign key constraint)
     $delete_donations = "DELETE FROM donations WHERE campaign_id = :campaign_id";
@@ -122,6 +133,8 @@ try {
         'success' => true,
         'message' => 'Campaign deleted successfully',
         'campaign_id' => $campaign_id,
+        'campaign_title' => $campaign['title'],
+        'deleted_by' => $userId,
         'deleted_donations' => $deletedDonations
     ]);
     

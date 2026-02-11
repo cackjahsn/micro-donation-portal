@@ -25,10 +25,14 @@ error_log("FILES data: " . print_r($_FILES, true));
 
 // Simple admin check
 $isAdmin = false;
+$userId = null;
+$userName = null;
 
 // Check session
-if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'admin') {
+if (isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
     $isAdmin = true;
+    $userId = $_SESSION['user_id'];
+    $userName = $_SESSION['user_name'] ?? 'Admin';
     error_log("Admin access via session: User ID " . $_SESSION['user_id']);
 }
 
@@ -36,6 +40,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'admin') {
 if (!$isAdmin && isset($_SERVER['HTTP_X_USER_ID']) && isset($_SERVER['HTTP_X_USER_ROLE'])) {
     if ($_SERVER['HTTP_X_USER_ROLE'] === 'admin') {
         $isAdmin = true;
+        $userId = $_SERVER['HTTP_X_USER_ID'];
+        $userName = $_SERVER['HTTP_X_USER_NAME'] ?? 'Admin';
         error_log("Admin access via headers: User ID " . $_SERVER['HTTP_X_USER_ID']);
     }
 }
@@ -63,8 +69,8 @@ try {
     $description = $_POST['description'] ?? '';
     $category = $_POST['category'] ?? '';
     $target_amount = $_POST['goal_amount'] ?? 0;
-    $organizer = $_POST['organization'] ?? 'University Club';
-    $deadline = $_POST['deadline'] ?? '';
+    $organizer = $_POST['organizer'] ?? 'CommunityGive Admin';  // Changed from organization
+    $end_date = $_POST['end_date'] ?? '';  // Changed from deadline
     $featured = isset($_POST['featured']) ? 1 : 0;
     
     // Log received data
@@ -73,12 +79,14 @@ try {
     error_log("  Category: $category");
     error_log("  Target: $target_amount");
     error_log("  Organizer: $organizer");
-    error_log("  Deadline: $deadline");
+    error_log("  End Date: $end_date");
     error_log("  Featured: $featured");
+    error_log("  Created By ID: $userId");
+    error_log("  Created By Name: $userName");
     
     // Validate required fields
-    if (empty($title) || empty($description) || empty($category) || empty($target_amount) || empty($deadline)) {
-        throw new Exception('Missing required fields: Title, Description, Category, Target Amount, and Deadline are required');
+    if (empty($title) || empty($description) || empty($category) || empty($target_amount) || empty($end_date)) {
+        throw new Exception('Missing required fields: Title, Description, Category, Target Amount, and End Date are required');
     }
     
     // Sanitize input
@@ -92,19 +100,14 @@ try {
         throw new Exception('Target amount must be a positive number');
     }
     
-    // Calculate days_left from deadline
-    $days_left = 30; // default
-    if (!empty($deadline)) {
-        $deadlineDate = new DateTime($deadline);
+    // Validate end date is in the future
+    if (!empty($end_date)) {
+        $endDateObj = new DateTime($end_date);
         $today = new DateTime();
-        $interval = $today->diff($deadlineDate);
-        $days_left = $interval->days;
+        $today->setTime(0, 0, 0); // Set to midnight for comparison
         
-        if ($days_left < 0) {
-            throw new Exception('Deadline must be in the future');
-        }
-        if ($days_left == 0) {
-            $days_left = 1; // Minimum 1 day if deadline is today
+        if ($endDateObj < $today) {
+            throw new Exception('End date must be in the future');
         }
     }
     
@@ -132,7 +135,7 @@ try {
             throw new Exception('File size exceeds 5MB limit');
         }
         
-        // Check MIME type (simplified version)
+        // Check MIME type
         $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         
@@ -156,15 +159,44 @@ try {
     // Begin transaction
     $db->beginTransaction();
     
-    // SQL Query - Use deadline date from form for end_date
-    $query = "INSERT INTO campaigns 
-              (title, description, category, target_amount, current_amount, 
-               progress_percentage, donors_count, days_left, image_url, 
-               organizer, start_date, end_date, featured, status, created_at, updated_at) 
-              VALUES 
-              (:title, :description, :category, :target_amount, 0, 
-               0, 0, :days_left, :image_url, :organizer, 
-               CURDATE(), :end_date, :featured, 'active', NOW(), NOW())";
+    // UPDATED INSERT QUERY - using correct column names
+    $query = "INSERT INTO campaigns (
+        title, 
+        description, 
+        category, 
+        target_amount, 
+        current_amount,
+        progress_percentage,
+        donors_count,
+        end_date,           // Correct column name
+        image_url,
+        organizer,
+        featured,
+        status,
+        created_by,
+        created_by_name,    // New field
+        updated_by,
+        created_at,
+        updated_at
+    ) VALUES (
+        :title,
+        :description,
+        :category,
+        :target_amount,
+        0.00,
+        0.00,
+        0,
+        :end_date,          // Correct column name
+        :image_url,
+        :organizer,
+        :featured,
+        'active',
+        :created_by,
+        :created_by_name,   // New field
+        :updated_by,        // Set updated_by
+        NOW(),
+        NOW()
+    )";
     
     error_log("SQL Query: " . $query);
     
@@ -175,21 +207,25 @@ try {
     $stmt->bindParam(':description', $description);
     $stmt->bindParam(':category', $category);
     $stmt->bindParam(':target_amount', $target_amount);
-    $stmt->bindParam(':days_left', $days_left, PDO::PARAM_INT);
+    $stmt->bindParam(':end_date', $end_date);  // Changed from deadline
     $stmt->bindParam(':image_url', $image_url);
     $stmt->bindParam(':organizer', $organizer);
     $stmt->bindParam(':featured', $featured, PDO::PARAM_INT);
-    $stmt->bindParam(':end_date', $deadline);
+    $stmt->bindParam(':created_by', $userId, PDO::PARAM_INT);
+    $stmt->bindParam(':created_by_name', $userName);
+    $stmt->bindParam(':updated_by', $userId, PDO::PARAM_INT);
     
     error_log("Binding parameters:");
     error_log("  title: $title");
     error_log("  category: $category");
     error_log("  target_amount: $target_amount");
-    error_log("  days_left: $days_left");
+    error_log("  end_date: $end_date");
     error_log("  image_url: $image_url");
     error_log("  organizer: $organizer");
     error_log("  featured: $featured");
-    error_log("  end_date: $deadline");
+    error_log("  created_by: $userId");
+    error_log("  created_by_name: $userName");
+    error_log("  updated_by: $userId");
     
     if ($stmt->execute()) {
         $campaign_id = $db->lastInsertId();
@@ -199,8 +235,11 @@ try {
         
         error_log("Campaign created successfully! ID: $campaign_id");
         
-        // Get the created campaign
-        $query = "SELECT * FROM campaigns WHERE id = :id";
+        // Get the created campaign with creator info
+        $query = "SELECT c.*, u.name as creator_name 
+                  FROM campaigns c
+                  LEFT JOIN users u ON c.created_by = u.id
+                  WHERE c.id = :id";
         $stmt = $db->prepare($query);
         $stmt->bindParam(':id', $campaign_id);
         $stmt->execute();
@@ -231,12 +270,15 @@ try {
     
     echo json_encode([
         'success' => false,
-        'message' => 'Database error: ' . $e->getMessage(),
-        'error_info' => $e->errorInfo
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
     
 } catch (Exception $e) {
     error_log("General error: " . $e->getMessage());
+    
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     
     echo json_encode([
         'success' => false,
@@ -253,6 +295,18 @@ function updateCampaignsJSON($db) {
         
         $formattedCampaigns = [];
         foreach ($campaigns as $campaign) {
+            // Calculate days left from end_date
+            $daysLeft = 0;
+            if ($campaign['end_date']) {
+                $endDate = new DateTime($campaign['end_date']);
+                $today = new DateTime();
+                $interval = $today->diff($endDate);
+                $daysLeft = $interval->days;
+                if ($endDate < $today) {
+                    $daysLeft = 0;
+                }
+            }
+            
             $formattedCampaigns[] = [
                 'id' => $campaign['id'],
                 'title' => $campaign['title'],
@@ -262,10 +316,13 @@ function updateCampaignsJSON($db) {
                 'current_amount' => floatval($campaign['current_amount']),
                 'progress_percentage' => floatval($campaign['progress_percentage']),
                 'donors_count' => intval($campaign['donors_count']),
-                'days_left' => intval($campaign['days_left']),
+                'days_left' => $daysLeft,  // Calculated from end_date
                 'organizer' => $campaign['organizer'],
                 'image_url' => $campaign['image_url'],
-                'status' => $campaign['status']
+                'status' => $campaign['status'],
+                'featured' => (bool)$campaign['featured'],
+                'end_date' => $campaign['end_date'],
+                'created_by_name' => $campaign['created_by_name']
             ];
         }
         
