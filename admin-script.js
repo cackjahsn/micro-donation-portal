@@ -666,6 +666,7 @@ class AdminDashboard {
     // CREATE CAMPAIGN PAGE (NEW)
     // ============================================
     
+    // Update the getCreateCampaignHTML method
     getCreateCampaignHTML() {
         return `
             <div class="row">
@@ -712,16 +713,68 @@ class AdminDashboard {
                                             <li>Use clear, specific categories</li>
                                             <li>Set achievable goals</li>
                                             <li>Include organization information for credibility</li>
+                                            <li>Mark as featured for better visibility</li>
                                             <li>Monitor campaign progress regularly</li>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="text-center py-5">
+                            <!-- Quick Create Form Preview -->
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0"><i class="fas fa-rocket me-2"></i>Quick Create Form</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Campaign Title</label>
+                                                <input type="text" class="form-control bg-light" placeholder="e.g., Flood Relief Fund" readonly>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Category</label>
+                                                <select class="form-select bg-light" disabled>
+                                                    <option>Education</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Goal Amount</label>
+                                                <input type="text" class="form-control bg-light" placeholder="RM 10,000" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Enhanced Fields</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Organizer</label>
+                                                <input type="text" class="form-control bg-light" placeholder="Organization name" readonly>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Featured Campaign</label>
+                                                <div class="form-check">
+                                                    <input type="checkbox" class="form-check-input" disabled>
+                                                    <label class="form-check-label">Mark as featured (appears on homepage)</label>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Campaign Image</label>
+                                                <input type="file" class="form-control bg-light" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center py-5 mt-4">
                                 <i class="fas fa-hand-holding-heart fa-4x text-primary mb-4"></i>
                                 <h4>Ready to Create a Campaign?</h4>
-                                <p class="text-muted mb-4">Click the "Create Campaign" button to start a new fundraising campaign</p>
+                                <p class="text-muted mb-4">Click the "Create Campaign" button to start a new fundraising campaign with all enhanced fields</p>
                                 <button class="btn btn-primary btn-lg" onclick="adminDashboard.openCampaignCreationModal()">
                                     <i class="fas fa-plus me-2"></i> Create Campaign
                                 </button>
@@ -735,8 +788,11 @@ class AdminDashboard {
             <div class="row mt-4">
                 <div class="col-12">
                     <div class="card shadow">
-                        <div class="card-header py-3">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
                             <h6 class="m-0 font-weight-bold text-primary">Recently Created Campaigns</h6>
+                            <button class="btn btn-sm btn-outline-primary" onclick="adminDashboard.loadRecentCampaigns()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
                         </div>
                         <div class="card-body">
                             <div id="recentCampaignsContainer">
@@ -781,11 +837,12 @@ class AdminDashboard {
         }
     }
     
+    // Update renderRecentCampaigns method
     renderRecentCampaigns(campaigns) {
         const container = document.getElementById('recentCampaignsContainer');
         if (!container) return;
         
-        if (displayCampaigns.length === 0) {
+        if (!campaigns || campaigns.length === 0) {
             this.showNoRecentCampaigns();
             return;
         }
@@ -793,27 +850,81 @@ class AdminDashboard {
         container.innerHTML = `
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <thead>
+                    <thead class="table-light">
                         <tr>
-                            <th>Title</th>
+                            <th>Campaign</th>
                             <th>Category</th>
+                            <th>Organizer</th>
                             <th>Goal</th>
                             <th>Raised</th>
+                            <th>Progress</th>
                             <th>Status</th>
+                            <th>Featured</th>
                             <th>Created</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${campaigns.map(campaign => `
-                            <tr>
-                                <td><strong>${campaign.title}</strong></td>
-                                <td><span class="badge bg-primary">${campaign.category}</span></td>
-                                <td>RM ${parseFloat(campaign.target_amount || 0).toFixed(2)}</td>
-                                <td class="fw-bold text-success">RM ${parseFloat(campaign.current_amount || 0).toFixed(2)}</td>
-                                <td><span class="badge bg-${campaign.status === 'active' ? 'success' : 'warning'}">${campaign.status}</span></td>
-                                <td>${new Date(campaign.created_at).toLocaleDateString()}</td>
-                            </tr>
-                        `).join('')}
+                        ${campaigns.map(campaign => {
+                            const progress = campaign.target_amount > 0 
+                                ? ((campaign.current_amount || 0) / campaign.target_amount * 100) 
+                                : 0;
+                            
+                            return `
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            ${campaign.image_url && campaign.image_url !== 'assets/images/default-campaign.jpg' ? 
+                                                `<img src="${campaign.image_url}" alt="${campaign.title}" 
+                                                    style="width: 40px; height: 40px; object-fit: cover;" class="rounded me-2">` : 
+                                                `<div class="bg-light rounded d-flex align-items-center justify-content-center me-2" 
+                                                    style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-hand-holding-heart text-muted"></i>
+                                                </div>`
+                                            }
+                                            <div>
+                                                <strong>${campaign.title || 'Untitled'}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info">${campaign.category || 'Uncategorized'}</span></td>
+                                    <td>${campaign.organizer || 'Not specified'}</td>
+                                    <td class="fw-bold">RM ${parseFloat(campaign.target_amount || 0).toLocaleString()}</td>
+                                    <td class="fw-bold text-success">RM ${parseFloat(campaign.current_amount || 0).toLocaleString()}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px; width: 80px;">
+                                                <div class="progress-bar ${progress >= 100 ? 'bg-success' : 'bg-primary'}" 
+                                                    style="width: ${Math.min(progress, 100)}%"></div>
+                                            </div>
+                                            <small>${progress.toFixed(1)}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-${campaign.status === 'active' ? 'success' : 'secondary'}">
+                                            ${campaign.status || 'active'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        ${campaign.featured ? 
+                                            '<span class="badge bg-warning"><i class="fas fa-star me-1"></i>Featured</span>' : 
+                                            '<span class="badge bg-light text-muted">No</span>'
+                                        }
+                                    </td>
+                                    <td><small>${new Date(campaign.created_at).toLocaleDateString()}</small></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="adminDashboard.viewCampaign(${campaign.id})" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" onclick="adminDashboard.editCampaign(${campaign.id})" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -851,6 +962,7 @@ class AdminDashboard {
         }
     }
     
+    // Update the submitCampaignForm method
     async submitCampaignForm() {
         const form = document.getElementById('campaignCreationForm');
         const formData = new FormData(form);
@@ -859,8 +971,11 @@ class AdminDashboard {
         const modal = bootstrap.Modal.getInstance(document.getElementById('campaignCreationModal'));
         
         // Get user data from localStorage
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const token = localStorage.getItem('token') || localStorage.getItem('micro_donation_token');
+        const userString = localStorage.getItem('micro_donation_user') || 
+                        localStorage.getItem('user');
+        const user = userString ? JSON.parse(userString) : null;
+        const token = localStorage.getItem('micro_donation_token') || 
+                    localStorage.getItem('token');
         
         console.log('Submitting campaign form...', {
             user: user,
@@ -883,10 +998,24 @@ class AdminDashboard {
             return;
         }
         
+        // Add additional fields to formData
+        formData.append('created_by', user.id);
+        formData.append('created_by_name', user.name || 'Admin');
+        
+        // Add organizer field (default to user name if not specified)
+        if (!formData.get('organizer')) {
+            formData.append('organizer', user.name || 'CommunityGive Admin');
+        }
+        
+        // Add status (default to 'active' for new campaigns)
+        formData.append('status', 'active');
+        
+        // Add featured flag (checkbox value is handled automatically)
+        
         // Disable submit button
-        const originalText = submitBtn.textContent;
+        const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Creating...';
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
         
         try {
             // Show loading message
@@ -943,15 +1072,31 @@ class AdminDashboard {
                 // Reset form
                 form.reset();
                 
+                // Remove image preview
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                const preview = document.getElementById('imagePreview');
+                if (previewContainer) previewContainer.style.display = 'none';
+                if (preview) preview.src = '';
+                
                 // Show success notification
                 this.showNotification('Campaign created successfully!', 'success');
+                
+                // Add the new campaign to local arrays
+                if (result.campaign) {
+                    // If API returns full campaign data
+                    this.allCampaigns.unshift(result.campaign);
+                    this.currentCampaigns.unshift(result.campaign);
+                } else {
+                    // Create a minimal campaign object and fetch full list
+                    this.loadAllCampaignsTable();
+                }
                 
                 // Close modal after delay
                 setTimeout(() => {
                     if (modal) modal.hide();
                     this.loadRecentCampaigns();
                     if (this.currentPage === 'campaigns') {
-                        this.loadAllCampaignsTable();
+                        this.renderCampaignsTable();
                     }
                 }, 2000);
             } else {
@@ -967,7 +1112,7 @@ class AdminDashboard {
             this.showNotification('Failed to create campaign: ' + error.message, 'error');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
+            submitBtn.innerHTML = originalText;
         }
     }
 
@@ -2321,6 +2466,949 @@ class AdminDashboard {
         URL.revokeObjectURL(url);
         
         this.showNotification(`Exported ${this.allCampaigns.length} campaigns to CSV`, 'success');
+    }
+
+    // Add this method to your AdminDashboard class
+    async deleteCampaign(campaignId) {
+        try {
+            console.log('Deleting campaign ID:', campaignId);
+            
+            // Show confirmation dialog
+            const confirmed = await this.showDeleteConfirmation(campaignId);
+            if (!confirmed) return;
+            
+            // Get authentication token
+            const token = localStorage.getItem('micro_donation_token') || 
+                        localStorage.getItem('token');
+            
+            if (!token) {
+                this.showNotification('Authentication required. Please login again.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+            
+            // Show loading state on the button
+            const deleteBtn = document.querySelector(`button[onclick="adminDashboard.deleteCampaign(${campaignId})"]`);
+            const originalHtml = deleteBtn?.innerHTML || '';
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+            }
+            
+            // Get user data for verification
+            const userString = localStorage.getItem('micro_donation_user') || 
+                            localStorage.getItem('user');
+            const user = userString ? JSON.parse(userString) : null;
+            
+            // Prepare request payload
+            const payload = {
+                campaign_id: campaignId
+            };
+            
+            console.log('Sending delete request with payload:', payload);
+            console.log('Using token:', token ? 'Present' : 'Missing');
+            
+            // Make API call
+            const response = await fetch('backend/api/campaigns/delete.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                    'X-User-ID': user?.id || '',
+                    'X-User-Role': user?.role || ''
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            console.log('Delete response status:', response.status);
+            
+            // Get response text first for debugging
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
+            
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Failed to parse JSON response:', e);
+                throw new Error('Server returned invalid response format');
+            }
+            
+            // Restore button
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
+            
+            if (result.success) {
+                // Show success notification
+                this.showNotification(result.message || 'Campaign deleted successfully', 'success');
+                
+                // Remove campaign from local arrays
+                this.allCampaigns = this.allCampaigns.filter(c => c.id !== campaignId);
+                this.currentCampaigns = this.currentCampaigns.filter(c => c.id !== campaignId);
+                
+                // Re-render the table
+                this.renderCampaignsTable();
+                
+                // Update campaign statistics
+                this.loadCampaignStatistics();
+                
+                // Log success
+                console.log(`Campaign ID ${campaignId} deleted successfully`);
+            } else {
+                throw new Error(result.message || 'Failed to delete campaign');
+            }
+            
+        } catch (error) {
+            console.error('Error deleting campaign:', error);
+            
+            // Restore button if it exists
+            const deleteBtn = document.querySelector(`button[onclick="adminDashboard.deleteCampaign(${campaignId})"]`);
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            }
+            
+            // Show error message
+            this.showNotification('Failed to delete campaign: ' + error.message, 'error');
+        }
+    }
+
+    // Add confirmation dialog method
+    showDeleteConfirmation(campaignId) {
+        return new Promise((resolve) => {
+            // Find campaign title
+            const campaign = this.allCampaigns.find(c => c.id === campaignId);
+            const campaignTitle = campaign ? campaign.title : `Campaign #${campaignId}`;
+            
+            // Create modal dynamically
+            const modalId = 'deleteConfirmModal';
+            let modal = document.getElementById(modalId);
+            
+            // Remove existing modal if any
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Create modal element
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.className = 'modal fade';
+            modal.setAttribute('tabindex', '-1');
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Confirm Delete
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="text-center py-3">
+                                <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                                <h5 class="mb-3">Delete Campaign?</h5>
+                                <p class="mb-2">
+                                    <strong>"${campaignTitle}"</strong>
+                                </p>
+                                <p class="text-muted">
+                                    This action cannot be undone. All donation data for this campaign will also be deleted.
+                                </p>
+                                <div class="alert alert-warning mt-3">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Campaign ID: ${campaignId}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>
+                                Cancel
+                            </button>
+                            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                                <i class="fas fa-trash me-2"></i>
+                                Yes, Delete Campaign
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Initialize modal
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+            
+            // Handle confirm
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.onclick = () => {
+                bootstrapModal.hide();
+                // Clean up modal after hidden
+                modal.addEventListener('hidden.bs.modal', () => {
+                    modal.remove();
+                });
+                resolve(true);
+            };
+            
+            // Handle cancel and close
+            modal.addEventListener('hidden.bs.modal', () => {
+                modal.remove();
+                resolve(false);
+            });
+        });
+    }
+
+        async viewCampaign(campaignId) {
+        try {
+            console.log('Viewing campaign ID:', campaignId);
+            
+            // Show loading notification
+            this.showNotification('Loading campaign details...', 'info');
+            
+            // Get authentication token
+            const token = localStorage.getItem('micro_donation_token') || 
+                        localStorage.getItem('token');
+            
+            // Fetch campaign details
+            const response = await fetch(`backend/api/campaigns/get-single.php?id=${campaignId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': token ? 'Bearer ' + token : ''
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            if (!result.success || !result.campaign) {
+                throw new Error(result.message || 'Campaign not found');
+            }
+            
+            const campaign = result.campaign;
+            
+            // Create and show modal with campaign details
+            this.showCampaignDetailsModal(campaign);
+            
+        } catch (error) {
+            console.error('Error viewing campaign:', error);
+            this.showNotification('Failed to load campaign details: ' + error.message, 'error');
+        }
+    }
+
+    showCampaignDetailsModal(campaign) {
+        // Format currency
+        const formatCurrency = (amount) => {
+            return 'RM ' + parseFloat(amount || 0).toLocaleString('en-MY', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        };
+        
+        // Format date
+        const formatDate = (dateString) => {
+            if (!dateString) return 'Not set';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-MY', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+        
+        // Calculate progress
+        const targetAmount = parseFloat(campaign.target_amount || 0);
+        const currentAmount = parseFloat(campaign.current_amount || 0);
+        const progressPercentage = targetAmount > 0 ? (currentAmount / targetAmount * 100) : 0;
+        
+        // Determine status color
+        const statusColor = {
+            'active': 'success',
+            'completed': 'info',
+            'cancelled': 'danger',
+            'pending': 'warning'
+        }[campaign.status?.toLowerCase()] || 'secondary';
+        
+        // Create modal
+        const modalId = 'viewCampaignModal';
+        let modal = document.getElementById(modalId);
+        
+        if (modal) {
+            modal.remove();
+        }
+        
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-hidden', 'true');
+        
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-hand-holding-heart me-2"></i>
+                            Campaign Details
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Campaign Header Image -->
+                        <div class="text-center mb-4">
+                            ${campaign.image_url && campaign.image_url !== 'assets/images/default-campaign.jpg' ? 
+                                `<img src="${campaign.image_url}" alt="${campaign.title}" 
+                                    class="img-fluid rounded" style="max-height: 250px; object-fit: cover;">` : 
+                                `<div class="bg-light rounded d-flex align-items-center justify-content-center p-5">
+                                    <i class="fas fa-hand-holding-heart fa-5x text-primary opacity-50"></i>
+                                </div>`
+                            }
+                        </div>
+                        
+                        <!-- Title and Status -->
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h3 class="mb-1">${campaign.title || 'Untitled Campaign'}</h3>
+                                <span class="badge bg-${statusColor} fs-6">${campaign.status || 'Unknown'}</span>
+                                ${campaign.featured ? '<span class="badge bg-warning ms-2 fs-6"><i class="fas fa-star me-1"></i>Featured</span>' : ''}
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted d-block">Campaign ID</small>
+                                <strong>#${campaign.id}</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Section -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="fw-bold">Progress</span>
+                                            <span class="fw-bold text-${progressPercentage >= 100 ? 'success' : 'primary'}">
+                                                ${progressPercentage.toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar ${progressPercentage >= 100 ? 'bg-success' : 'bg-primary'}" 
+                                                style="width: ${Math.min(progressPercentage, 100)}%"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-2">
+                                            <span class="text-success fw-bold">${formatCurrency(currentAmount)}</span>
+                                            <span class="text-muted">of ${formatCurrency(targetAmount)}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center border-start ps-3">
+                                            <div class="mb-2">
+                                                <i class="fas fa-users fa-2x text-primary"></i>
+                                                <div class="h4 mb-0">${campaign.donors_count || 0}</div>
+                                                <small class="text-muted">Total Donors</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campaign Details Grid -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th style="width: 40%;">Category:</th>
+                                                <td><span class="badge bg-info">${campaign.category || 'Uncategorized'}</span></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Organizer:</th>
+                                                <td>${campaign.organizer || 'Not specified'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Created By:</th>
+                                                <td>${campaign.created_by_name || 'System'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Created Date:</th>
+                                                <td>${formatDate(campaign.created_at)}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Last Updated:</th>
+                                                <td>${formatDate(campaign.updated_at)}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Timeline & Goals</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th style="width: 40%;">Target Amount:</th>
+                                                <td class="fw-bold text-primary">${formatCurrency(targetAmount)}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Current Raised:</th>
+                                                <td class="fw-bold text-success">${formatCurrency(currentAmount)}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Deadline:</th>
+                                                <td>
+                                                    ${campaign.deadline ? formatDate(campaign.deadline) : 'No deadline'}
+                                                    ${campaign.days_left ? `<span class="badge ${campaign.days_left < 7 ? 'bg-danger' : 'bg-secondary'} ms-2">
+                                                        ${campaign.days_left} days left
+                                                    </span>` : ''}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Days Active:</th>
+                                                <td>${campaign.days_active || 'N/A'}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-0" style="white-space: pre-line;">${campaign.description || 'No description provided.'}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Stats -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-receipt fa-2x text-info mb-2"></i>
+                                        <h6 class="mb-1">Total Transactions</h6>
+                                        <h4>${campaign.donations_count || campaign.donors_count || 0}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                                        <h6 class="mb-1">Average Donation</h6>
+                                        <h4>${campaign.avg_donation ? formatCurrency(campaign.avg_donation) : formatCurrency(0)}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-calendar-alt fa-2x text-success mb-2"></i>
+                                        <h6 class="mb-1">Last Donation</h6>
+                                        <h6 class="mt-2">${campaign.last_donation_date ? formatDate(campaign.last_donation_date) : 'No donations yet'}</h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-primary" onclick="window.adminDashboard.editCampaign(${campaign.id})">
+                            <i class="fas fa-edit me-2"></i>Edit Campaign
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="window.open('campaigns.html?campaign=${campaign.id}', '_blank')">
+                            <i class="fas fa-external-link-alt me-2"></i>View Public Page
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Initialize and show modal
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+        
+        // Clean up on hidden
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    }
+
+        async editCampaign(campaignId) {
+        try {
+            console.log('Editing campaign ID:', campaignId);
+            
+            // Show loading notification
+            this.showNotification('Loading campaign for editing...', 'info');
+            
+            // Get authentication token
+            const token = localStorage.getItem('micro_donation_token') || 
+                        localStorage.getItem('token');
+            
+            // Check admin authorization
+            const userString = localStorage.getItem('micro_donation_user') || 
+                            localStorage.getItem('user');
+            const user = userString ? JSON.parse(userString) : null;
+            
+            if (!user || user.role !== 'admin') {
+                this.showNotification('Access denied. Admin privileges required.', 'error');
+                return;
+            }
+            
+            // Fetch campaign details
+            const response = await fetch(`backend/api/campaigns/get-single.php?id=${campaignId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': token ? 'Bearer ' + token : ''
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            if (!result.success || !result.campaign) {
+                throw new Error(result.message || 'Campaign not found');
+            }
+            
+            const campaign = result.campaign;
+            
+            // Show edit campaign modal
+            this.showEditCampaignModal(campaign);
+            
+        } catch (error) {
+            console.error('Error loading campaign for edit:', error);
+            this.showNotification('Failed to load campaign for editing: ' + error.message, 'error');
+        }
+    }
+
+    showEditCampaignModal(campaign) {
+        // Create or get modal
+        const modalId = 'editCampaignModal';
+        let modal = document.getElementById(modalId);
+        
+        if (modal) {
+            modal.remove();
+        }
+        
+        // Format date for input fields
+        const formatDateForInput = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toISOString().split('T')[0];
+        };
+        
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-hidden', 'true');
+        
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title">
+                            <i class="fas fa-edit me-2"></i>
+                            Edit Campaign
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editCampaignForm" enctype="multipart/form-data">
+                            <input type="hidden" name="campaign_id" value="${campaign.id}">
+                            
+                            <!-- Campaign Title -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Campaign Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="title" 
+                                    value="${this.escapeHtml(campaign.title || '')}" 
+                                    required maxlength="100">
+                            </div>
+                            
+                            <div class="row">
+                                <!-- Category -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="category" required>
+                                        <option value="">Select Category</option>
+                                        ${this.getCategoryOptions(campaign.category)}
+                                    </select>
+                                </div>
+                                
+                                <!-- Status -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Status</label>
+                                    <select class="form-select" name="status">
+                                        <option value="active" ${campaign.status === 'active' ? 'selected' : ''}>Active</option>
+                                        <option value="completed" ${campaign.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                        <option value="cancelled" ${campaign.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                                        <option value="pending" ${campaign.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    </select>
+                                    <small class="text-muted">Change campaign status</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <!-- Goal Amount -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Goal Amount (RM) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="goal_amount" 
+                                        value="${campaign.target_amount || ''}" 
+                                        min="100" step="100" required>
+                                </div>
+                                
+                                <!-- Deadline -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Deadline</label>
+                                    <input type="date" class="form-control" name="deadline" 
+                                        value="${formatDateForInput(campaign.deadline)}"
+                                        min="${new Date().toISOString().split('T')[0]}">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <!-- Organizer -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Organizer</label>
+                                    <input type="text" class="form-control" name="organizer" 
+                                        value="${this.escapeHtml(campaign.organizer || '')}" 
+                                        maxlength="100">
+                                </div>
+                                
+                                <!-- Featured Checkbox -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Promotion</label>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="featured" id="editFeaturedCampaign" 
+                                            ${campaign.featured ? 'checked' : ''}>
+                                        <label class="form-check-label" for="editFeaturedCampaign">
+                                            <i class="fas fa-star text-warning me-1"></i>
+                                            Mark as featured campaign
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="description" rows="5" required maxlength="1000">${this.escapeHtml(campaign.description || '')}</textarea>
+                            </div>
+                            
+                            <!-- Current Campaign Image -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Current Campaign Image</label>
+                                <div class="d-flex align-items-center mb-3">
+                                    ${campaign.image_url && campaign.image_url !== 'assets/images/default-campaign.jpg' ? 
+                                        `<div class="position-relative">
+                                            <img src="${campaign.image_url}" alt="Current campaign image" 
+                                                style="max-width: 200px; max-height: 150px;" class="img-thumbnail">
+                                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" 
+                                                onclick="adminDashboard.removeCampaignImage(${campaign.id}, this)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>` : 
+                                        `<span class="text-muted">No image uploaded</span>`
+                                    }
+                                </div>
+                            </div>
+                            
+                            <!-- Upload New Image -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Update Campaign Image</label>
+                                <input type="file" class="form-control" name="campaign_image" accept="image/*">
+                                <small class="text-muted">Leave empty to keep current image. Max 5MB, recommended: 1200x600px</small>
+                                
+                                <!-- Image preview for new upload -->
+                                <div class="mt-2" id="editImagePreviewContainer" style="display: none;">
+                                    <img id="editImagePreview" class="img-thumbnail" style="max-height: 150px;">
+                                    <button type="button" class="btn btn-sm btn-danger mt-2" onclick="adminDashboard.clearEditImagePreview()">
+                                        <i class="fas fa-times me-1"></i> Remove New Image
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Form Message -->
+                            <div id="editCampaignFormMessage" class="alert" style="display: none;"></div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-warning" id="submitEditCampaignBtn">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Initialize modal
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+        
+        // Setup image preview
+        const fileInput = modal.querySelector('input[name="campaign_image"]');
+        fileInput.addEventListener('change', (event) => {
+            this.previewEditImage(event);
+        });
+        
+        // Setup form submission
+        const submitBtn = modal.querySelector('#submitEditCampaignBtn');
+        submitBtn.addEventListener('click', () => {
+            this.submitEditCampaignForm(campaign.id);
+        });
+        
+        // Clean up on hidden
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    }
+
+    // Helper method to escape HTML
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Helper method to get category options with selected value
+    getCategoryOptions(selectedCategory) {
+        const categories = [
+            'education', 'community', 'environment', 'health', 
+            'sports', 'technology', 'arts', 'emergency'
+        ];
+        
+        let options = '';
+        categories.forEach(category => {
+            const selected = category === selectedCategory ? 'selected' : '';
+            options += `<option value="${category}" ${selected}>${category.charAt(0).toUpperCase() + category.slice(1)}</option>`;
+        });
+        
+        return options;
+    }
+
+    // Preview image for edit modal
+    previewEditImage(event) {
+        const input = event.target;
+        const previewContainer = document.getElementById('editImagePreviewContainer');
+        const preview = document.getElementById('editImagePreview');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewContainer.style.display = 'block';
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Clear edit image preview
+    clearEditImagePreview() {
+        const fileInput = document.querySelector('#editCampaignModal input[name="campaign_image"]');
+        const previewContainer = document.getElementById('editImagePreviewContainer');
+        const preview = document.getElementById('editImagePreview');
+        
+        if (fileInput) fileInput.value = '';
+        if (preview) preview.src = '';
+        if (previewContainer) previewContainer.style.display = 'none';
+    }
+
+    // Remove campaign image
+    async removeCampaignImage(campaignId, buttonElement) {
+        try {
+            if (!confirm('Are you sure you want to remove the campaign image?')) {
+                return;
+            }
+            
+            const token = localStorage.getItem('micro_donation_token') || 
+                        localStorage.getItem('token');
+            const userString = localStorage.getItem('micro_donation_user') || 
+                            localStorage.getItem('user');
+            const user = userString ? JSON.parse(userString) : null;
+            
+            // Show loading state
+            const originalHtml = buttonElement.innerHTML;
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            
+            const response = await fetch('backend/api/campaigns/remove-image.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': token ? 'Bearer ' + token : ''
+                },
+                body: JSON.stringify({
+                    campaign_id: campaignId
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Remove the image container
+                const imageContainer = buttonElement.closest('.position-relative');
+                if (imageContainer) {
+                    imageContainer.remove();
+                }
+                
+                // Add placeholder text
+                const imageSection = buttonElement.closest('.mb-3').querySelector('.d-flex');
+                if (imageSection) {
+                    imageSection.innerHTML = '<span class="text-muted">No image uploaded</span>';
+                }
+                
+                this.showNotification('Campaign image removed successfully', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to remove image');
+            }
+        } catch (error) {
+            console.error('Error removing campaign image:', error);
+            this.showNotification('Failed to remove image: ' + error.message, 'error');
+            
+            // Restore button
+            if (buttonElement) {
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = '<i class="fas fa-times"></i>';
+            }
+        }
+    }
+
+    // Submit edit campaign form
+    async submitEditCampaignForm(campaignId) {
+        const form = document.getElementById('editCampaignForm');
+        const formData = new FormData(form);
+        const messageDiv = document.getElementById('editCampaignFormMessage');
+        const submitBtn = document.getElementById('submitEditCampaignBtn');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editCampaignModal'));
+        
+        // Get authentication
+        const token = localStorage.getItem('micro_donation_token') || 
+                    localStorage.getItem('token');
+        const userString = localStorage.getItem('micro_donation_user') || 
+                        localStorage.getItem('user');
+        const user = userString ? JSON.parse(userString) : null;
+        
+        // Disable submit button
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        
+        try {
+            // Show loading message
+            messageDiv.style.display = 'block';
+            messageDiv.className = 'alert alert-info';
+            messageDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating campaign...';
+            
+            console.log('Submitting edit for campaign ID:', campaignId);
+            
+            const response = await fetch('backend/api/campaigns/update.php', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'X-User-ID': user?.id || '',
+                    'X-User-Role': user?.role || ''
+                }
+            });
+            
+            const responseText = await response.text();
+            console.log('Edit response:', responseText);
+            
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (e) {
+                throw new Error('Invalid server response');
+            }
+            
+            if (!response.ok) {
+                throw new Error(result.message || `HTTP ${response.status}`);
+            }
+            
+            if (result.success) {
+                // Success message
+                messageDiv.className = 'alert alert-success';
+                messageDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Campaign updated successfully!';
+                
+                this.showNotification('Campaign updated successfully', 'success');
+                
+                // Update campaign in local arrays
+                this.updateCampaignInArrays(campaignId, result.campaign);
+                
+                // Re-render table
+                this.renderCampaignsTable();
+                
+                // Close modal after delay
+                setTimeout(() => {
+                    if (modal) modal.hide();
+                }, 1500);
+            } else {
+                throw new Error(result.message || 'Failed to update campaign');
+            }
+            
+        } catch (error) {
+            console.error('Error updating campaign:', error);
+            
+            messageDiv.className = 'alert alert-danger';
+            messageDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>' + error.message;
+            
+            this.showNotification('Failed to update campaign: ' + error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
+
+    // Update campaign in local arrays after edit
+    updateCampaignInArrays(campaignId, updatedCampaign) {
+        // Update allCampaigns
+        const index = this.allCampaigns.findIndex(c => c.id === campaignId);
+        if (index !== -1) {
+            this.allCampaigns[index] = {...this.allCampaigns[index], ...updatedCampaign};
+        }
+        
+        // Update currentCampaigns
+        const currentIndex = this.currentCampaigns.findIndex(c => c.id === campaignId);
+        if (currentIndex !== -1) {
+            this.currentCampaigns[currentIndex] = {...this.currentCampaigns[currentIndex], ...updatedCampaign};
+        }
     }
 
     // ============================================
