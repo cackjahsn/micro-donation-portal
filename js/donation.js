@@ -966,10 +966,10 @@ async processDonation() {
         try {
             console.log(`Generating receipt for donation: ${donationId}`);
             
-            // Get user ID
+            // Get user ID from localStorage
             let userId = null;
             try {
-                const userStr = localStorage.getItem('user');
+                const userStr = localStorage.getItem('user') || localStorage.getItem('micro_donation_user');
                 if (userStr) {
                     const user = JSON.parse(userStr);
                     userId = user.id;
@@ -978,7 +978,7 @@ async processDonation() {
                 console.error('Error parsing user:', e);
             }
             
-            // Build receipt URL
+            // Build receipt URL with ALL parameters
             const params = new URLSearchParams({
                 donation_id: donationId,
                 autoprint: 'true'
@@ -988,33 +988,24 @@ async processDonation() {
                 params.append('user_id', userId);
             }
             
-            let receiptUrl;
-            if (typeof utils !== 'undefined' && utils.getApiUrl) {
-                receiptUrl = utils.getApiUrl(`payment/download-receipt.php?${params.toString()}`);
-            } else {
-                receiptUrl = `backend/api/payment/download-receipt.php?${params.toString()}`;
-            }
+            const baseUrl = '/micro-donation-portal/backend/api';
+            const receiptUrl = `${baseUrl}/payment/download-receipt.php?${params.toString()}`;
             
             console.log('Opening receipt in new tab:', receiptUrl);
             
-            // SIMPLIFIED: Just open in new tab, no fallback navigation
+            // Try to open in new tab
             const newWindow = window.open(receiptUrl, '_blank');
             
-            if (!newWindow) {
-                // Only show notification, DON'T navigate current window
-                this.showNotification('Popup blocked! Please allow popups or right-click and "Open in new tab".', 'warning');
-                
-                // Optionally show the URL for manual copy
-                console.log('Popup blocked. URL for manual copy:', receiptUrl);
+            // SILENT FALLBACK: Only console log, no user notifications
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                console.warn('Popup blocked. Manual URL:', receiptUrl);
+                // SILENT: Just log to console, don't bother the user
             }
             
             return { success: true, url: receiptUrl };
             
         } catch (error) {
             console.error('Receipt generation error:', error);
-            
-            // Show error but DON'T navigate
-            this.showNotification('Error: ' + error.message, 'error');
             return { success: false, error: error.message };
         }
     }

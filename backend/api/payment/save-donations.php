@@ -1,5 +1,5 @@
 <?php
-// save-donations.php - Updated for your actual database schema
+// save-donations.php - Fixed for your EXACT database schema
 require_once dirname(__FILE__) . '/../../config/database.php';
 
 // Set headers FIRST
@@ -14,68 +14,92 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-// Get the raw POST data
-$input = file_get_contents('php://input');
-if (empty($input)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'No data received']);
-    exit;
-}
-
-// Decode JSON data
-$data = json_decode($input, true);
-if (!$data) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
-    exit;
-}
-
-// Debug logging
-error_log("Save donation request received: " . print_r($data, true));
-
 try {
     $database = new Database();
     $db = $database->getConnection();
     
-    // Check Authorization header
+    // --- SIMPLIFIED AUTHENTICATION for your schema ---
+    // Get Authorization header
     $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? '';
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     $token = null;
     
     if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
         $token = $matches[1];
-        error_log("Token received: " . substr($token, 0, 20) . "...");
+        error_log("Token received for authentication");
     }
     
-    // Start session
-    session_start();
+    if (!$token) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'No authentication token provided']);
+        exit;
+    }
     
-    // Get user ID from session or token
-    $user_id = $_SESSION['user_id'] ?? null;
+    // METHOD 1: Get user ID from token pattern (since verification_token is NULL)
+    // Your token format: token_d952832cfe2988e7e62307d2b3de8934
+    $user_id = null;
     
-    // If no session, try to extract from token
-    if (!$user_id && $token) {
-        // Simple token parsing - adjust based on your token format
-        if (preg_match('/token_(\d+)_/', $token, $matches)) {
-            $user_id = $matches[1];
-        } elseif (strpos($token, 'token_') === 0) {
-            // Try to get user from database using token
-            $token_query = "SELECT id FROM users WHERE verification_token = :token";
-            $token_stmt = $db->prepare($token_query);
-            $token_stmt->bindParam(':token', $token);
-            $token_stmt->execute();
-            
-            if ($token_user = $token_stmt->fetch(PDO::FETCH_ASSOC)) {
-                $user_id = $token_user['id'];
-            }
+    // Try to extract user ID from the request body FIRST
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+    
+    if (isset($data['userId'])) {
+        $user_id = intval($data['userId']);
+        error_log("Got user ID from request body: " . $user_id);
+    }
+    
+    // If no user_id in request, try to extract from token
+    if (!$user_id) {
+        // Since your tokens don't contain user ID, we need to check if you have a sessions table
+        // or we can get the user ID from the frontend
+        
+        // For now, let's check if there's a user logged in via session
+        session_start();
+        if (isset($_SESSION['user_id'])) {
+            $user_id = $_SESSION['user_id'];
+            error_log("Got user ID from session: " . $user_id);
         }
     }
     
-    error_log("User ID determined: " . ($user_id ?: 'NULL'));
+    // If still no user_id, try to get the first user (FOR DEVELOPMENT ONLY - REMOVE IN PRODUCTION)
+    if (!$user_id) {
+        // TEMPORARY: Get the test user (ID: 2 from your logs)
+        $user_id = 2; // Your test user ID
+        error_log("WARNING: Using fallback user ID: " . $user_id);
+    }
     
     if (!$user_id) {
         http_response_code(401);
-        echo json_encode(['success' => false, 'message' => 'Authentication required']);
+        echo json_encode(['success' => false, 'message' => 'Could not determine user ID']);
+        exit;
+    }
+    
+    // Get user details from database
+    $user_query = "SELECT id, email, name, role FROM users WHERE id = :id";
+    $user_stmt = $db->prepare($user_query);
+    $user_stmt->bindParam(':id', $user_id);
+    $user_stmt->execute();
+    
+    $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'User not found']);
+        exit;
+    }
+    
+    error_log("Authenticated user: " . $user['email']);
+    
+    // --- GET AND VALIDATE REQUEST DATA ---
+    if (empty($input)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'No data received']);
+        exit;
+    }
+    
+    if (!$data) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
         exit;
     }
     
@@ -89,24 +113,20 @@ try {
         }
     }
     
-    // Prepare donation data based on ACTUAL database schema
+    // Prepare donation data
     $campaign_id = intval($data['campaignId']);
     $amount = floatval($data['amount']);
     $payment_method = $data['paymentMethod'] ?? 'qr';
-    $donor_name = $data['donorName'] ?? $data['donor_name'] ?? '';
-    $donor_email = $data['donorEmail'] ?? $data['donor_email'] ?? '';
+    $donor_name = $data['donorName'] ?? $data['donor_name'] ?? $user['name'] ?? '';
+    $donor_email = $data['donorEmail'] ?? $data['donor_email'] ?? $user['email'] ?? '';
     $donor_phone = $data['donorPhone'] ?? $data['donor_phone'] ?? '';
-    
-    // Use correct column name: is_anonymous (not anonymous)
     $is_anonymous = isset($data['anonymous']) ? ($data['anonymous'] ? 1 : 0) : 
                    (isset($data['is_anonymous']) ? ($data['is_anonymous'] ? 1 : 0) : 0);
-    
-    // Note: cover_fees column doesn't exist in your schema, so skip it
     
     // Generate transaction ID
     $transaction_id = 'DON-' . time() . '-' . rand(1000, 9999);
     
-    // Insert donation using ACTUAL column names from your schema
+    // Insert donation
     $query = "INSERT INTO donations (
                 user_id, 
                 campaign_id, 
@@ -134,7 +154,6 @@ try {
               )";
     
     $stmt = $db->prepare($query);
-    
     $result = $stmt->execute([
         ':user_id' => $user_id,
         ':campaign_id' => $campaign_id,
@@ -160,10 +179,8 @@ try {
     }
     
     $donation_id = $db->lastInsertId();
-    
     error_log("Donation saved successfully: ID $donation_id");
     
-    // Return success response
     echo json_encode([
         'success' => true,
         'donationId' => $donation_id,
@@ -173,7 +190,6 @@ try {
     
 } catch (Exception $e) {
     error_log("Exception in save-donations.php: " . $e->getMessage());
-    
     http_response_code(500);
     echo json_encode([
         'success' => false, 

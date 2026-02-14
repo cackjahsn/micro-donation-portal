@@ -214,33 +214,93 @@ class PaymentProcessor {
             if (typeof utils !== 'undefined' && utils.getApiUrl) {
                 saveUrl = utils.getApiUrl('payment/save-donations.php');
             } else {
-                saveUrl = 'backend/api/payment/save-donations.php';
+                saveUrl = '/micro-donation-portal/backend/api/payment/save-donations.php';
             }
             
             console.log('Using save URL:', saveUrl);
             
-            // Get auth token
+            // Get auth token - try all possible locations
             const authToken = localStorage.getItem('auth_token') || 
-                             localStorage.getItem('token') ||
-                             localStorage.getItem('micro_donation_token');
+                            localStorage.getItem('token') ||
+                            localStorage.getItem('micro_donation_token');
+            
+            // Get current user - IMPORTANT: Use micro_donation_user, NOT 'user'
+            let currentUser = null;
+            try {
+                // Try to get from AuthManager first
+                if (window.authManager && typeof window.authManager.getUser === 'function') {
+                    currentUser = window.authManager.getUser();
+                }
+                
+                // Fallback to localStorage - use the CORRECT key
+                if (!currentUser) {
+                    const userStr = localStorage.getItem('micro_donation_user');
+                    if (userStr) {
+                        currentUser = JSON.parse(userStr);
+                    }
+                }
+                
+                // Last resort - try to parse from other keys but warn
+                if (!currentUser) {
+                    const legacyUserStr = localStorage.getItem('user');
+                    if (legacyUserStr) {
+                        console.warn('Using legacy user key - this should be fixed');
+                        currentUser = JSON.parse(legacyUserStr);
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing user data:', e);
+            }
             
             console.log('Auth token available:', !!authToken);
+            console.log('Current user:', currentUser);
+            
+            // Prepare headers
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            };
+            
+            // Add Authorization header if token exists
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            // Prepare request body - INCLUDE USER ID
+            const requestBody = {
+                campaignId: donationData.campaignId,
+                amount: donationData.amount,
+                paymentMethod: donationData.paymentMethod || 'qr',
+                donorName: donationData.donorName || currentUser?.name || '',
+                donorEmail: donationData.donorEmail || currentUser?.email || '',
+                anonymous: donationData.anonymous || false
+            };
+            
+            // IMPORTANT: Add userId to help backend identify the user
+            if (currentUser && currentUser.id) {
+                requestBody.userId = currentUser.id;
+            }
+            
+            // If donationData already has transactionId from QR generation, include it
+            if (donationData.transactionId) {
+                requestBody.transactionId = donationData.transactionId;
+            }
+            
+            // If donationData has donationId from QR generation, include it
+            if (donationData.donationId) {
+                requestBody.donationId = donationData.donationId;
+            }
+            
+            console.log('Sending request with headers:', { 
+                ...headers, 
+                Authorization: headers.Authorization ? 'Bearer [REDACTED]' : undefined 
+            });
+            console.log('Request body:', requestBody);
             
             const response = await fetch(saveUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    campaignId: donationData.campaignId,
-                    amount: donationData.amount,
-                    paymentMethod: donationData.paymentMethod || 'qr',
-                    donorName: donationData.donorName || '',
-                    donorEmail: donationData.donorEmail || '',
-                    anonymous: donationData.anonymous || false
-                    // Note: cover_fees column doesn't exist, so skip it
-                })
+                headers: headers,
+                body: JSON.stringify(requestBody)
             });
             
             console.log('Save response status:', response.status);

@@ -170,7 +170,7 @@ try {
                   FROM donations d
                   LEFT JOIN users u ON d.user_id = u.id
                   JOIN campaigns c ON d.campaign_id = c.id
-                  WHERE d.id = :donation_id AND d.status = 'completed'";
+                  WHERE d.id = :donation_id AND d.status IN ('completed', 'pending')";
         
         $stmt = $db->prepare($query);
         $stmt->bindParam(':donation_id', $donation_id);
@@ -184,7 +184,7 @@ try {
                   JOIN campaigns c ON d.campaign_id = c.id
                   WHERE d.id = :donation_id 
                     AND d.user_id = :user_id 
-                    AND d.status = 'completed'";
+                    AND d.status IN ('completed', 'pending')"; // CHANGED HERE
         
         $stmt = $db->prepare($query);
         $stmt->bindParam(':donation_id', $donation_id);

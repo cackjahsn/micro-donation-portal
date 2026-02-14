@@ -14,6 +14,7 @@ class AuthManager {
         this.currentUser = null;
         this.tokenKey = 'micro_donation_token';
         this.userKey = 'micro_donation_user';
+        AuthManager.cleanupStorage();
         
         // Initialize utils if available
         if (typeof utils !== 'undefined') {
@@ -55,6 +56,25 @@ class AuthManager {
         }
         
         this.init();
+    }
+
+        // Add this method to your AuthManager class in auth.js
+    static cleanupStorage() {
+        // Remove conflicting user keys
+        if (localStorage.getItem('user') && localStorage.getItem('micro_donation_user')) {
+            console.warn('Removing conflicting user data from localStorage');
+            localStorage.removeItem('user');
+        }
+        
+        // Remove other potential conflicts
+        if (localStorage.getItem('token') && localStorage.getItem('auth_token')) {
+            // Keep auth_token, remove token if they're different
+            const authToken = localStorage.getItem('auth_token');
+            const legacyToken = localStorage.getItem('token');
+            if (authToken !== legacyToken) {
+                localStorage.removeItem('token');
+            }
+        }
     }
     
     init() {
@@ -456,6 +476,7 @@ class AuthManager {
             }
         }
     }
+    
     
     async handleRegister(userData) {
         console.log('Registration attempt for:', userData.email);
