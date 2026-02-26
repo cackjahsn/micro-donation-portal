@@ -137,30 +137,6 @@
                         </div>
                     </div>
 
-                    <!-- Recent Transactions -->
-                    <div class="card shadow mb-5">
-                        <div class="card-body">
-                            <h3 class="card-title mb-4">Recent Transactions</h3>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Donor</th>
-                                            <th>Campaign</th>
-                                            <th>Amount</th>
-                                            <th>Status</th>
-                                            <th>Receipt</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="recentTransactionsBody">
-                                        <!-- will be populated by JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Audit Reports -->
                     <div class="card shadow">
                         <div class="card-body">
@@ -171,8 +147,8 @@
                                         <div class="card-body text-center">
                                             <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
                                             <h5>Monthly Financial Report</h5>
-                                            <p>December 2025</p>
-                                            <a href="#" class="btn btn-outline-danger">Download PDF</a>
+                                            <p>Current month summary</p>
+                                            <a href="backend/api/transparency/report.php?type=monthly" class="btn btn-outline-danger" target="_blank">View Report</a>
                                         </div>
                                     </div>
                                 </div>
@@ -181,8 +157,8 @@
                                         <div class="card-body text-center">
                                             <i class="fas fa-chart-bar fa-3x text-primary mb-3"></i>
                                             <h5>Annual Impact Report</h5>
-                                            <p>2025 Summary</p>
-                                            <a href="#" class="btn btn-outline-primary">View Report</a>
+                                            <p>Yearly overview</p>
+                                            <a href="backend/api/transparency/report.php?type=annual" class="btn btn-outline-primary" target="_blank">View Report</a>
                                         </div>
                                     </div>
                                 </div>
@@ -191,8 +167,8 @@
                                         <div class="card-body text-center">
                                             <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
                                             <h5>Security Audit</h5>
-                                            <p>Q4 2025</p>
-                                            <a href="#" class="btn btn-outline-success">View Details</a>
+                                            <p>System integrity check</p>
+                                            <a href="backend/api/transparency/report.php?type=security" class="btn btn-outline-success" target="_blank">View Report</a>
                                         </div>
                                     </div>
                                 </div>
