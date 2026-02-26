@@ -838,6 +838,56 @@ class Utils {
     getCurrentPage() {
         return window.location.pathname.split('/').pop().replace('.html', '');
     }
+
+    // utils.js – inside Utils class
+
+    /**
+     * Get the correct URL for a campaign image
+     * @param {string} imageUrl - The image path from the database
+     * @param {boolean} addTimestamp - Whether to add a cache-busting timestamp
+     * @returns {string} The full image URL
+     */
+    getCampaignImageUrl(imageUrl, addTimestamp = false) {
+        // Default image if none provided
+        if (!imageUrl || imageUrl === 'assets/images/default-campaign.jpg') {
+            return 'assets/images/default-campaign.jpg';
+        }
+        
+        // Already a full URL (http://, https://, //)
+        if (imageUrl.startsWith('http') || imageUrl.startsWith('//')) {
+            return addTimestamp ? imageUrl + '?t=' + Date.now() : imageUrl;
+        }
+        
+        // If it's from the uploads directory (new path)
+        if (imageUrl.includes('uploads/')) {
+            // Ensure we prepend the base path
+            const basePath = this.getBasePath();
+            return basePath + imageUrl;
+        }
+        
+        // If it's from the old assets path (legacy)
+        if (imageUrl.includes('assets/images/campaigns/')) {
+            return imageUrl; // Keep as is (may 404 for old images)
+        }
+        
+        // If it's a bare filename (e.g., campaign_5_1772092564.jpg) – treat as uploads
+        if (!imageUrl.includes('/')) {
+            const basePath = this.getBasePath();
+            return basePath + 'uploads/campaigns/' + imageUrl;
+        }
+        
+        // Default: return as is
+        return addTimestamp ? imageUrl + '?t=' + Date.now() : imageUrl;
+    }
+
+    /**
+     * Get the base path for the application
+     * @returns {string} Base path (e.g., '/micro-donation-portal/')
+     */
+    getBasePath() {
+        // You can adjust this based on your deployment
+        return '/micro-donation-portal/';
+    }
     
     // ==================== SETUP FUNCTIONS ====================
     

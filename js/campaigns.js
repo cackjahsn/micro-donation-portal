@@ -3,11 +3,11 @@ class CampaignManager {
     constructor() {
         this.campaigns = [];
         this.categories = [
-            'education',
-            'health',
-            'emergency',
-            'community',
-            'environment'
+            'Education',
+            'Health & Medical',
+            'Emergency Relief',
+            'Community Development',
+            'Environment'
         ];
         
         // Initialize utils if available
@@ -63,6 +63,229 @@ class CampaignManager {
         // Sort buttons
         document.querySelectorAll('[data-sort]').forEach(btn => {
             btn.addEventListener('click', (e) => this.sortCampaigns(e.target.dataset.sort));
+        });
+    }
+
+        /**
+     * Show login modal and store campaign ID for redirect after login
+     * @param {string|number} campaignId - The campaign ID to donate to
+     * @param {string} campaignTitle - The campaign title (optional)
+     */
+    showLoginModal(campaignId, campaignTitle) {
+        console.log('Showing login modal for campaign:', campaignTitle);
+        
+        // Store campaign ID for redirect after login
+        if (campaignId) {
+            sessionStorage.setItem('redirectAfterLogin', `donation-page.html?campaign=${campaignId}`);
+            sessionStorage.setItem('campaignTitle', campaignTitle || '');
+        }
+        
+        const loginModal = document.getElementById('loginModal');
+        
+        if (loginModal && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            this.useBootstrapModal(loginModal);
+        } else {
+            this.useCustomModal(campaignTitle);
+        }
+    }
+
+    /**
+     * Use Bootstrap modal for login
+     */
+    useBootstrapModal(loginModal) {
+        console.log('Using Bootstrap modal');
+        
+        try {
+            let modalInstance = bootstrap.Modal.getInstance(loginModal);
+            if (!modalInstance) {
+                modalInstance = new bootstrap.Modal(loginModal, {
+                    backdrop: true,
+                    keyboard: true,
+                    focus: true
+                });
+            }
+            
+            // Clear any existing close handlers
+            const closeButtons = loginModal.querySelectorAll('[data-bs-dismiss="modal"], .btn-close');
+            closeButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+            });
+            
+            // Listen for hidden event to clean up
+            loginModal.addEventListener('hidden.bs.modal', () => {
+                console.log('Bootstrap modal hidden - cleaning up');
+                this.cleanupModalState();
+                sessionStorage.removeItem('redirectAfterLogin');
+                sessionStorage.removeItem('campaignTitle');
+            });
+            
+            modalInstance.show();
+            
+        } catch (error) {
+            console.error('Error with Bootstrap modal:', error);
+            this.useCustomModal();
+        }
+    }
+
+    /**
+     * Use custom modal when Bootstrap is not available
+     */
+    useCustomModal(campaignTitle) {
+        console.log('Using custom modal');
+        
+        // Remove existing custom modal
+        const existingModal = document.getElementById('customLoginModal');
+        if (existingModal) existingModal.remove();
+        
+        const modalHTML = `
+            <div id="customLoginModal" class="custom-login-modal">
+                <div class="custom-modal-backdrop"></div>
+                <div class="custom-modal-dialog">
+                    <div class="custom-modal-content">
+                        <div class="custom-modal-header">
+                            <h5 class="custom-modal-title"><i class="fas fa-sign-in-alt me-2"></i>Login Required</h5>
+                            <button type="button" class="custom-modal-close"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="custom-modal-body">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                ${campaignTitle ? 
+                                    `You need to login to donate to "${campaignTitle}"` : 
+                                    'You need to login to make a donation'}
+                            </div>
+                            <p class="mb-3">Please login or register to continue with your donation.</p>
+                        </div>
+                        <div class="custom-modal-footer">
+                            <button type="button" class="btn btn-secondary btn-cancel"><i class="fas fa-times me-2"></i>Cancel</button>
+                            <a href="register.html" class="btn btn-primary"><i class="fas fa-sign-in-alt me-2"></i>Go to Login</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Add CSS if not already present
+        if (!document.querySelector('#custom-modal-styles')) {
+            const styles = `
+                <style id="custom-modal-styles">
+                    .custom-login-modal {
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;
+                        display: flex; align-items: center; justify-content: center;
+                    }
+                    .custom-modal-backdrop {
+                        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                        background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s ease;
+                    }
+                    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                    .custom-modal-dialog {
+                        position: relative; width: 90%; max-width: 500px; z-index: 10000;
+                        animation: slideIn 0.3s ease;
+                    }
+                    @keyframes slideIn {
+                        from { transform: translateY(-50px); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                    .custom-modal-content { background: white; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+                    .custom-modal-header {
+                        padding: 20px; border-bottom: 1px solid #dee2e6;
+                        display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa;
+                    }
+                    .custom-modal-title { margin: 0; font-size: 1.25rem; color: #333; }
+                    .custom-modal-close {
+                        background: none; border: none; font-size: 1.25rem; color: #6c757d; cursor: pointer;
+                    }
+                    .custom-modal-close:hover { color: #000; }
+                    .custom-modal-body { padding: 20px; }
+                    .custom-modal-footer {
+                        padding: 20px; border-top: 1px solid #dee2e6;
+                        display: flex; justify-content: flex-end; gap: 10px; background-color: #f8f9fa;
+                    }
+                    .btn-cancel:hover { background-color: #6c757d; color: white; }
+                    body.modal-open { overflow: hidden; }
+                </style>
+            `;
+            document.head.insertAdjacentHTML('beforeend', styles);
+        }
+        
+        const modal = document.getElementById('customLoginModal');
+        const closeBtn = modal.querySelector('.custom-modal-close');
+        const cancelBtn = modal.querySelector('.btn-cancel');
+        const backdrop = modal.querySelector('.custom-modal-backdrop');
+        
+        const closeModal = () => {
+            modal.style.opacity = '0';
+            modal.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                modal.remove();
+                sessionStorage.removeItem('redirectAfterLogin');
+                sessionStorage.removeItem('campaignTitle');
+                document.body.classList.remove('modal-open');
+            }, 300);
+        };
+        
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        backdrop.addEventListener('click', closeModal);
+        
+        document.body.classList.add('modal-open');
+        
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+        modal._escHandler = escHandler;
+    }
+
+    /**
+     * Clean up modal state (remove backdrops, restore body scroll)
+     */
+    cleanupModalState() {
+        console.log('Cleaning up modal state');
+        document.body.classList.remove('modal-open');
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        const customModal = document.getElementById('customLoginModal');
+        if (customModal) customModal.remove();
+    }
+
+    /**
+     * Attach click handlers to all donate buttons to enforce login
+     */
+    attachDonationButtonListeners() {
+        // Remove any existing listeners by cloning buttons
+        document.querySelectorAll('.btn-donate').forEach(button => {
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+        });
+        
+        // Attach new listeners
+        document.querySelectorAll('.btn-donate').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const campaignId = button.getAttribute('data-campaign-id');
+                const campaignTitle = button.getAttribute('data-campaign-title') || '';
+                
+                console.log('Donate button clicked for campaign:', campaignId);
+                
+                // Check authentication using global auth object
+                const isAuthenticated = window.auth && typeof window.auth.isAuthenticated === 'function'
+                    ? window.auth.isAuthenticated()
+                    : !!localStorage.getItem('micro_donation_user');
+                
+                if (!isAuthenticated) {
+                    this.showLoginModal(campaignId, campaignTitle);
+                } else {
+                    window.location.href = `donation-page.html?campaign=${campaignId}`;
+                }
+            });
         });
     }
     
@@ -180,89 +403,6 @@ class CampaignManager {
             resolve(filtered);
         });
     }
-    
-    async createCampaignInDB(campaignData) {
-        try {
-            const response = await fetch('../backend/api/campaigns/create.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(campaignData)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                // Transform and add to local array for immediate display
-                const transformedCampaign = this.transformCampaignData(result.campaign);
-                this.campaigns.unshift(transformedCampaign);
-                return {
-                    success: true,
-                    campaign: transformedCampaign,
-                    message: 'Campaign submitted for admin review'
-                };
-            } else {
-                throw new Error(result.message || 'Failed to create campaign');
-            }
-        } catch (error) {
-            throw new Error('Network error: ' + error.message);
-        }
-    }
-
-    async createCampaign(campaignData) {
-        // Validate campaign data
-        if (!this.validateCampaignData(campaignData)) {
-            throw new Error('Invalid campaign data');
-        }
-        
-        // Check if user is logged in
-        const user = this.getCurrentUser();
-        if (!user) {
-            throw new Error('Please login to create a campaign');
-        }
-        
-        // Prepare data for database
-        const dbData = {
-            ...campaignData,
-            organizer: user.name || 'Anonymous',
-            organizer_email: user.email,
-            status: 'pending', // Admin needs to approve
-            featured: false
-        };
-        
-        try {
-            // Try to save to database
-            return await this.createCampaignInDB(dbData);
-        } catch (error) {
-            // If API fails, save locally as temporary campaign
-            console.warn('API failed, saving campaign locally:', error);
-            
-            const tempCampaign = {
-                ...dbData,
-                id: Date.now(),
-                raised: 0,
-                progress: 0,
-                donors: 0,
-                daysLeft: dbData.days_left || 30,
-                image: dbData.image_url || '/micro-donation-portal/assets/images/default-campaign.jpg',
-                dateCreated: new Date().toISOString().split('T')[0],
-                isTemporary: true
-            };
-            
-            // Add to campaigns array
-            this.campaigns.unshift(tempCampaign);
-            
-            // Save to storage
-            this.saveTempCampaign(tempCampaign);
-            
-            return {
-                success: true,
-                campaign: tempCampaign,
-                message: 'Campaign saved locally. Will sync when online.'
-            };
-        }
-    }
 
     // In campaigns.js - FIX getCurrentUser method to use utils
     getCurrentUser() {
@@ -349,11 +489,11 @@ class CampaignManager {
     
     getCategoryLabel(category) {
         const labels = {
-            'education': 'Education',
-            'health': 'Health & Medical',
-            'emergency': 'Emergency Relief',
-            'community': 'Community Development',
-            'environment': 'Environment'
+            'Education': 'Education',
+            'Health & Medical': 'Health & Medical',
+            'Emergency Relief': 'Emergency Relief',
+            'Community Development': 'Community Development',
+            'Environment': 'Environment'
         };
         
         return labels[category] || category;
@@ -361,11 +501,11 @@ class CampaignManager {
     
     getCategoryColor(category) {
         const colors = {
-            'education': 'primary',
-            'health': 'danger',
-            'emergency': 'warning',
-            'community': 'success',
-            'environment': 'info'
+            'Education': 'primary',
+            'Health & Medical': 'danger',
+            'Emergency Relief': 'warning',
+            'Community Development': 'success',
+            'Environment': 'info'
         };
         
         return colors[category] || 'secondary';
@@ -451,19 +591,30 @@ class CampaignManager {
         const targetAmount = typeof utils !== 'undefined' && utils.formatCurrency ? 
             utils.formatCurrency(campaign.target) : `RM ${campaign.target.toLocaleString()}`;
         
-        // Handle image path correctly
-        let imageUrl = campaign.image;
-        if (!imageUrl) {
-            imageUrl = 'assets/images/default-campaign.jpg';
+        // --- START: IMAGE HELPER INTEGRATION ---
+        // Get correct image URL using utils (with fallback)
+        let imageUrl;
+        if (window.utils && window.utils.getCampaignImageUrl) {
+            imageUrl = window.utils.getCampaignImageUrl(campaign.image);
         } else {
-            // Remove any backslashes (just in case)
-            imageUrl = imageUrl.replace(/\\/g, '');
-            // If it's a bare filename (no slashes), assume it belongs in uploads/campaigns/
-            if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.includes('/')) {
-                imageUrl = 'uploads/campaigns/' + imageUrl;
+            // Fallback logic (same as before but ensures base path for uploads)
+            if (!campaign.image) {
+                imageUrl = 'assets/images/default-campaign.jpg';
+            } else {
+                let img = campaign.image.replace(/\\/g, '');
+                // If it's a bare filename (no slashes), assume it's in uploads/campaigns/
+                if (!img.startsWith('http') && !img.startsWith('/') && !img.includes('/')) {
+                    img = 'uploads/campaigns/' + img;
+                }
+                // If it's an uploads path but missing the base path, prepend it
+                if (img.includes('uploads/') && !img.startsWith('/micro-donation-portal/')) {
+                    imageUrl = '/micro-donation-portal/' + img;
+                } else {
+                    imageUrl = img;
+                }
             }
-            // Otherwise, leave it as is (should already be a proper relative path like 'uploads/campaigns/...')
         }
+        // --- END: IMAGE HELPER INTEGRATION ---
         
         return `
             <div class="col-md-6 col-lg-4 mb-4 stagger-item">
@@ -514,7 +665,8 @@ class CampaignManager {
                                         <i class="fas fa-info-circle"></i> View
                                     </button>
                                     <a href="donation-page.html?campaign=${campaign.id}" 
-                                    class="btn btn-success btn-sm">
+                                    class="btn btn-success btn-sm btn-donate"
+                                    data-campaign-id="${campaign.id}">
                                         <i class="fas fa-heart"></i> Donate
                                     </a>
                                 </div>
@@ -632,6 +784,8 @@ class CampaignManager {
                 container.innerHTML = campaigns.map(campaign => 
                     this.renderCampaignCard(campaign)
                 ).join('');
+                // ADD THIS LINE: Attach click handlers to donate buttons
+                this.attachDonationButtonListeners();
             }
             
         } catch (error) {

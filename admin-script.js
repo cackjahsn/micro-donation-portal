@@ -1553,6 +1553,25 @@ class AdminDashboard {
                 case 'cancelled': statusColor = 'danger'; statusText = 'Cancelled'; break;
                 default: statusColor = 'secondary'; statusText = statusText;
             }
+
+            // --- START OF IMAGE HELPER INTEGRATION ---
+            // Get the correct image URL using utils (with fallback)
+            let imgSrc = window.utils && window.utils.getCampaignImageUrl
+                ? window.utils.getCampaignImageUrl(campaign.image_url)
+                : (campaign.image_url && campaign.image_url.includes('uploads/')
+                    ? '/micro-donation-portal/' + campaign.image_url
+                    : campaign.image_url);
+
+            // Check if the image is valid (not the default placeholder)
+            const isValidImage = imgSrc && imgSrc !== 'assets/images/default-campaign.jpg' && !imgSrc.includes('default');
+
+            let imageHtml;
+            if (isValidImage) {
+                imageHtml = `<img src="${imgSrc}" alt="${this.escapeHtml(campaign.title)}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.onerror=null; this.src='assets/images/default-campaign.jpg';">`;
+            } else {
+                imageHtml = `<div class="rounded me-2 d-flex align-items-center justify-content-center bg-light" style="width: 40px; height: 40px;"><i class="fas fa-hand-holding-heart text-muted"></i></div>`;
+            }
+            // --- END OF IMAGE HELPER INTEGRATION ---
             
             html += `
                 <tr>
@@ -1831,156 +1850,116 @@ class AdminDashboard {
             'cancelled': 'danger',
             'pending': 'warning'
         }[campaign.status?.toLowerCase()] || 'secondary';
+
+        // --- START: IMAGE HELPER INTEGRATION ---
+        // Get correct image URL using utils (with fallback)
+        let imgSrc = window.utils && window.utils.getCampaignImageUrl
+            ? window.utils.getCampaignImageUrl(campaign.image_url)
+            : (campaign.image_url && campaign.image_url.includes('uploads/')
+                ? '/micro-donation-portal/' + campaign.image_url
+                : campaign.image_url);
+
+        // Determine if the image is valid (not the default placeholder)
+        const isValidImage = imgSrc && imgSrc !== 'assets/images/default-campaign.jpg' && !imgSrc.includes('default');
+
+        let imageHtml;
+        if (isValidImage) {
+            imageHtml = `<img src="${imgSrc}" alt="${this.escapeHtml(campaign.title)}" class="img-fluid rounded" style="max-height: 250px; object-fit: cover;" onerror="this.onerror=null; this.src='assets/images/default-campaign.jpg';">`;
+        } else {
+            imageHtml = `<div class="bg-light rounded d-flex align-items-center justify-content-center p-5"><i class="fas fa-hand-holding-heart fa-5x text-primary opacity-50"></i></div>`;
+        }
+        // --- END: IMAGE HELPER INTEGRATION ---
         
         modal = document.createElement('div');
         modal.id = modalId;
         modal.className = 'modal fade';
         modal.setAttribute('tabindex', '-1');
         modal.innerHTML = `
-            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-dialog modal-md modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
+                    <div class="modal-header bg-primary text-white py-2">
                         <h5 class="modal-title">
                             <i class="fas fa-hand-holding-heart me-2"></i>
-                            Campaign Details
+                            Campaign #${campaign.id}
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="text-center mb-4">
-                            ${campaign.image_url && campaign.image_url !== 'assets/images/default-campaign.jpg' ? 
-                                `<img src="${campaign.image_url}" alt="${this.escapeHtml(campaign.title)}" 
-                                    class="img-fluid rounded" style="max-height: 250px; object-fit: cover;">` : 
-                                `<div class="bg-light rounded d-flex align-items-center justify-content-center p-5">
-                                    <i class="fas fa-hand-holding-heart fa-5x text-primary opacity-50"></i>
-                                </div>`
-                            }
-                        </div>
-                        
+                    <div class="modal-body p-3">
+                        ${imageHtml}
+
+                        <!-- Title & Status -->
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h3 class="mb-1">${this.escapeHtml(campaign.title || 'Untitled Campaign')}</h3>
-                                <span class="badge bg-${statusColor} fs-6">${campaign.status || 'Unknown'}</span>
-                                ${campaign.featured ? '<span class="badge bg-warning ms-2 fs-6"><i class="fas fa-star me-1"></i>Featured</span>' : ''}
-                            </div>
-                            <div class="text-end">
-                                <small class="text-muted d-block">Campaign ID</small>
-                                <strong>#${campaign.id}</strong>
-                            </div>
+                            <h5 class="mb-0">${this.escapeHtml(campaign.title || 'Untitled Campaign')}</h5>
+                            <span class="badge bg-${statusColor}">${campaign.status || 'Unknown'}</span>
                         </div>
-                        
-                        <div class="card bg-light mb-4">
-                            <div class="card-body">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <span class="fw-bold">Progress</span>
-                                            <span class="fw-bold text-${progressPercentage >= 100 ? 'success' : 'primary'}">
-                                                ${progressPercentage.toFixed(1)}%
-                                            </span>
-                                        </div>
-                                        <div class="progress" style="height: 10px;">
-                                            <div class="progress-bar ${progressPercentage >= 100 ? 'bg-success' : 'bg-primary'}" 
-                                                style="width: ${Math.min(progressPercentage, 100)}%"></div>
-                                        </div>
-                                        <div class="d-flex justify-content-between mt-2">
-                                            <span class="text-success fw-bold">${this.formatCurrency(currentAmount)}</span>
-                                            <span class="text-muted">of ${this.formatCurrency(targetAmount)}</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="text-center border-start ps-3">
-                                            <div class="mb-2">
-                                                <i class="fas fa-users fa-2x text-primary"></i>
-                                                <div class="h4 mb-0">${campaign.donors_count || 0}</div>
-                                                <small class="text-muted">Total Donors</small>
-                                            </div>
-                                        </div>
-                                    </div>
+
+                        <!-- Progress Card (compact) -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between small">
+                                    <span>Progress</span>
+                                    <span class="fw-bold">${progressPercentage.toFixed(1)}%</span>
+                                </div>
+                                <div class="progress mb-1" style="height: 6px;">
+                                    <div class="progress-bar ${progressPercentage >= 100 ? 'bg-success' : 'bg-primary'}" 
+                                        style="width: ${Math.min(progressPercentage, 100)}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-success fw-bold">${this.formatCurrency(currentAmount)}</span>
+                                    <span class="text-muted">of ${this.formatCurrency(targetAmount)}</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th style="width: 40%;">Category:</th>
-                                                <td><span class="badge bg-info">${this.escapeHtml(campaign.category || 'Uncategorized')}</span></td>
-                                            </tr>
-                                            <tr>
-                                                <th>Organizer:</th>
-                                                <td>${this.escapeHtml(campaign.organizer || 'Not specified')}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Created By:</th>
-                                                <td>${this.escapeHtml(campaign.created_by_name || 'System')}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Created Date:</th>
-                                                <td>${this.formatDate(campaign.created_at)}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
+
+                        <!-- Two‑column info grid (no tables) -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Category</small>
+                                    <span class="badge bg-info">${this.escapeHtml(campaign.category || 'Uncategorized')}</span>
                                 </div>
                             </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Timeline & Goals</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th style="width: 40%;">Target Amount:</th>
-                                                <td class="fw-bold text-primary">${this.formatCurrency(targetAmount)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Current Raised:</th>
-                                                <td class="fw-bold text-success">${this.formatCurrency(currentAmount)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>End Date:</th>
-                                                <td>${campaign.end_date ? this.formatDate(campaign.end_date) : 'No end date'}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Organizer</small>
+                                    <span>${this.escapeHtml(campaign.organizer || 'Not specified')}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Created</small>
+                                    <span>${this.formatDate(campaign.created_at)}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">End Date</small>
+                                    <span>${campaign.end_date ? this.formatDate(campaign.end_date) : 'No end date'}</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="card mb-3">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h6>
-                            </div>
-                            <div class="card-body">
-                                <p class="mb-0" style="white-space: pre-line;">${this.escapeHtml(campaign.description || 'No description provided.')}</p>
-                            </div>
+
+                        <!-- Description -->
+                        <div class="border rounded p-2">
+                            <small class="text-muted d-block mb-1">Description</small>
+                            <p class="mb-0 small" style="white-space: pre-line;">${this.escapeHtml(campaign.description || 'No description provided.')}</p>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-primary" onclick="adminDashboard.editCampaign(${campaign.id})">
-                            <i class="fas fa-edit me-2"></i>Edit Campaign
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="adminDashboard.editCampaign(${campaign.id})">
+                            <i class="fas fa-edit me-1"></i>Edit
                         </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-2"></i>Close
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close
                         </button>
                     </div>
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
         const bootstrapModal = new bootstrap.Modal(modal);
         bootstrapModal.show();
-        
         modal.addEventListener('hidden.bs.modal', () => modal.remove());
     }
 
@@ -2180,15 +2159,10 @@ class AdminDashboard {
                                                 <select class="form-select" name="category" required>
                                                     <option value="">Select a category</option>
                                                     <option value="Education" ${campaign.category === 'Education' ? 'selected' : ''}>📚 Education</option>
-                                                    <option value="Healthcare" ${campaign.category === 'Healthcare' ? 'selected' : ''}>🏥 Healthcare</option>
-                                                    <option value="Disaster Relief" ${campaign.category === 'Disaster Relief' ? 'selected' : ''}>🌊 Disaster Relief</option>
+                                                    <option value="Health & Medical" ${campaign.category === 'Health & Medical' ? 'selected' : ''}>🏥 Health & Medical</option>
+                                                    <option value="Emergency Relief" ${campaign.category === 'Emergency Relief' ? 'selected' : ''}>🚨 Emergency Relief</option>
+                                                    <option value="Community Development" ${campaign.category === 'Community Development' ? 'selected' : ''}>🏘️ Community Development</option>
                                                     <option value="Environment" ${campaign.category === 'Environment' ? 'selected' : ''}>🌱 Environment</option>
-                                                    <option value="Animals" ${campaign.category === 'Animals' ? 'selected' : ''}>🐾 Animals</option>
-                                                    <option value="Community" ${campaign.category === 'Community' ? 'selected' : ''}>🏘️ Community</option>
-                                                    <option value="Arts & Culture" ${campaign.category === 'Arts & Culture' ? 'selected' : ''}>🎨 Arts & Culture</option>
-                                                    <option value="Sports" ${campaign.category === 'Sports' ? 'selected' : ''}>⚽ Sports</option>
-                                                    <option value="Technology" ${campaign.category === 'Technology' ? 'selected' : ''}>💻 Technology</option>
-                                                    <option value="Other" ${campaign.category === 'Other' ? 'selected' : ''}>🔄 Other</option>
                                                 </select>
                                             </div>
                                             
@@ -2590,7 +2564,7 @@ class AdminDashboard {
     // DONORS PAGE - Real data from donations
     // ============================================
     
-    // Update the getDonorsHTML to include the phone and status columns
+    // Update the getDonorsHTML to include the status columns
     getDonorsHTML() {
         return `
             <div class="row">
@@ -2692,7 +2666,6 @@ class AdminDashboard {
                                             <th>ID</th>
                                             <th>Name</th>
                                             <th>Email</th>
-                                            <th>Phone</th>
                                             <th>Total Donations</th>
                                             <th>Last Donation</th>
                                             <th>Status</th>
@@ -2805,7 +2778,6 @@ class AdminDashboard {
                             </div>
                         </td>
                         <td>${this.escapeHtml(d.email || 'N/A')}</td>
-                        <td>${this.escapeHtml(d.phone || 'Not provided')}</td>
                         <td class="fw-bold text-success">${this.formatCurrency(d.totalDonations || 0)}</td>
                         <td>${this.formatDate(d.lastDonation)}</td>
                         <td>
@@ -2836,16 +2808,657 @@ class AdminDashboard {
         }
     }
     
-    // Update viewDonor method to work with email
-    viewDonor(email) {
-        this.showNotification(`Viewing donor: ${email}`, 'info');
-        // You could fetch and show detailed donor history here
+    /**
+     * Send email to donor (opens default mail client)
+     * @param {string} email - Donor's email address
+     */
+    sendEmailToDonor(email) {
+        if (!email || email === 'N/A') {
+            this.showNotification('No email address available for this donor', 'warning');
+            return;
+        }
+        window.location.href = 'mailto:' + email;
     }
 
-    // Update sendEmailToDonor method
-    sendEmailToDonor(email) {
-        this.showNotification(`Preparing email to: ${email}`, 'info');
-        window.location.href = `mailto:${email}`;
+    /**
+     * View donor details – shows a modal with donor information and donation history
+     * @param {string} email - Donor's email address
+     */
+    async viewDonor(email) {
+        if (!email || email === 'N/A') {
+            this.showNotification('No email address available for this donor', 'warning');
+            return;
+        }
+
+        this.showNotification('Loading donor details...', 'info');
+
+        try {
+            // Fetch all donations (we'll filter by email)
+            const donationsData = await this.apiRequest('backend/api/user/donations.php?limit=10000');
+
+            if (!donationsData.success || !Array.isArray(donationsData.donations)) {
+                throw new Error('Failed to load donation data');
+            }
+
+            // Find all donations for this email
+            const donorDonations = donationsData.donations.filter(d => 
+                d.donor_email && d.donor_email.toLowerCase() === email.toLowerCase()
+            );
+
+            // Get donor info from the donors list (we already have it in this.allDonors? 
+            // But we don't store allDonors globally. We can either store it or extract from first donation.)
+            // For simplicity, we'll fetch donors again or use the first donation's donor info.
+            // Alternatively, we can rely on the donations data: it contains donor_name, donor_email, etc.
+            // We'll extract donor name from the first donation if available.
+
+            let donorName = 'Unknown';
+            let donorStatus = 'Unknown';
+
+            // If we have at least one donation, get donor name from it
+            if (donorDonations.length > 0) {
+                donorName = donorDonations[0].donor_name || 'Unknown';
+            }
+
+            // To get phone and status, we might need to fetch donors separately.
+            // Since we already loaded donors in loadDonors, we could store them globally.
+            // Let's add a property this.allDonors to the class and populate it in loadDonors.
+            // We'll modify loadDonors to store donors in this.allDonors.
+            // But to keep this answer self-contained, we'll fetch donors again if needed.
+
+            // Fetch donors to get phone and status
+            const donorsData = await this.apiRequest('backend/api/donors/get-all.php?admin=true');
+            if (donorsData.success && Array.isArray(donorsData.donors)) {
+                const donor = donorsData.donors.find(d => d.email && d.email.toLowerCase() === email.toLowerCase());
+                if (donor) {
+                    donorName = donor.name || donorName;
+                    donorStatus = donor.status || 'active';
+                }
+            }
+
+            // Calculate stats
+            const totalDonated = donorDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+            const donationCount = donorDonations.length;
+            const lastDonation = donorDonations.length > 0 ? donorDonations[0].created_at : null;
+
+            // Create and show modal
+            this.showDonorDetailsModal({
+                name: donorName,
+                email: email,
+                status: donorStatus,
+                totalDonated: totalDonated,
+                donationCount: donationCount,
+                lastDonation: lastDonation,
+                donations: donorDonations
+            });
+
+        } catch (error) {
+            console.error('Error loading donor details:', error);
+            this.showNotification('Failed to load donor details: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Display donor details modal
+     * @param {Object} donorData - Donor information and donation list
+     */
+    showDonorDetailsModal(donorData) {
+        const modalId = 'donorDetailsModal';
+        let modal = document.getElementById(modalId);
+        if (modal) modal.remove();
+
+        // Format currency
+        const formatCurrency = (amount) => {
+            return 'RM ' + parseFloat(amount || 0).toFixed(2);
+        };
+
+        // Format date
+        const formatDate = (dateString) => {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-MY', {
+                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        };
+
+        // Determine status badge color
+        const statusColor = donorData.status === 'active' ? 'success' : 
+                            donorData.status === 'recurring' ? 'warning' : 'secondary';
+
+        // Build donations table HTML
+        let donationsHtml = '';
+        if (donorData.donations.length === 0) {
+            donationsHtml = '<tr><td colspan="4" class="text-center">No donations found</td></tr>';
+        } else {
+            donorData.donations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            donorData.donations.slice(0, 10).forEach(d => {
+                donationsHtml += `
+                    <tr>
+                        <td>${this.escapeHtml(d.campaign_title || 'Unknown Campaign')}</td>
+                        <td class="fw-bold text-success">${formatCurrency(d.amount)}</td>
+                        <td>${formatDate(d.created_at)}</td>
+                        <td><span class="badge bg-${d.status === 'completed' ? 'success' : 'warning'}">${d.status || 'pending'}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-user-circle me-2"></i>
+                            Donor Details
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Donor Info Card -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h4>${this.escapeHtml(donorData.name)}</h4>
+                                        <p class="mb-1"><i class="fas fa-envelope me-2"></i>${this.escapeHtml(donorData.email)}</p>
+                                        <p><span class="badge bg-${statusColor}">${donorData.status}</span></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center border-start ps-3">
+                                            <div class="mb-2">
+                                                <i class="fas fa-hand-holding-heart fa-2x text-primary"></i>
+                                                <div class="h4 mb-0">${donorData.donationCount}</div>
+                                                <small class="text-muted">Total Donations</small>
+                                            </div>
+                                            <div>
+                                                <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                                                <div class="h4 mb-0">${formatCurrency(donorData.totalDonated)}</div>
+                                                <small class="text-muted">Total Amount</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                ${donorData.lastDonation ? `
+                                <div class="mt-3 text-muted small">
+                                    <i class="fas fa-clock me-1"></i> Last donation: ${formatDate(donorData.lastDonation)}
+                                </div>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Donation History -->
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Donation History</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Campaign</th>
+                                                <th>Amount</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${donationsHtml}
+                                        </tbody>
+                                    </table>
+                                    ${donorData.donations.length > 10 ? 
+                                        `<p class="text-muted small mt-2">Showing 10 most recent donations</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="adminDashboard.sendEmailToDonor('${donorData.email}')">
+                            <i class="fas fa-envelope me-2"></i>Send Email
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+        modal.addEventListener('hidden.bs.modal', () => modal.remove());
+    }
+
+    // ============================================
+    // USERS MANAGEMENT PAGE
+    // ============================================
+
+    getUsersHTML() {
+        return `
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">User Management</h1>
+                        <div>
+                            <button class="btn btn-outline-primary" onclick="adminDashboard.loadUsersData()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Total Users</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="usersTotal">Loading...</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Active Users</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="usersActive">Loading...</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Admins</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="usersAdmins">Loading...</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        New Users (30d)</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="usersNew">Loading...</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-user-plus fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">All Registered Users</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover" id="usersTable" width="100%" cellspacing="0">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Joined</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersBody">
+                                        <tr><td colspan="7" class="text-center">Loading users...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async loadUsersData() {
+        try {
+            const usersBody = document.getElementById('usersBody');
+            if (!usersBody) return;
+            
+            usersBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading users...</p>
+                    </td>
+                </tr>
+            `;
+
+            // Fetch users from your backend API
+            const data = await this.apiRequest('backend/api/user/get-all.php?admin=true');
+            console.log('Users data:', data);
+
+            if (data.success && Array.isArray(data.users)) {
+                const users = data.users;
+
+                // Update stats
+                const total = users.length;
+                const active = users.filter(u => u.status === 'active' || !u.status).length;
+                const admins = users.filter(u => u.role === 'admin').length;
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const newUsers = users.filter(u => new Date(u.created_at) >= thirtyDaysAgo).length;
+
+                document.getElementById('usersTotal').textContent = total;
+                document.getElementById('usersActive').textContent = active;
+                document.getElementById('usersAdmins').textContent = admins;
+                document.getElementById('usersNew').textContent = newUsers;
+
+                // Render table
+                this.renderUsersTable(users);
+            } else {
+                throw new Error(data.message || 'Failed to load users');
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            const usersBody = document.getElementById('usersBody');
+            if (usersBody) {
+                usersBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load users: ${error.message}</td></tr>`;
+            }
+        }
+    }
+
+    renderUsersTable(users) {
+        const tbody = document.getElementById('usersBody');
+        if (!tbody) return;
+
+        if (!users || users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4">No users found</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = users.map(user => {
+            // Determine role badge color
+            let roleColor = 'secondary';
+            let roleText = user.role || 'user';
+            if (roleText === 'admin') roleColor = 'danger';
+            else if (roleText === 'donor') roleColor = 'success';
+
+            // Status badge
+            const statusColor = user.status === 'active' ? 'success' : 'secondary';
+            const statusText = user.status || 'active';
+
+            // Format date
+            const joined = this.formatDate(user.created_at);
+
+            return `
+            <tr>
+                <td><strong>#${user.id}</strong></td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle bg-primary text-white me-2" 
+                            style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            ${(user.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        ${this.escapeHtml(user.name || 'Unknown')}
+                    </div>
+                </td>
+                <td>${this.escapeHtml(user.email || 'N/A')}</td>
+                <td><span class="badge bg-${roleColor}">${roleText}</span></td>
+                <td><span class="badge bg-${statusColor}">${statusText}</span></td>
+                <td>${joined}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="adminDashboard.viewUser(${user.id})" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="adminDashboard.deleteUser(${user.id})" title="Delete User">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    async viewUser(userId) {
+        try {
+            this.showNotification('Loading user details...', 'info');
+            const data = await this.apiRequest(`backend/api/user/get-single.php?id=${userId}`);
+            
+            if (!data.success || !data.user) {
+                throw new Error(data.message || 'User not found');
+            }
+            
+            this.showUserDetailsModal(data.user);
+        } catch (error) {
+            console.error('Error viewing user:', error);
+            this.showNotification('Failed to load user details: ' + error.message, 'error');
+        }
+    }
+
+    showUserDetailsModal(user) {
+        const modalId = 'viewUserModal';
+        let modal = document.getElementById(modalId);
+        if (modal) modal.remove();
+
+        const roleColor = user.role === 'admin' ? 'danger' : (user.role === 'donor' ? 'success' : 'secondary');
+        const statusColor = user.status === 'active' ? 'success' : 'secondary';
+
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.innerHTML = `
+            <div class="modal-dialog modal-md modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white py-2">
+                        <h5 class="modal-title">
+                            <i class="fas fa-user-circle me-2"></i>
+                            User #${user.id}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-3">
+                        <!-- Avatar placeholder -->
+                        <div class="text-center mb-3">
+                            <div class="avatar-circle bg-primary text-white mx-auto" 
+                                style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+                                ${(user.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                        </div>
+
+                        <h5 class="text-center mb-3">${this.escapeHtml(user.name || 'Unknown')}</h5>
+
+                        <!-- Details grid -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Email</small>
+                                    <span>${this.escapeHtml(user.email || 'N/A')}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Role</small>
+                                    <span class="badge bg-${roleColor}">${user.role || 'user'}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Status</small>
+                                    <span class="badge bg-${statusColor}">${user.status || 'active'}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Joined</small>
+                                    <span>${this.formatDate(user.created_at)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="adminDashboard.deleteUser(${user.id})" data-bs-dismiss="modal">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+        modal.addEventListener('hidden.bs.modal', () => modal.remove());
+    }
+
+    async deleteUser(userId) {
+        // First, find user name for confirmation message
+        const userRow = document.querySelector(`#usersBody button[onclick*="deleteUser(${userId})"]`).closest('tr');
+        const userName = userRow ? userRow.querySelector('td:nth-child(2)').innerText.trim() : `User #${userId}`;
+
+        const confirmed = await this.showDeleteUserConfirmation(userId, userName);
+        if (!confirmed) return;
+
+        try {
+            this.showNotification('Deleting user...', 'info');
+
+            const token = localStorage.getItem('micro_donation_token') || localStorage.getItem('token');
+            const userString = localStorage.getItem('micro_donation_user') || localStorage.getItem('user');
+            const user = userString ? JSON.parse(userString) : null;
+
+            if (!user || user.role !== 'admin') {
+                this.showNotification('Access denied. Admin privileges required.', 'error');
+                return;
+            }
+
+            const response = await fetch('backend/api/users/delete.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                    'X-User-ID': user.id,
+                    'X-User-Role': user.role
+                },
+                body: JSON.stringify({ user_id: userId })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showNotification('User deleted successfully', 'success');
+                await this.loadUsersData(); // Refresh the table
+            } else {
+                throw new Error(result.message || 'Failed to delete user');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            this.showNotification('Failed to delete user: ' + error.message, 'error');
+        }
+    }
+
+    showDeleteUserConfirmation(userId, userName) {
+        return new Promise((resolve) => {
+            const modalId = 'deleteUserConfirmModal';
+            let modal = document.getElementById(modalId);
+            if (modal) modal.remove();
+
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.className = 'modal fade';
+            modal.setAttribute('tabindex', '-1');
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Confirm Delete User
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="text-center py-3">
+                                <i class="fas fa-user-slash fa-4x text-danger mb-3"></i>
+                                <h5 class="mb-3">Delete User?</h5>
+                                <p class="mb-2">
+                                    <strong>"${this.escapeHtml(userName)}"</strong> (ID: ${userId})
+                                </p>
+                                <p class="text-muted">
+                                    This action cannot be undone. All data associated with this user (donations, etc.) will also be deleted.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i> Cancel
+                            </button>
+                            <button type="button" class="btn btn-danger" id="confirmDeleteUserBtn">
+                                <i class="fas fa-trash me-2"></i> Yes, Delete User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+
+            document.getElementById('confirmDeleteUserBtn').onclick = () => {
+                bootstrapModal.hide();
+                modal.addEventListener('hidden.bs.modal', () => modal.remove());
+                resolve(true);
+            };
+
+            modal.addEventListener('hidden.bs.modal', () => {
+                modal.remove();
+                resolve(false);
+            });
+        });
     }
 
     // ============================================
@@ -3663,7 +4276,7 @@ class AdminDashboard {
                 }
                 
                 // Define CSV headers
-                const headers = ['ID', 'Name', 'Email', 'Phone', 'Total Donations', 'Donations Count', 'Last Donation Date', 'Status'];
+                const headers = ['ID', 'Name', 'Email', 'Total Donations', 'Donations Count', 'Last Donation Date', 'Status'];
                 const csvRows = [headers.join(',')];
                 
                 // Add donor rows
@@ -3673,7 +4286,7 @@ class AdminDashboard {
                         `"DON-${donor.id || ''}"`,
                         `"${this.escapeCsvField(donor.name || 'Anonymous')}"`,
                         `"${this.escapeCsvField(donor.email || '')}"`,
-                        `"${this.escapeCsvField(donor.phone || 'Not provided')}"`,
+
                         donor.total_donations || donor.totalDonations || 0,
                         donor.donations_count || donor.donationsCount || 0,
                         donor.last_donation_date || donor.lastDonation || '',
@@ -3774,7 +4387,7 @@ class AdminDashboard {
     }
     
     exportData() {
-        this.exportCampaigns();
+        this.exportDonations();
     }
     
     redrawCharts() {

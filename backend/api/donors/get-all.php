@@ -22,7 +22,6 @@ try {
         $query = "SELECT 
                     donor_email as email,
                     MAX(donor_name) as name,
-                    MAX(donor_phone) as phone,
                     SUM(amount) as total_donations,
                     COUNT(*) as donations_count,
                     MAX(created_at) as last_donation,
@@ -54,7 +53,6 @@ try {
                 'id' => $id,
                 'name' => $donor['name'] ?: 'Unknown',
                 'email' => $donor['email'],
-                'phone' => $donor['phone'] ?: 'Not provided',
                 'totalDonations' => floatval($donor['total_donations']),
                 'donationsCount' => intval($donor['donations_count']),
                 'lastDonation' => $donor['last_donation'],

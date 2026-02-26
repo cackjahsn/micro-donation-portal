@@ -30,7 +30,6 @@ class DonationPage {
             donorName: '',
             donorEmail: '',
             anonymous: false,
-            coverFees: false,
             selectedTier: 'helper',
             donationId: null,
             transactionId: null,
@@ -334,8 +333,8 @@ class DonationPage {
         const targetAmount = campaign.target || campaign.target_amount || 0;
         const donorsCount = campaign.donors || campaign.donors_count || 0;
         const daysLeft = campaign.daysLeft || campaign.days_left || 30;
-        const imageUrl = campaign.image || campaign.image_url || 
-            'assets/images/default-campaign.jpg';
+        const imageUrl = window.utils ? window.utils.getCampaignImageUrl(campaign.image || campaign.image_url) :
+            (campaign.image || campaign.image_url || 'assets/images/default-campaign.jpg');
         
         card.innerHTML = `
             <div class="card-body">
@@ -434,14 +433,6 @@ class DonationPage {
             });
         });
         
-        // Cover fees checkbox
-        const coverFeesCheckbox = document.getElementById('coverFees');
-        if (coverFeesCheckbox) {
-            coverFeesCheckbox.addEventListener('change', () => {
-                this.donationData.coverFees = coverFeesCheckbox.checked;
-                this.updateSummary();
-            });
-        }
         
         // Payment method selection (QR Only)
         document.querySelectorAll('.payment-method-card:not(.disabled)').forEach(card => {
@@ -789,7 +780,6 @@ async processDonation() {
                     donorEmail: this.donationData.donorEmail,
                     donorName: this.donationData.anonymous ? 'Anonymous' : this.donationData.donorName,
                     paymentMethod: 'qr', // Always QR
-                    coverFees: this.donationData.coverFees,
                     anonymous: this.donationData.anonymous,
                     userId: userId || 0
                 }

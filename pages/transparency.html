@@ -122,18 +122,35 @@
                                             <td>Server costs & development</td>
                                             <td>Campaign organizer</td>
                                         </tr>
-                                        <tr>
-                                            <td>Bank Transfer</td>
-                                            <td>RM5.00</td>
-                                            <td>Bank processing fees</td>
-                                            <td>Campaign organizer</td>
-                                        </tr>
+                                        <!-- Bank Transfer row removed -->
                                     </tbody>
                                 </table>
                             </div>
-                            <p class="text-muted mt-3">
-                                <small>* Donors can choose to cover payment processing fees to ensure 100% of their donation goes to the cause.</small>
-                            </p>
+                            <!-- Footnote about donors covering fees removed -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card shadow mb-5">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">Recent Transactions</h3>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Donor</th>
+                                            <th>Campaign</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Receipt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentTransactionsBody">
+                                        <!-- populated by transparency.js -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 

@@ -1,38 +1,50 @@
 <?php
-// backend/api/transparency/report.php
-require_once dirname(__FILE__) . '/../../../config/database.php';
+// Enable error display for debugging (remove in production)
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-$type = $_GET['type'] ?? 'monthly'; // monthly, annual, security
+// Start output buffering to catch any unexpected output
+ob_start();
 
-$database = new Database();
-$db = $database->getConnection();
+try {
+    // Include database config
+    $configPath = dirname(__FILE__) . '/../../config/database.php';
+    if (!file_exists($configPath)) {
+        throw new Exception("Database config not found at: " . $configPath);
+    }
+    require_once $configPath;
 
-// Fetch the same stats as on the transparency page
-$query = "SELECT COALESCE(SUM(amount), 0) as total_donations FROM donations WHERE status = 'completed'";
-$stmt = $db->query($query);
-$total_donations = $stmt->fetch(PDO::FETCH_ASSOC)['total_donations'];
+    $type = $_GET['type'] ?? 'monthly';
 
-$query = "SELECT COUNT(DISTINCT donor_email) as total_donors FROM donations WHERE status = 'completed'";
-$stmt = $db->query($query);
-$total_donors = $stmt->fetch(PDO::FETCH_ASSOC)['total_donors'];
+    $database = new Database();
+    $db = $database->getConnection();
 
-$query = "SELECT COUNT(DISTINCT campaign_id) as campaigns_funded FROM donations WHERE status = 'completed'";
-$stmt = $db->query($query);
-$campaigns_funded = $stmt->fetch(PDO::FETCH_ASSOC)['campaigns_funded'];
+    // Fetch stats
+    $query = "SELECT COALESCE(SUM(amount), 0) as total_donations FROM donations WHERE status = 'completed'";
+    $stmt = $db->query($query);
+    $total_donations = $stmt->fetch(PDO::FETCH_ASSOC)['total_donations'];
 
-// Recent donations
-$query = "SELECT d.*, c.title as campaign_title FROM donations d 
-          LEFT JOIN campaigns c ON d.campaign_id = c.id 
-          WHERE d.status = 'completed' 
-          ORDER BY d.created_at DESC LIMIT 10";
-$stmt = $db->query($query);
-$recent = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = "SELECT COUNT(DISTINCT donor_email) as total_donors FROM donations WHERE status = 'completed'";
+    $stmt = $db->query($query);
+    $total_donors = $stmt->fetch(PDO::FETCH_ASSOC)['total_donors'];
 
-// Platform fee (hardcoded)
-$platform_fee = 2.5;
+    $query = "SELECT COUNT(DISTINCT campaign_id) as campaigns_funded FROM donations WHERE status = 'completed'";
+    $stmt = $db->query($query);
+    $campaigns_funded = $stmt->fetch(PDO::FETCH_ASSOC)['campaigns_funded'];
 
-// Generate HTML report
-header('Content-Type: text/html');
+    // Recent donations
+    $query = "SELECT d.*, c.title as campaign_title FROM donations d 
+              LEFT JOIN campaigns c ON d.campaign_id = c.id 
+              WHERE d.status = 'completed' 
+              ORDER BY d.created_at DESC LIMIT 10";
+    $stmt = $db->query($query);
+    $recent = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $platform_fee = 2.5;
+
+    // Clear output buffer and send HTML
+    ob_end_clean();
+    header('Content-Type: text/html; charset=utf-8');
 ?>
 <!DOCTYPE html>
 <html>
@@ -106,4 +118,10 @@ header('Content-Type: text/html');
     </div>
 </body>
 </html>
-<?php exit; ?>
+<?php
+} catch (Exception $e) {
+    ob_end_clean();
+    header('Content-Type: text/plain');
+    echo "Error: " . $e->getMessage();
+}
+?>

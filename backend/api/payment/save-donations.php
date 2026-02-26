@@ -119,7 +119,6 @@ try {
     $payment_method = $data['paymentMethod'] ?? 'qr';
     $donor_name = $data['donorName'] ?? $data['donor_name'] ?? $user['name'] ?? '';
     $donor_email = $data['donorEmail'] ?? $data['donor_email'] ?? $user['email'] ?? '';
-    $donor_phone = $data['donorPhone'] ?? $data['donor_phone'] ?? '';
     $is_anonymous = isset($data['anonymous']) ? ($data['anonymous'] ? 1 : 0) : 
                    (isset($data['is_anonymous']) ? ($data['is_anonymous'] ? 1 : 0) : 0);
     
@@ -136,7 +135,6 @@ try {
                 status,
                 donor_name,
                 donor_email,
-                donor_phone,
                 is_anonymous,
                 created_at
               ) VALUES (
@@ -148,7 +146,6 @@ try {
                 'pending',
                 :donor_name,
                 :donor_email,
-                :donor_phone,
                 :is_anonymous,
                 NOW()
               )";
@@ -162,7 +159,6 @@ try {
         ':transaction_id' => $transaction_id,
         ':donor_name' => $donor_name,
         ':donor_email' => $donor_email,
-        ':donor_phone' => $donor_phone,
         ':is_anonymous' => $is_anonymous
     ]);
     

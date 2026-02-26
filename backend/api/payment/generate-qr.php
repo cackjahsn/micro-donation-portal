@@ -45,7 +45,6 @@ try {
     // Get donor information from request or session
     $donor_name = '';
     $donor_email = '';
-    $donor_phone = '';
     $is_anonymous = false;
     
     // First check if donor info is provided in the request
@@ -55,9 +54,6 @@ try {
     if (isset($data->donor_email)) {
         $donor_email = $data->donor_email;
     }
-    if (isset($data->donor_phone)) {
-        $donor_phone = $data->donor_phone;
-    }
     if (isset($data->anonymous)) {
         $is_anonymous = (bool)$data->anonymous;
     }
@@ -66,13 +62,12 @@ try {
     if ($is_anonymous) {
         $donor_name = 'Anonymous';
         $donor_email = '';
-        $donor_phone = '';
     }
     
     // If donor info not provided in request but user is logged in, get from session/user data
     if (empty($donor_name) && isset($data->user_id) && $data->user_id > 0) {
         // Try to get user info from users table
-        $user_query = "SELECT name, email, phone FROM users WHERE id = :user_id";
+        $user_query = "SELECT name, email FROM users WHERE id = :user_id";
         $user_stmt = $db->prepare($user_query);
         $user_stmt->bindParam(':user_id', $data->user_id);
         $user_stmt->execute();
@@ -81,16 +76,15 @@ try {
         if ($user) {
             if (empty($donor_name)) $donor_name = $user['name'];
             if (empty($donor_email)) $donor_email = $user['email'];
-            if (empty($donor_phone)) $donor_phone = $user['phone'] ?? '';
         }
     }
     
     // Create donation record with donor information
     $query = "INSERT INTO donations 
               (user_id, campaign_id, amount, transaction_id, payment_method, 
-               donor_name, donor_email, donor_phone, is_anonymous, status, created_at) 
+               donor_name, donor_email, is_anonymous, status, created_at) 
               VALUES (:user_id, :campaign_id, :amount, :transaction_id, :payment_method, 
-                      :donor_name, :donor_email, :donor_phone, :is_anonymous, 'pending', NOW())";
+                      :donor_name, :donor_email, :is_anonymous, 'pending', NOW())";
     
     $stmt = $db->prepare($query);
     
@@ -104,7 +98,6 @@ try {
     $stmt->bindParam(':payment_method', $payment_method);
     $stmt->bindParam(':donor_name', $donor_name);
     $stmt->bindParam(':donor_email', $donor_email);
-    $stmt->bindParam(':donor_phone', $donor_phone);
     $stmt->bindParam(':is_anonymous', $is_anonymous, PDO::PARAM_BOOL);
     
     if (!$stmt->execute()) {

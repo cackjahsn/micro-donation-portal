@@ -156,21 +156,25 @@ const CampaignModal = {
         
         // Category color
         const categoryColors = {
-            'education': 'primary',
-            'health': 'danger',
-            'emergency': 'warning',
-            'community': 'success',
-            'environment': 'info',
-            'sports': 'secondary',
-            'technology': 'dark',
-            'arts': 'purple'
+            'Education': 'primary',
+            'Health & Medical': 'danger',
+            'Emergency Relief': 'warning',
+            'Community Development': 'success',
+            'Environment': 'info'
         };
         const categoryColor = categoryColors[campaign.category?.toLowerCase()] || 'secondary';
         
         // Fix image path
         let imageUrl = campaign.image;
-        if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
-            imageUrl = 'assets/' + imageUrl;
+        if (window.utils && window.utils.getCampaignImageUrl) {
+            imageUrl = window.utils.getCampaignImageUrl(imageUrl);
+        } else {
+            // Fallback logic if utils not available (keep existing helper)
+            if (!imageUrl || imageUrl === 'assets/images/default-campaign.jpg') {
+                imageUrl = 'assets/images/default-campaign.jpg';
+            } else if (!imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
+                imageUrl = '/micro-donation-portal/' + imageUrl;
+            }
         }
         
         // Create modal HTML

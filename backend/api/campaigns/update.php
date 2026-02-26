@@ -70,6 +70,7 @@ try {
     $campaign_id = isset($_POST['campaign_id']) ? intval($_POST['campaign_id']) : 0;
     $title = $_POST['title'] ?? '';
     $category = $_POST['category'] ?? '';
+    $allowed_categories = ['Education', 'Health & Medical', 'Emergency Relief', 'Community Development', 'Environment'];
     $description = $_POST['description'] ?? '';
     $goal_amount = isset($_POST['goal_amount']) ? floatval($_POST['goal_amount']) : 0;
     $end_date = $_POST['end_date'] ?? null;  // Changed from deadline
@@ -82,6 +83,15 @@ try {
         echo json_encode([
             'success' => false,
             'message' => 'Missing required fields'
+        ]);
+        exit;
+    }
+
+    if (!in_array($category, $allowed_categories)) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid category. Allowed categories: ' . implode(', ', $allowed_categories)
         ]);
         exit;
     }

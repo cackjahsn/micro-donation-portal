@@ -136,7 +136,6 @@ class PaymentProcessor {
                 donor_email: donationData.donorEmail,
                 payment_method: 'qr',
                 anonymous: donationData.anonymous || false,
-                cover_fees: donationData.coverFees || false
             });
             
             if (!qrResponse.success) {

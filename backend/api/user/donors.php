@@ -19,13 +19,10 @@ try {
                 u.id,
                 u.name,
                 u.email,
-                u.phone,
                 u.total_donated,
                 u.donation_count,
                 u.last_donation_date as last_donation,
                 u.status,
-                u.city,
-                u.state
               FROM users u
               WHERE u.total_donated > 0 OR u.id IN (SELECT DISTINCT user_id FROM donations)
               ORDER BY u.total_donated DESC";
