@@ -643,51 +643,103 @@ class AuthManager {
         // Store token globally for fetch requests
         window.authToken = token;
         
+        // Also store in localStorage as backup
+        if (token) {
+            localStorage.setItem('micro_donation_token', token);
+        }
+        
         // Override global fetch to add auth header
         if (!window.originalFetch) {
             window.originalFetch = window.fetch;
             
-            window.fetch = async function(...args) {
-                const [resource, config = {}] = args;
+            window.fetch = async function(url, options = {}) {
+                // Make sure options is an object
+                options = options || {};
                 
-                // Skip for auth endpoints (they don't need token)
-                const isAuthEndpoint = resource.includes('/auth/') || 
-                                    resource.includes('login.php') || 
-                                    resource.includes('register.php');
+                // Ensure headers object exists
+                options.headers = options.headers || {};
                 
-                // Get token from localStorage or global
+                // Get token from multiple sources
                 const token = window.authToken || 
                             localStorage.getItem('micro_donation_token') ||
-                            localStorage.getItem('communitygive_token');
+                            localStorage.getItem('communitygive_token') ||
+                            localStorage.getItem('token');
                 
-                // Add auth header if we have a token and it's not an auth endpoint
-                if (token && !isAuthEndpoint) {
-                    config.headers = {
-                        ...config.headers,
-                        'Authorization': `Bearer ${token}`
-                    };
+                // Only add auth header if we have a token
+                if (token) {
+                    // Check if this is an auth endpoint - we still need token for some auth endpoints
+                    const urlString = typeof url === 'string' ? url : url.url || '';
+                    const isAuthEndpoint = urlString.includes('/auth/') && 
+                                        (urlString.includes('login.php') || urlString.includes('register.php'));
+                    
+                    // For ALL other endpoints, including donors and donations, add the token
+                    if (!isAuthEndpoint) {
+                        options.headers['Authorization'] = `Bearer ${token}`;
+                        
+                        // Also add X-User-ID and X-User-Role headers if we have user data
+                        try {
+                            const userStr = localStorage.getItem('micro_donation_user') || 
+                                        localStorage.getItem('communitygive_user') ||
+                                        localStorage.getItem('user');
+                            if (userStr) {
+                                const user = JSON.parse(userStr);
+                                if (user && user.id) {
+                                    options.headers['X-User-ID'] = user.id;
+                                }
+                                if (user && user.role) {
+                                    options.headers['X-User-Role'] = user.role;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('Could not parse user for headers:', e);
+                        }
+                    }
                 }
                 
-                console.log('Fetch with auth:', {
-                    resource: typeof resource === 'string' ? resource.substring(0, 50) : 'Request object',
+                // Log the request for debugging
+                console.log('Fetch request:', {
+                    url: typeof url === 'string' ? url.substring(0, 50) : 'Request object',
                     hasToken: !!token,
-                    isAuthEndpoint: isAuthEndpoint
+                    headers: options.headers ? Object.keys(options.headers) : []
                 });
                 
-                return window.originalFetch(resource, config);
+                try {
+                    // Make the request
+                    const response = await window.originalFetch(url, options);
+                    
+                    // If response is 401 Unauthorized, try to refresh or clear session
+                    if (response.status === 401) {
+                        console.warn('Received 401 Unauthorized response');
+                        
+                        // Check if we should clear session
+                        const shouldClear = !urlString.includes('/auth/');
+                        if (shouldClear) {
+                            console.log('Clearing session due to 401');
+                            // Don't call auth directly to avoid loops
+                            setTimeout(() => {
+                                if (window.auth && window.auth.clearSession) {
+                                    window.auth.clearSession();
+                                }
+                            }, 100);
+                        }
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    throw error;
+                }
             };
         }
     }
-    
+
     clearAuthHeader() {
         // Clear global token
         window.authToken = null;
         
-        // Restore original fetch if we overrode it
-        if (window.originalFetch) {
-            window.fetch = window.originalFetch;
-            window.originalFetch = null;
-        }
+        // Don't restore original fetch immediately as other components might still need it
+        // Instead, just clear the token and let the fetch wrapper handle it
+        console.log('Auth header cleared');
     }
     
     updateUI() {
@@ -776,7 +828,7 @@ class AuthManager {
             return;
         }
         
-        // Try different selectors to find the navbar
+        // Find the navbar
         let navbarNav = document.querySelector('#navbarNav .navbar-nav');
         if (!navbarNav) {
             navbarNav = document.querySelector('.navbar-nav');
@@ -790,31 +842,28 @@ class AuthManager {
                         this.currentUser.email?.split('@')[0] || 
                         'User';
         
-        const userMenuHTML = `
-            <li class="nav-item dropdown" id="userMenu">
-                <a class="nav-link dropdown-toggle" href="#" role="button" 
-                data-bs-toggle="dropdown">
-                    <i class="fas fa-user-circle me-1"></i>
-                    <span class="user-name">${userName}</span>
-                    ${this.currentUser.role === 'admin' ? ' (Admin)' : ''}
-                </a>
-                <ul class="dropdown-menu">
-                    ${this.currentUser.role === 'admin' ? `
-                        <li><a class="dropdown-item" href="admin-dashboard.html">
-                            <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+        // MODIFIED: Added inline styles to ensure dropdown visibility
+            const userMenuHTML = `
+                <li class="nav-item dropdown" id="userMenu" style="position: relative; overflow: visible;">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
+                    data-bs-toggle="dropdown" aria-expanded="false" 
+                    style="display: flex; align-items: center; gap: 0.5rem; background-color: #4e73df; color: white; border-radius: 0.35rem; padding: 0.5rem 1rem;">
+                        <i class="fas fa-user-circle"></i>
+                        <span class="user-name">${userName}</span>
+                        ${this.currentUser.role === 'admin' ? ' <small>(Admin)</small>' : ''}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" 
+                        style="position: absolute; top: 100%; right: 0; left: auto; min-width: 200px; z-index: 9999; margin-top: 0.5rem; background-color: white; border: 1px solid rgba(0,0,0,0.15); border-radius: 0.35rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.175);">
+                        <li><a class="dropdown-item" href="pages/profile.html" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #212529; text-decoration: none;">
+                            <i class="fas fa-user me-2"></i>My Profile
                         </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                    ` : ''}
-                    <li><a class="dropdown-item" href="pages/profile.html">
-                        <i class="fas fa-user me-2"></i>My Profile
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger logout-btn" href="#">
-                        <i class="fas fa-sign-out-alt me-2"></i>Logout
-                    </a></li>
-                </ul>
-            </li>
-        `;
+                        <li><hr class="dropdown-divider" style="margin: 0.5rem 0; border-top: 1px solid #e3e6f0;"></li>
+                        <li><a class="dropdown-item text-danger logout-btn" href="#" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #dc3545 !important; text-decoration: none;">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a></li>
+                    </ul>
+                </li>
+            `;
         
         // Find login buttons to insert before them
         const loginBtn = navbarNav.querySelector('#loginBtn');
@@ -837,10 +886,13 @@ class AuthManager {
         // Check if admin menu already exists
         if (document.getElementById('adminMenu')) return;
         
+        // MODIFIED: Added proper styling and positioning
         const adminMenuHTML = `
-            <li class="nav-item" id="adminMenu">
-                <a class="nav-link" href="admin-dashboard.html">
-                    <i class="fas fa-tachometer-alt me-1"></i>Admin
+            <li class="nav-item" id="adminMenu" style="position: relative; margin-right: 0.5rem;">
+                <a class="nav-link" href="admin-dashboard.html" 
+                style="display: flex; align-items: center; gap: 0.5rem; background-color: #f6c23e; color: #fff; border-radius: 0.35rem; padding: 0.5rem 1rem; font-weight: 600;">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Admin</span>
                 </a>
             </li>
         `;
@@ -1067,3 +1119,15 @@ console.log('User from localStorage:', localStorage.getItem('micro_donation_user
 console.log('Current user object:', auth?.currentUser);
 console.log('Is authenticated:', auth?.isAuthenticated());
 console.log('==================');
+
+// Fix for dropdown visibility
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure dropdowns work properly
+    if (typeof bootstrap !== 'undefined') {
+        // Initialize any dropdowns that might exist
+        const dropdowns = document.querySelectorAll('.dropdown-toggle');
+        dropdowns.forEach(dropdown => {
+            new bootstrap.Dropdown(dropdown);
+        });
+    }
+});

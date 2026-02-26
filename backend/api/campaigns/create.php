@@ -11,15 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 require_once dirname(__FILE__) . '/../../config/database.php';
 
 // Get authorization headers
-$headers = getallheaders();
-$token = null;
+ $headers = getallheaders();
+ $token = null;
 if (isset($headers['Authorization'])) {
     $token = str_replace('Bearer ', '', $headers['Authorization']);
 }
 
 // Get user info from headers
-$user_id = isset($headers['X-User-ID']) ? $headers['X-User-ID'] : null;
-$user_role = isset($headers['X-User-Role']) ? $headers['X-User-Role'] : null;
+ $user_id = isset($headers['X-User-ID']) ? $headers['X-User-ID'] : null;
+ $user_role = isset($headers['X-User-Role']) ? $headers['X-User-Role'] : null;
 
 // Verify admin access
 if (!$token || !$user_id || $user_role !== 'admin') {
@@ -31,8 +31,8 @@ if (!$token || !$user_id || $user_role !== 'admin') {
     exit;
 }
 
-$database = new Database();
-$db = $database->getConnection();
+ $database = new Database();
+ $db = $database->getConnection();
 
 try {
     // Get form data
@@ -46,73 +46,73 @@ try {
     
     // Validate required fields
     if (empty($title)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Campaign title is required'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Campaign title is required']);
         exit;
     }
     
     if (empty($description)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Campaign description is required'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Campaign description is required']);
         exit;
     }
     
     if (empty($category)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Campaign category is required'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Campaign category is required']);
         exit;
     }
     
     if ($goal_amount <= 0) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Valid goal amount is required'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Valid goal amount is required']);
         exit;
     }
     
     if (empty($end_date)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'End date is required'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'End date is required']);
         exit;
     }
     
-    // Initialize image_url as null
-    $image_url = null;
-    $file_name = null; // FIX: Initialize variable
+    // Initialize image_url
+    $image_url = 'assets/images/default-campaign.jpg'; // Default fallback
     
     // Handle image upload
     if (isset($_FILES['campaign_image']) && $_FILES['campaign_image']['error'] === UPLOAD_ERR_OK) {
-        // FIX: Use uploads directory instead of assets/images/campaigns/
-        $upload_dir = dirname(dirname(dirname(__FILE__))) . '/uploads/campaigns/';
+        
+        // FIX: Calculate path to project root
+        // This script is at: backend/api/campaigns/create.php
+        // We need to go up 4 levels to reach the project root:
+        // 1. campaigns -> 2. api -> 3. backend -> 4. root
+        $project_root = dirname(dirname(dirname(dirname(__FILE__))));
+        
+        // Target directory: micro-donation-portal/uploads/campaigns/
+        $upload_dir = $project_root . '/uploads/campaigns/';
         
         // Create directory if it doesn't exist
         if (!file_exists($upload_dir)) {
             mkdir($upload_dir, 0777, true);
         }
         
-        $file_extension = pathinfo($_FILES['campaign_image']['name'], PATHINFO_EXTENSION);
-        $file_name = 'campaign_' . time() . '_' . uniqid() . '.' . $file_extension; // FIX: Define $file_name
-        $target_file = $upload_dir . $file_name;
+        // Get file info
+        $file_tmp = $_FILES['campaign_image']['tmp_name'];
+        $file_name = $_FILES['campaign_image']['name'];
+        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
         
-        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp']; // FIX: Added webp, removed svg
-        if (in_array(strtolower($file_extension), $allowed_types)) {
-            if (move_uploaded_file($_FILES['campaign_image']['tmp_name'], $target_file)) {
-                // FIX: Use uploads path, not assets path
-                $image_url = 'uploads/campaigns/' . $file_name;
+        // Generate unique filename
+        $new_file_name = 'campaign_' . time() . '_' . uniqid() . '.' . $file_extension;
+        $target_file = $upload_dir . $new_file_name;
+        
+        // Allowed types
+        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        // Validate file type
+        if (in_array($file_extension, $allowed_types)) {
+            // Move uploaded file
+            if (move_uploaded_file($file_tmp, $target_file)) {
+                // Save the relative path for database (accessible from web root)
+                $image_url = 'uploads/campaigns/' . $new_file_name;
+            } else {
+                // Log error if move fails (permissions issue usually)
+                error_log("Failed to move uploaded file to: " . $target_file);
             }
         }
-    } else {
-        // No image uploaded, use default
-        $image_url = 'assets/images/default-campaign.jpg';
     }
     
     // Calculate days left
@@ -123,46 +123,22 @@ try {
     // Set start date to today
     $start_date = date('Y-m-d');
     
-    // Insert campaign - MATCHING YOUR EXACT TABLE COLUMNS
+    // Insert campaign
     $query = "INSERT INTO campaigns (
-                title,
-                description,
-                category,
-                target_amount,
-                current_amount,
-                progress_percentage,
-                donors_count,
-                days_left,
-                image_url,
-                organizer,
-                start_date,
-                end_date,
-                featured,
-                status,
-                created_at,
-                updated_at
+                title, description, category, target_amount, 
+                current_amount, progress_percentage, donors_count, days_left, 
+                image_url, organizer, start_date, end_date, 
+                featured, status, created_at, updated_at
               ) VALUES (
-                :title,
-                :description,
-                :category,
-                :target_amount,
-                0.00,
-                0.00,
-                0,
-                :days_left,
-                :image_url,
-                :organizer,
-                :start_date,
-                :end_date,
-                :featured,
-                'active',
-                NOW(),
-                NOW()
+                :title, :description, :category, :target_amount,
+                0.00, 0.00, 0, :days_left,
+                :image_url, :organizer, :start_date, :end_date,
+                :featured, 'active', NOW(), NOW()
               )";
     
     $stmt = $db->prepare($query);
     
-    // Bind all parameters
+    // Bind parameters
     $stmt->bindParam(':title', $title);
     $stmt->bindParam(':description', $description);
     $stmt->bindParam(':category', $category);
@@ -181,7 +157,7 @@ try {
             'success' => true,
             'message' => 'Campaign created successfully',
             'campaign_id' => $campaign_id,
-            'image_url' => $image_url
+            'image_url' => $image_url // Return the path to verify
         ]);
     } else {
         throw new Exception('Failed to create campaign');

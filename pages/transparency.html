@@ -76,19 +76,19 @@
                             <h3 class="card-title text-center mb-4">Platform Statistics</h3>
                             <div class="row text-center">
                                 <div class="col-md-3 mb-3">
-                                    <div class="display-4 text-primary">RM 124,580</div>
+                                    <div class="display-4 text-primary" id="totalDonations">RM 0</div>
                                     <p class="text-muted">Total Donations Raised</p>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <div class="display-4 text-success">94.7%</div>
+                                    <div class="display-4 text-success" id="directToCause">0%</div>
                                     <p class="text-muted">Direct to Cause</p>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <div class="display-4 text-info">2,347</div>
+                                    <div class="display-4 text-info" id="totalDonors">0</div>
                                     <p class="text-muted">Total Donors</p>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <div class="display-4 text-warning">56</div>
+                                    <div class="display-4 text-warning" id="campaignsFunded">0</div>
                                     <p class="text-muted">Campaigns Funded</p>
                                 </div>
                             </div>
@@ -153,47 +153,8 @@
                                             <th>Receipt</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>2025-12-18</td>
-                                            <td>Anonymous</td>
-                                            <td>Flood Relief Fund</td>
-                                            <td>RM 10.00</td>
-                                            <td><span class="badge bg-success">Completed</span></td>
-                                            <td><a href="#" class="text-primary">View</a></td>
-                                        </tr>
-                                        <tr>
-                                            <td>2025-12-17</td>
-                                            <td>Ahmad R.</td>
-                                            <td>Student Scholarship</td>
-                                            <td>RM 5.00</td>
-                                            <td><span class="badge bg-success">Completed</span></td>
-                                            <td><a href="#" class="text-primary">View</a></td>
-                                        </tr>
-                                        <tr>
-                                            <td>2025-12-16</td>
-                                            <td>Siti M.</td>
-                                            <td>Health Center</td>
-                                            <td>RM 20.00</td>
-                                            <td><span class="badge bg-success">Completed</span></td>
-                                            <td><a href="#" class="text-primary">View</a></td>
-                                        </tr>
-                                        <tr>
-                                            <td>2025-12-15</td>
-                                            <td>Anonymous</td>
-                                            <td>Animal Shelter</td>
-                                            <td>RM 2.00</td>
-                                            <td><span class="badge bg-success">Completed</span></td>
-                                            <td><a href="#" class="text-primary">View</a></td>
-                                        </tr>
-                                        <tr>
-                                            <td>2025-12-14</td>
-                                            <td>John L.</td>
-                                            <td>Community Garden</td>
-                                            <td>RM 50.00</td>
-                                            <td><span class="badge bg-success">Completed</span></td>
-                                            <td><a href="#" class="text-primary">View</a></td>
-                                        </tr>
+                                    <tbody id="recentTransactionsBody">
+                                        <!-- will be populated by JS -->
                                     </tbody>
                                 </table>
                             </div>
@@ -324,6 +285,7 @@
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/auth-global.js"></script>
+    <script src="js/transparency.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -185,10 +185,16 @@ async function loadHomepageCampaigns() {
         }
         
         // Fix image path
-        let imageUrl = campaign.image || campaign.image_url || 'assets/images/default-campaign.jpg';
-        imageUrl = imageUrl.replace(/\\/g, '');
-        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.startsWith('assets/')) {
-            imageUrl = 'assets/' + imageUrl;
+        let imageUrl = campaign.image || campaign.image_url || '';
+        if (!imageUrl) {
+            imageUrl = 'assets/images/default-campaign.jpg';
+        } else {
+            imageUrl = imageUrl.replace(/\\/g, '');
+            // If it's a bare filename, prepend uploads/campaigns/
+            if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.includes('/')) {
+                imageUrl = 'uploads/campaigns/' + imageUrl;
+            }
+            // Otherwise, keep as is (e.g., 'uploads/campaigns/filename.jpg' or absolute URL)
         }
         
         return `

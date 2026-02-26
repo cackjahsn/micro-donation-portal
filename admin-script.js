@@ -24,6 +24,7 @@ class AdminDashboard {
         }
         this.loadUserData();
         this.setupSidebarToggle();
+        this.setupMobileResponsive();
         this.setupSidebarNavigation();
         this.setupEventListeners();
         this.loadPage('overview');
@@ -101,15 +102,161 @@ class AdminDashboard {
     setupSidebarToggle() {
         const menuToggle = document.getElementById('menu-toggle');
         const wrapper = document.getElementById('wrapper');
+        const sidebar = document.getElementById('sidebar-wrapper');
+        const pageContent = document.getElementById('page-content-wrapper');
         
-        if (menuToggle && wrapper) {
+        if (menuToggle && wrapper && sidebar && pageContent) {
+            // Set initial state
+            this.sidebarCollapsed = false;
+            
+            // Add title attributes to sidebar items for tooltips
+            const sidebarItems = document.querySelectorAll('#sidebar-wrapper .list-group-item');
+            sidebarItems.forEach(item => {
+                const text = item.textContent.trim().replace(/[🔍📊💰👥📈📉📋⚙️🚪]/g, '').trim();
+                if (text && !item.getAttribute('title')) {
+                    item.setAttribute('title', text);
+                }
+            });
+            
             menuToggle.addEventListener('click', (e) => {
                 e.preventDefault();
-                wrapper.classList.toggle('sidebar-collapsed');
-                menuToggle.innerHTML = wrapper.classList.contains('sidebar-collapsed') 
-                    ? '<i class="fas fa-bars"></i>' 
-                    : '<i class="fas fa-times"></i>';
+                e.stopPropagation();
+                
+                this.sidebarCollapsed = !this.sidebarCollapsed;
+                
+                if (this.sidebarCollapsed) {
+                    // Collapse sidebar
+                    sidebar.style.width = '70px';
+                    sidebar.style.minWidth = '70px';
+                    pageContent.style.marginLeft = '70px';
+                    pageContent.style.width = 'calc(100% - 70px)';
+                    
+                    // Add classes for CSS
+                    sidebar.classList.add('sidebar-collapsed');
+                    sidebar.classList.add('minimized');
+                    
+                    // Keep icons visible, hide only text spans
+                    document.querySelectorAll('#sidebar-wrapper .list-group-item span, #sidebar-wrapper .sidebar-heading span').forEach(el => {
+                        el.style.display = 'none';
+                    });
+                    
+                    // Ensure icons are visible and centered
+                    document.querySelectorAll('#sidebar-wrapper .list-group-item i, #sidebar-wrapper .sidebar-heading i').forEach(el => {
+                        el.style.display = 'inline-block';
+                        el.style.marginRight = '0';
+                        el.style.width = 'auto';
+                        el.style.textAlign = 'center';
+                        el.style.fontSize = '1.2rem';
+                    });
+                    
+                    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                } else {
+                    // Expand sidebar
+                    sidebar.style.width = '250px';
+                    sidebar.style.minWidth = '250px';
+                    pageContent.style.marginLeft = '250px';
+                    pageContent.style.width = 'calc(100% - 250px)';
+                    
+                    // Remove classes
+                    sidebar.classList.remove('sidebar-collapsed');
+                    sidebar.classList.remove('minimized');
+                    
+                    // Show all spans
+                    document.querySelectorAll('#sidebar-wrapper .list-group-item span, #sidebar-wrapper .sidebar-heading span').forEach(el => {
+                        el.style.display = '';
+                    });
+                    
+                    // Reset icons
+                    document.querySelectorAll('#sidebar-wrapper .list-group-item i, #sidebar-wrapper .sidebar-heading i').forEach(el => {
+                        el.style.display = '';
+                        el.style.marginRight = '10px';
+                        el.style.width = '20px';
+                        el.style.textAlign = 'center';
+                        el.style.fontSize = '';
+                    });
+                    
+                    menuToggle.innerHTML = '<i class="fas fa-times"></i>';
+                }
+                
+                // Store state in localStorage
+                localStorage.setItem('sidebar_collapsed', this.sidebarCollapsed);
+                
+                // Trigger resize event for charts
                 this.redrawCharts();
+            });
+            
+            // Check for saved state
+            const savedState = localStorage.getItem('sidebar_collapsed') === 'true';
+            if (savedState) {
+                setTimeout(() => {
+                    menuToggle.click();
+                }, 100);
+            }
+        }
+    }
+
+    // Add this method to your AdminDashboard class
+    setupMobileResponsive() {
+        // Create overlay if it doesn't exist
+        if (!document.querySelector('.sidebar-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'sidebar-overlay';
+            document.body.appendChild(overlay);
+        }
+        
+        const overlay = document.querySelector('.sidebar-overlay');
+        const sidebar = document.getElementById('sidebar-wrapper');
+        const menuToggle = document.getElementById('menu-toggle');
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('mobile-show');
+                overlay.classList.remove('show');
+                
+                // Reset to desktop behavior
+                if (this.sidebarCollapsed) {
+                    sidebar.style.width = '70px';
+                    sidebar.classList.add('sidebar-collapsed');
+                } else {
+                    sidebar.style.width = '250px';
+                    sidebar.classList.remove('sidebar-collapsed');
+                }
+            } else {
+                // On mobile, hide sidebar by default
+                sidebar.classList.remove('mobile-show');
+                overlay.classList.remove('show');
+            }
+        });
+        
+        // Toggle mobile sidebar when menu button is clicked
+        if (menuToggle) {
+            menuToggle.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    sidebar.classList.toggle('mobile-show');
+                    overlay.classList.toggle('show');
+                    
+                    // Change icon based on state
+                    if (sidebar.classList.contains('mobile-show')) {
+                        menuToggle.innerHTML = '<i class="fas fa-times"></i>';
+                    } else {
+                        menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                    }
+                }
+            });
+        }
+        
+        // Close sidebar when clicking overlay
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-show');
+                overlay.classList.remove('show');
+                if (menuToggle) {
+                    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                }
             });
         }
     }
@@ -3447,78 +3594,183 @@ class AdminDashboard {
         this.showNotification(`Exported ${this.allCampaigns.length} campaigns to CSV`, 'success');
     }
     
-    exportDonors() {
-        this.loadDonors().then(() => {
-            // Donors are already loaded in the table
-            const donorsTable = document.getElementById('donorsBody');
-            if (!donorsTable) return;
+    // Add this method to your AdminDashboard class
+    async apiRequestWithAuth(endpoint) {
+        const token = localStorage.getItem('micro_donation_token') || 
+                    localStorage.getItem('communitygive_token') ||
+                    localStorage.getItem('token');
+        
+        const userStr = localStorage.getItem('micro_donation_user') ||
+                        localStorage.getItem('communitygive_user') ||
+                        localStorage.getItem('user');
+        
+        const user = userStr ? JSON.parse(userStr) : null;
+        
+        const headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        };
+        
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+        
+        if (user && user.id) {
+            headers['X-User-ID'] = user.id;
+        }
+        
+        if (user && user.role) {
+            headers['X-User-Role'] = user.role;
+        }
+        
+        try {
+            console.log(`Making authenticated request to: ${endpoint}`);
+            const response = await fetch(endpoint, { headers });
             
-            const rows = donorsTable.querySelectorAll('tr');
-            if (rows.length === 0 || rows[0].cells?.[0]?.textContent === 'No donors found') {
-                this.showNotification('No donors to export', 'warning');
-                return;
+            if (response.status === 401) {
+                console.error('Authentication failed for endpoint:', endpoint);
+                throw new Error('Authentication failed. Please login again.');
             }
             
-            const headers = ['ID', 'Name', 'Email', 'Total Donations', 'Donations Count', 'Last Donation'];
-            const csvRows = [headers.join(',')];
+            const text = await response.text();
             
-            rows.forEach(row => {
-                if (row.cells.length >= 6) {
-                    const rowData = [
-                        row.cells[0].textContent.replace('#', ''),
-                        `"${row.cells[1].textContent.replace(/"/g, '""')}"`,
-                        `"${row.cells[2].textContent.replace(/"/g, '""')}"`,
-                        row.cells[3].textContent.replace('RM', '').replace(',', '').trim(),
-                        row.cells[4].textContent,
-                        row.cells[5].textContent
-                    ];
-                    csvRows.push(rowData.join(','));
-                }
-            });
-            
-            const csvContent = csvRows.join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `donors_export_${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
-            
-            this.showNotification('Donors exported to CSV', 'success');
-        });
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('Invalid JSON response:', text.substring(0, 200));
+                throw new Error('Invalid server response format');
+            }
+        } catch (error) {
+            console.error(`API request failed (${endpoint}):`, error);
+            throw error;
+        }
     }
-    
-    exportDonations() {
-        this.apiRequest('backend/api/user/donations.php?limit=10000').then(data => {
-            if (data.success && Array.isArray(data.donations)) {
-                const headers = ['ID', 'Donor', 'Email', 'Campaign', 'Amount', 'Date', 'Status', 'Method'];
-                const rows = [headers.join(',')];
+
+    // Fix for Donors Report
+    async exportDonors() {
+        try {
+            this.showNotification('Preparing donors report...', 'info');
+            
+            // Fetch donors data
+            const data = await this.apiRequest('backend/api/donors/get-all.php?admin=true&limit=10000');
+            
+            if (data.success && Array.isArray(data.donors)) {
+                const donors = data.donors;
                 
-                data.donations.forEach(d => {
+                if (donors.length === 0) {
+                    this.showNotification('No donors to export', 'warning');
+                    return;
+                }
+                
+                // Define CSV headers
+                const headers = ['ID', 'Name', 'Email', 'Phone', 'Total Donations', 'Donations Count', 'Last Donation Date', 'Status'];
+                const csvRows = [headers.join(',')];
+                
+                // Add donor rows
+                donors.forEach(donor => {
+                    // Clean and escape data
                     const row = [
-                        d.id || '',
-                        `"${(d.donor_name || 'Anonymous').replace(/"/g, '""')}"`,
-                        `"${(d.donor_email || '').replace(/"/g, '""')}"`,
-                        `"${(d.campaign_title || '').replace(/"/g, '""')}"`,
-                        d.amount || 0,
-                        d.created_at || '',
-                        d.status || '',
-                        d.payment_method || ''
+                        `"DON-${donor.id || ''}"`,
+                        `"${this.escapeCsvField(donor.name || 'Anonymous')}"`,
+                        `"${this.escapeCsvField(donor.email || '')}"`,
+                        `"${this.escapeCsvField(donor.phone || 'Not provided')}"`,
+                        donor.total_donations || donor.totalDonations || 0,
+                        donor.donations_count || donor.donationsCount || 0,
+                        donor.last_donation_date || donor.lastDonation || '',
+                        donor.status || 'active'
                     ];
-                    rows.push(row.join(','));
+                    csvRows.push(row.join(','));
                 });
                 
-                const csvContent = rows.join('\n');
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                // Create and download CSV
+                const csvContent = csvRows.join('\n');
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' }); // Add BOM for UTF-8
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `donations_export_${new Date().toISOString().split('T')[0]}.csv`;
+                link.download = `donors_report_${new Date().toISOString().split('T')[0]}.csv`;
                 link.click();
                 
-                this.showNotification(`Exported ${data.donations.length} donations to CSV`, 'success');
+                this.showNotification(`Exported ${donors.length} donors to CSV`, 'success');
+            } else {
+                throw new Error(data.message || 'Failed to fetch donors data');
             }
-        }).catch(error => {
+        } catch (error) {
+            console.error('Error exporting donors:', error);
+            this.showNotification('Failed to export donors: ' + error.message, 'error');
+        }
+    }
+
+    // Updated exportDonations method
+    async exportDonations() {
+        try {
+            this.showNotification('Preparing donations report...', 'info');
+            
+            // Use the new method that ensures auth headers
+            const data = await this.apiRequestWithAuth('backend/api/user/donations.php?limit=10000');
+            
+            if (data.success && Array.isArray(data.donations)) {
+                const donations = data.donations;
+                
+                if (donations.length === 0) {
+                    this.showNotification('No donations to export', 'warning');
+                    return;
+                }
+                
+                // Define CSV headers
+                const headers = ['ID', 'Donor Name', 'Donor Email', 'Campaign', 'Amount (RM)', 'Date', 'Status', 'Payment Method'];
+                const csvRows = [headers.join(',')];
+                
+                // Add donation rows
+                donations.forEach(donation => {
+                    const row = [
+                        `"${donation.id || ''}"`,
+                        `"${this.escapeCsvField(donation.donor_name || 'Anonymous')}"`,
+                        `"${this.escapeCsvField(donation.donor_email || '')}"`,
+                        `"${this.escapeCsvField(donation.campaign_title || 'Unknown Campaign')}"`,
+                        parseFloat(donation.amount || 0).toFixed(2),
+                        donation.created_at || '',
+                        donation.status || 'completed',
+                        donation.payment_method || 'QR Payment'
+                    ];
+                    csvRows.push(row.join(','));
+                });
+                
+                // Create and download CSV
+                const csvContent = csvRows.join('\n');
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `donations_report_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+                
+                this.showNotification(`Exported ${donations.length} donations to CSV`, 'success');
+            } else {
+                throw new Error(data.message || 'Failed to fetch donations data');
+            }
+        } catch (error) {
+            console.error('Error exporting donations:', error);
             this.showNotification('Failed to export donations: ' + error.message, 'error');
-        });
+        }
+    }
+
+    // Helper method to escape CSV fields
+    escapeCsvField(field) {
+        if (field === null || field === undefined) {
+            return '';
+        }
+        
+        // Convert to string
+        let stringField = String(field);
+        
+        // Escape double quotes by doubling them
+        stringField = stringField.replace(/"/g, '""');
+        
+        // If field contains commas, quotes, or newlines, wrap in quotes
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+            return stringField;
+        }
+        
+        return stringField;
     }
     
     exportData() {

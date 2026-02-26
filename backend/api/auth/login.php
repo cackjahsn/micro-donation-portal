@@ -1,5 +1,5 @@
 <?php
-// login.php - FINAL CORRECT VERSION
+// login.php - WITH DATABASE TOKEN STORAGE
 
 ob_start();
 ini_set('display_errors', 0);
@@ -19,19 +19,9 @@ ob_clean();
 
 try {
     $configPath = dirname(__FILE__) . '/../../config/database.php';
-    require_once $configPath;
-    
     if (!file_exists($configPath)) {
-        // For debugging
-        $possiblePaths = [
-            $basePath . '/config/database.php',
-            $basePath . '/../backend/config/database.php',
-            dirname($basePath) . '/backend/config/database.php'
-        ];
-        
-        throw new Exception("Config not found. Tried: " . implode(', ', $possiblePaths));
+        throw new Exception("Config file not found");
     }
-    
     require_once $configPath;
     
     $database = new Database();
@@ -51,7 +41,7 @@ try {
     $email = trim($data['email']);
     $password = trim($data['password']);
     
-    // Accept test credentials
+    // Accept test credentials (bypass password check for demo)
     if ($email === 'admin@communitygive.com') {
         $user = [
             'id' => 1,
@@ -69,22 +59,51 @@ try {
             'avatar' => 'assets/images/default-avatar.png'
         ];
     } else {
-        // Database lookup for other users
-        $query = "SELECT id, email, name, role, avatar FROM users WHERE email = :email AND status = 'active'";
+        // Database lookup for other users (including password verification)
+        $query = "SELECT id, email, name, role, avatar, password FROM users WHERE email = :email AND status = 'active'";
         $stmt = $db->prepare($query);
         $stmt->bindParam(':email', $email);
         $stmt->execute();
         
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!$user) {
+        if (!$dbUser) {
             throw new Exception('User not found');
         }
+        
+        // Verify password (assuming passwords are hashed)
+        if (!password_verify($password, $dbUser['password'])) {
+            throw new Exception('Invalid password');
+        }
+        
+        $user = [
+            'id' => $dbUser['id'],
+            'email' => $dbUser['email'],
+            'name' => $dbUser['name'],
+            'role' => $dbUser['role'],
+            'avatar' => $dbUser['avatar'] ?: 'assets/images/default-avatar.png'
+        ];
     }
     
-    $token = 'token_' . bin2hex(random_bytes(16));
+    // Generate a secure random token
+    $raw_token = bin2hex(random_bytes(32));
+    $token = 'token_' . $raw_token;
+    $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
     
-    // Clear output
+    // Store token in database
+    $insert_token = "INSERT INTO user_tokens (user_id, token, expires_at) VALUES (:user_id, :token, :expires)";
+    $stmt_token = $db->prepare($insert_token);
+    $stmt_token->bindParam(':user_id', $user['id']);
+    $stmt_token->bindParam(':token', $raw_token); // store without prefix
+    $stmt_token->bindParam(':expires', $expires);
+    $stmt_token->execute();
+    
+    // Start session for future requests
+    session_start();
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_role'] = $user['role'];
+    
+    // Clear output buffer
     while (ob_get_level()) {
         ob_end_clean();
     }
@@ -92,7 +111,7 @@ try {
     echo json_encode([
         'success' => true,
         'user' => $user,
-        'token' => $token,
+        'token' => $token, // send with 'token_' prefix for frontend
         'message' => 'Login successful'
     ]);
     

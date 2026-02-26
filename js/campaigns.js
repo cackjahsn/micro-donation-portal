@@ -451,10 +451,18 @@ class CampaignManager {
         const targetAmount = typeof utils !== 'undefined' && utils.formatCurrency ? 
             utils.formatCurrency(campaign.target) : `RM ${campaign.target.toLocaleString()}`;
         
-        // Fix image path
+        // Handle image path correctly
         let imageUrl = campaign.image;
-        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.startsWith('assets/')) {
-            imageUrl = 'assets/' + imageUrl;
+        if (!imageUrl) {
+            imageUrl = 'assets/images/default-campaign.jpg';
+        } else {
+            // Remove any backslashes (just in case)
+            imageUrl = imageUrl.replace(/\\/g, '');
+            // If it's a bare filename (no slashes), assume it belongs in uploads/campaigns/
+            if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.includes('/')) {
+                imageUrl = 'uploads/campaigns/' + imageUrl;
+            }
+            // Otherwise, leave it as is (should already be a proper relative path like 'uploads/campaigns/...')
         }
         
         return `

@@ -43,57 +43,79 @@ if (!$donation_id) {
     exit;
 }
 
-// === AUTHENTICATION LOGIC ===
+// === IMPROVED AUTHENTICATION LOGIC ===
 $user_id = null;
 $isAdmin = false;
 $authenticated = false;
 
-// Debug info
-error_log("Receipt request - Session ID: " . session_id());
-error_log("Session data: " . print_r($_SESSION, true));
-error_log("GET parameters: " . print_r($_GET, true));
-
-// Check if user is logged in via session
+// 1. Check session first (for users with active session)
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
     $isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
     $authenticated = true;
-    error_log("User authenticated via session: id=$user_id, isAdmin=" . ($isAdmin ? 'true' : 'false'));
-} else {
-    // Check for user_id parameter (passed from JavaScript)
-    $param_user_id = $_GET['user_id'] ?? null;
-    if ($param_user_id && is_numeric($param_user_id)) {
-        $user_id = (int)$param_user_id;
+    error_log("Auth via session: user_id=$user_id");
+}
+
+// 2. If not authenticated, check token from query parameter
+if (!$authenticated && isset($_GET['token'])) {
+    $token_param = $_GET['token'];
+    // Remove 'token_' prefix if present
+    if (strpos($token_param, 'token_') === 0) {
+        $token_param = substr($token_param, 6);
+    }
+    
+    // Validate token against database
+    $token_query = "SELECT ut.user_id, u.role 
+                    FROM user_tokens ut 
+                    JOIN users u ON ut.user_id = u.id 
+                    WHERE ut.token = :token AND ut.expires_at > NOW()";
+    $token_stmt = $db->prepare($token_query);
+    $token_stmt->bindParam(':token', $token_param);
+    $token_stmt->execute();
+    $token_data = $token_stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($token_data) {
+        $user_id = $token_data['user_id'];
+        $isAdmin = $token_data['role'] === 'admin';
+        $authenticated = true;
         
-        // Verify this user exists and get their role
-        try {
-            $user_query = "SELECT role FROM users WHERE id = :user_id";
-            $user_stmt = $db->prepare($user_query);
-            $user_stmt->bindParam(':user_id', $user_id);
-            $user_stmt->execute();
-            $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($user) {
-                $isAdmin = $user['role'] === 'admin';
-                $authenticated = true;
-                
-                // Set session for future requests
-                $_SESSION['user_id'] = $user_id;
-                if ($isAdmin) {
-                    $_SESSION['user_role'] = 'admin';
-                }
-                
-                error_log("User authenticated via parameter: id=$user_id, isAdmin=" . ($isAdmin ? 'true' : 'false'));
-            } else {
-                error_log("User ID $param_user_id not found in database");
-            }
-        } catch (Exception $e) {
-            error_log("User verification error: " . $e->getMessage());
+        // Optionally refresh token expiration or just use it
+        // Set session for future requests in this tab
+        $_SESSION['user_id'] = $user_id;
+        if ($isAdmin) $_SESSION['user_role'] = 'admin';
+        
+        error_log("Auth via token: user_id=$user_id");
+    } else {
+        error_log("Invalid or expired token: $token_param");
+    }
+}
+
+// 3. Also check Authorization header (Bearer token) for API requests
+if (!$authenticated) {
+    $headers = getallheaders();
+    $auth_header = $headers['Authorization'] ?? '';
+    if (preg_match('/Bearer\s+(.*)$/i', $auth_header, $matches)) {
+        $token_header = $matches[1];
+        if (strpos($token_header, 'token_') === 0) {
+            $token_header = substr($token_header, 6);
+        }
+        
+        $token_stmt = $db->prepare("SELECT ut.user_id, u.role FROM user_tokens ut JOIN users u ON ut.user_id = u.id WHERE ut.token = :token AND ut.expires_at > NOW()");
+        $token_stmt->bindParam(':token', $token_header);
+        $token_stmt->execute();
+        $token_data = $token_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($token_data) {
+            $user_id = $token_data['user_id'];
+            $isAdmin = $token_data['role'] === 'admin';
+            $authenticated = true;
+            $_SESSION['user_id'] = $user_id;
+            if ($isAdmin) $_SESSION['user_role'] = 'admin';
+            error_log("Auth via Authorization header: user_id=$user_id");
         }
     }
     
     if (!$authenticated) {
-        error_log("Authentication failed - no valid user ID found");
         sendError('Authentication required. Please login to view receipt.', 401, $is_api_request);
         exit;
     }
