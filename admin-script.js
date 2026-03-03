@@ -9,6 +9,7 @@ class AdminDashboard {
         this.sidebarCollapsed = false;
         this.dataTable = null;
         this.currentPage = 'overview';
+        this.recentTransactions = [];
         this.charts = {};
         this.init();
     }
@@ -275,6 +276,39 @@ class AdminDashboard {
             });
         });
     }
+
+    filterTransactions(searchTerm) {
+    if (!this.recentTransactions || this.recentTransactions.length === 0) return;
+
+    const term = searchTerm.toLowerCase().trim();
+
+    if (term === '') {
+        // If search is empty, show all recent transactions
+        this.renderTransactions(this.recentTransactions);
+        return;
+    }
+
+    const filtered = this.recentTransactions.filter(t => {
+        // Search in multiple fields
+        return (
+            (t.donor_name && t.donor_name.toLowerCase().includes(term)) ||
+            (t.campaign_title && t.campaign_title.toLowerCase().includes(term)) ||
+            (t.amount && t.amount.toString().includes(term)) ||
+            (t.id && t.id.toString().includes(term)) ||
+            (t.status && t.status.toLowerCase().includes(term))
+        );
+    });
+
+    this.renderTransactions(filtered);
+    
+    // Optional: show a small notification if no results
+    if (filtered.length === 0) {
+        const tbody = document.getElementById('transactionsBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4">No transactions match "${term}"</td></tr>`;
+        }
+    }
+}
     
     async loadPage(page) {
         this.destroyAllCharts();
@@ -302,6 +336,10 @@ class AdminDashboard {
                 case 'donors':
                     content.innerHTML = this.getDonorsHTML();
                     await this.loadDonorsData();
+                    break;
+                case 'users':   // <-- ADD THIS
+                    content.innerHTML = this.getUsersHTML();
+                    await this.loadUsersData();
                     break;
                 case 'analytics':
                     content.innerHTML = this.getAnalyticsHTML();
@@ -698,6 +736,7 @@ class AdminDashboard {
             const data = await this.apiRequest('backend/api/user/donations.php?limit=10');
             
             if (data.success && Array.isArray(data.donations)) {
+                this.recentTransactions = data.donations;   // <-- store
                 this.renderTransactions(data.donations);
             }
         } catch (error) {
@@ -1481,28 +1520,28 @@ class AdminDashboard {
                         <i class="fas fa-sort me-1"></i> Sort by
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="sortDropdown">
-                        <li><a class="dropdown-item" href="#" onclick="adminDashboard.sortCampaigns('created_at', 'desc')">
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="adminDashboard.sortCampaigns('created_at', 'desc'); return false;">
                             <i class="fas fa-calendar me-2"></i> Newest First
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="adminDashboard.sortCampaigns('created_at', 'asc')">
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="adminDashboard.sortCampaigns('created_at', 'asc'); return false;">
                             <i class="fas fa-calendar me-2"></i> Oldest First
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="adminDashboard.sortCampaigns('title', 'asc')">
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="adminDashboard.sortCampaigns('title', 'asc'); return false;">
                             <i class="fas fa-font me-2"></i> Title A-Z
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="adminDashboard.sortCampaigns('title', 'desc')">
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="adminDashboard.sortCampaigns('title', 'desc'); return false;">
                             <i class="fas fa-font me-2"></i> Title Z-A
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="adminDashboard.sortCampaigns('target_amount', 'desc')">
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="adminDashboard.sortCampaigns('target_amount', 'desc'); return false;">
                             <i class="fas fa-money-bill-wave me-2"></i> Highest Target
                         </a></li>
-                        <li><a class="dropdown-item" href="#" onclick="adminDashboard.sortCampaigns('target_amount', 'asc')">
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="adminDashboard.sortCampaigns('target_amount', 'asc'); return false;">
                             <i class="fas fa-money-bill-wave me-2"></i> Lowest Target
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="adminDashboard.sortCampaigns('current_amount', 'desc')">
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="adminDashboard.sortCampaigns('current_amount', 'desc'); return false;">
                             <i class="fas fa-chart-line me-2"></i> Most Raised
                         </a></li>
                     </ul>
@@ -3228,6 +3267,13 @@ class AdminDashboard {
             // Format date
             const joined = this.formatDate(user.created_at);
 
+            // Only show delete button if user is NOT an admin
+            const deleteButton = user.role === 'admin' 
+                ? '' 
+                : `<button class="btn btn-outline-danger" onclick="adminDashboard.deleteUser(${user.id})" title="Delete User">
+                    <i class="fas fa-trash"></i>
+                </button>`;
+
             return `
             <tr>
                 <td><strong>#${user.id}</strong></td>
@@ -3249,9 +3295,7 @@ class AdminDashboard {
                         <button class="btn btn-outline-primary" onclick="adminDashboard.viewUser(${user.id})" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-outline-danger" onclick="adminDashboard.deleteUser(${user.id})" title="Delete User">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        ${deleteButton}
                     </div>
                 </td>
             </tr>
@@ -3282,6 +3326,13 @@ class AdminDashboard {
 
         const roleColor = user.role === 'admin' ? 'danger' : (user.role === 'donor' ? 'success' : 'secondary');
         const statusColor = user.status === 'active' ? 'success' : 'secondary';
+
+        // Only show delete button if user is NOT an admin
+        const deleteButton = user.role === 'admin' 
+            ? '' 
+            : `<button type="button" class="btn btn-sm btn-danger" onclick="adminDashboard.deleteUser(${user.id})" data-bs-dismiss="modal">
+                <i class="fas fa-trash me-1"></i>Delete
+            </button>`;
 
         modal = document.createElement('div');
         modal.id = modalId;
@@ -3337,9 +3388,7 @@ class AdminDashboard {
                         </div>
                     </div>
                     <div class="modal-footer py-2">
-                        <button type="button" class="btn btn-sm btn-danger" onclick="adminDashboard.deleteUser(${user.id})" data-bs-dismiss="modal">
-                            <i class="fas fa-trash me-1"></i>Delete
-                        </button>
+                        ${deleteButton}
                         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times me-1"></i>Close
                         </button>
@@ -3374,7 +3423,7 @@ class AdminDashboard {
                 return;
             }
 
-            const response = await fetch('backend/api/users/delete.php', {
+            const response = await fetch('backend/api/user/delete.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -4432,6 +4481,14 @@ class AdminDashboard {
             refreshBtn.addEventListener('click', () => {
                 this.showNotification('Refreshing dashboard...', 'info');
                 this.loadOverviewData();
+            });
+        }
+
+        // Add search functionality
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', () => {
+                this.filterTransactions(searchInput.value);
             });
         }
     }
