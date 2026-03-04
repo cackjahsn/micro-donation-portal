@@ -40,9 +40,13 @@ try {
     
     $email = trim($data['email']);
     $password = trim($data['password']);
-    
-    // Accept test credentials (bypass password check for demo)
-    if ($email === 'admin@communitygive.com') {
+
+    // Accept test credentials ONLY in development mode
+    $is_development = getenv('APP_ENV') === 'development' || 
+                      $_SERVER['HTTP_HOST'] === 'localhost' || 
+                      $_SERVER['HTTP_HOST'] === '127.0.0.1';
+
+    if ($is_development && $email === 'admin@communitygive.com') {
         $user = [
             'id' => 1,
             'email' => 'admin@communitygive.com',
@@ -50,7 +54,7 @@ try {
             'role' => 'admin',
             'avatar' => 'assets/images/default-avatar.png'
         ];
-    } elseif ($email === 'testuser@example.com') {
+    } elseif ($is_development && $email === 'testuser@example.com') {
         $user = [
             'id' => 2,
             'email' => 'testuser@example.com',

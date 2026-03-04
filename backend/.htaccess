@@ -6,16 +6,23 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    
+
     # If the request is for a file or directory that exists, serve it
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
-    
-    # Otherwise, route everything to index.php for API routing
-    RewriteRule ^(.*)$ index.php [QSA,L]
+
+    # NOTE: index.php not required - direct API endpoint access
+    # RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>
 
-# Enable error reporting for development
+# Error reporting - ONLY for development
+# Comment out these lines in production
 php_flag display_errors on
 php_value error_reporting E_ALL
+
+# Production settings (uncomment for production)
+# php_flag display_errors off
+# php_value error_reporting 0
+# php_flag log_errors on
+# php_value error_log /path/to/your/error.log

@@ -6,11 +6,44 @@ class Utils {
 
         // Use API_BASE_URL from path-resolver.js if available
         if (typeof window.API_BASE_URL !== 'undefined') {
-            console.log('[Utils] Using API_BASE_URL from path-resolver:', window.API_BASE_URL);
+            const logger = window.logger || console;
+            logger.log('[Utils] Using API_BASE_URL from path-resolver:', window.API_BASE_URL);
         } else {
             // Fallback for backward compatibility
             window.API_BASE_URL = '/micro-donation-portal/backend/api';
-            console.warn('[Utils] path-resolver.js not loaded. Using fallback API URL.');
+            const logger = window.logger || console;
+            logger.warn('[Utils] path-resolver.js not loaded. Using fallback API URL.');
+        }
+    }
+
+    /**
+     * Sanitize user input using Sanitizer utility
+     * @param {string} type - Type of sanitization ('html', 'email', 'text', 'number', 'url')
+     * @param {string|number} value - Value to sanitize
+     * @param {object} options - Additional options (maxLength, min, max, allowedTags)
+     * @returns {string|number} - Sanitized value
+     */
+    sanitize(type, value, options = {}) {
+        if (typeof window.Sanitizer === 'undefined') {
+            console.warn('Sanitizer not loaded, returning raw value');
+            return value;
+        }
+
+        switch (type) {
+            case 'html':
+                return window.Sanitizer.escapeHtml(String(value));
+            case 'email':
+                return window.Sanitizer.sanitizeEmail(value);
+            case 'text':
+                return window.Sanitizer.sanitizeText(value, options.maxLength || 1000);
+            case 'number':
+                return window.Sanitizer.sanitizeNumber(value, options.min || 0, options.max || Infinity);
+            case 'url':
+                return window.Sanitizer.sanitizeUrl(value);
+            case 'rich':
+                return window.Sanitizer.sanitizeRichText(value, options.allowedTags);
+            default:
+                return window.Sanitizer.escapeHtml(String(value));
         }
     }
     

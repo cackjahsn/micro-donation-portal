@@ -89,11 +89,45 @@ if(!$data) {
     exit;
 }
 
+// Validate required fields
 if(
     !empty($data->email) &&
     !empty($data->password) &&
     !empty($data->name)
 ) {
+    // Validate email format
+    if (!filter_var($data->email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(array(
+            "success" => false,
+            "message" => "Invalid email format. Please enter a valid email address."
+        ));
+        exit;
+    }
+
+    // Validate password strength (minimum 6 characters)
+    if (strlen($data->password) < 6) {
+        http_response_code(400);
+        echo json_encode(array(
+            "success" => false,
+            "message" => "Password must be at least 6 characters long."
+        ));
+        exit;
+    }
+
+    // Validate name length
+    if (strlen($data->name) < 2 || strlen($data->name) > 100) {
+        http_response_code(400);
+        echo json_encode(array(
+            "success" => false,
+            "message" => "Name must be between 2 and 100 characters."
+        ));
+        exit;
+    }
+
+    // Sanitize inputs
+    $data->email = filter_var($data->email, FILTER_SANITIZE_EMAIL);
+    $data->name = htmlspecialchars(strip_tags($data->name));
     try {
         // Create database connection
         $database = new Database();
