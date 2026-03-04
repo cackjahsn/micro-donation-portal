@@ -6,10 +6,13 @@ const API_BASE_URL = window.API_BASE_URL || '/micro-donation-portal/backend/api'
 // Also set it globally so other scripts can access it
 window.API_BASE_URL = API_BASE_URL;
 
+// Get logger instance (created by logger.js)
+const logger = window.logger || console;
+
 class AuthManager {
     constructor() {
-        console.log('AuthManager constructor called - Page:', window.location.pathname);
-        console.log('API Base URL set to:', window.API_BASE_URL);
+        logger.log('AuthManager constructor called - Page:', window.location.pathname);
+        logger.log('API Base URL set to:', window.API_BASE_URL);
         
         this.currentUser = null;
         this.tokenKey = 'micro_donation_token';

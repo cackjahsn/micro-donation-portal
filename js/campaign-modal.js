@@ -26,11 +26,10 @@ const CampaignModal = {
             
         } catch (error) {
             console.error('Error showing campaign details:', error);
-            
+
+            // Show user-friendly notification
             if (typeof utils !== 'undefined' && utils.showNotification) {
                 utils.showNotification('Failed to load campaign details: ' + error.message, 'error');
-            } else {
-                alert('Failed to load campaign details: ' + error.message);
             }
         }
     },

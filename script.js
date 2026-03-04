@@ -653,14 +653,20 @@ window.sendResetLink = function() {
     const email = document.getElementById('resetEmail')?.value;
     if (email) {
         // In a real app, you would send an API request here
-        alert(`Password reset link would be sent to: ${email}\n\n(Simulation only - No backend connected)`);
-        
+        if (typeof utils !== 'undefined' && utils.showNotification) {
+            utils.showNotification(`Password reset link would be sent to: ${email}`, 'info');
+        } else {
+            console.log('Password reset for:', email);
+        }
+
         // Close modal
         const forgotModal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
         if (forgotModal) {
             forgotModal.hide();
         }
     } else {
-        alert('Please enter your email address');
+        if (typeof utils !== 'undefined' && utils.showNotification) {
+            utils.showNotification('Please enter your email address', 'warning');
+        }
     }
 };
