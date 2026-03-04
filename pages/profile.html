@@ -280,70 +280,70 @@
             }
         }
 
-        function populateProfileData(userData, donationsData) {
-            console.log('Populating profile with user data:', userData);
-            console.log('Using donations data:', donationsData);
-            
-            // Basic user info
-            document.getElementById('userName').textContent = userData.name || 'User';
-            document.getElementById('userEmail').textContent = userData.email || 'No email';
-            document.getElementById('joinDate').textContent = formatDate(userData.date_joined);
-            
-            // User role with badge
-            const roleBadge = document.getElementById('userRole');
-            const userRole = userData.role || 'user';
-            roleBadge.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
-            roleBadge.className = userRole === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
-            
-            // Financial info - use donations data if available, otherwise user data
-            let totalDonated = 0;
-            if (donationsData.success && donationsData.total_donated) {
-                totalDonated = donationsData.total_donated;
-            } else if (userData.total_donated) {
-                totalDonated = userData.total_donated;
-            }
-            document.getElementById('totalDonated').textContent = `RM ${parseFloat(totalDonated).toFixed(2)}`;
-            
-            // Donations table
-            const tableBody = document.querySelector('#donationsTable tbody');
-            const campaignsCount = document.getElementById('campaignsCount');
-            
-            if (donationsData.success && donationsData.donations && donationsData.donations.length > 0) {
-                // Count unique campaigns
-                const uniqueCampaigns = [...new Set(donationsData.donations
-                    .filter(d => d.campaign_id)
-                    .map(d => d.campaign_id))];
-                campaignsCount.textContent = uniqueCampaigns.length;
-                
-                // Populate donations table
-                tableBody.innerHTML = '';
-                donationsData.donations.forEach(donation => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${formatDate(donation.created_at)}</td>
-                        <td>${donation.campaign_title || 'General Donation'}</td>
-                        <td class="text-success fw-bold">RM ${parseFloat(donation.amount || 0).toFixed(2)}</td>
-                        <td>
-                            <span class="badge ${getStatusBadgeClass(donation.status)}">
-                                ${donation.status ? donation.status.charAt(0).toUpperCase() + donation.status.slice(1) : 'Unknown'}
-                            </span>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            } else {
-                campaignsCount.textContent = '0';
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-4">
-                            <i class="fas fa-donate fa-2x mb-2 d-block"></i>
-                            No donations yet. 
-                            <a href="pages/campaigns.html">Browse campaigns</a>
-                        </td>
-                    </tr>
-                `;
-            }
+    function populateProfileData(userData, donationsData) {
+        console.log('Populating profile with user data:', userData);
+        console.log('Using donations data:', donationsData);
+        
+        // Basic user info
+        document.getElementById('userName').textContent = userData.name || 'User';
+        document.getElementById('userEmail').textContent = userData.email || 'No email';
+        document.getElementById('joinDate').textContent = formatDate(userData.date_joined);
+        
+        // User role with badge
+        const roleBadge = document.getElementById('userRole');
+        const userRole = userData.role || 'user';
+        roleBadge.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+        roleBadge.className = userRole === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
+        
+        // Financial info – use donations data if available, otherwise user data
+        let totalDonated = 0;
+        if (donationsData.success && donationsData.total_donated) {
+            totalDonated = donationsData.total_donated;
+        } else if (userData.total_donated) {
+            totalDonated = userData.total_donated;
         }
+        document.getElementById('totalDonated').textContent = `RM ${parseFloat(totalDonated).toFixed(2)}`;
+        
+        // Filter donations to only completed
+        const completedDonations = (donationsData.success && donationsData.donations) 
+            ? donationsData.donations.filter(d => d.status && d.status.toLowerCase() === 'completed')
+            : [];
+        
+        // Count unique campaigns from completed donations
+        const uniqueCampaigns = [...new Set(completedDonations
+            .filter(d => d.campaign_id)
+            .map(d => d.campaign_id))];
+        document.getElementById('campaignsCount').textContent = uniqueCampaigns.length;
+        
+        // Donations table
+        const tableBody = document.querySelector('#donationsTable tbody');
+        
+        if (completedDonations.length > 0) {
+            tableBody.innerHTML = '';
+            completedDonations.forEach(donation => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(donation.created_at)}</td>
+                    <td>${donation.campaign_title || 'General Donation'}</td>
+                    <td class="text-success fw-bold">RM ${parseFloat(donation.amount || 0).toFixed(2)}</td>
+                    <td>
+                        <span class="badge bg-success">Completed</span>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        <i class="fas fa-donate fa-2x mb-2 d-block"></i>
+                        No completed donations yet. 
+                        <a href="pages/campaigns.html">Browse campaigns</a>
+                    </td>
+                </tr>
+            `;
+        }
+    }
 
         function fallbackToLocalData(user) {
             console.log('Using fallback local data for user:', user);

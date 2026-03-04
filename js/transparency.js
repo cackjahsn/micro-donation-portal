@@ -82,18 +82,21 @@ function updateRecentTransactions(donations) {
     const tbody = document.getElementById('recentTransactionsBody');
     if (!tbody) return;
 
+    // Filter to only completed donations
+    const completedDonations = donations.filter(d => d.status && d.status.toLowerCase() === 'completed');
+
     // Get token for receipt links
     let token = localStorage.getItem('micro_donation_token') || localStorage.getItem('token');
     if (token) {
         token = encodeURIComponent(token);
     }
 
-    if (!donations || donations.length === 0) {
+    if (!completedDonations || completedDonations.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center py-4">
                     <i class="fas fa-donate fa-2x text-muted mb-2"></i>
-                    <p class="text-muted">You haven't made any donations yet.</p>
+                    <p class="text-muted">You haven't made any completed donations yet.</p>
                     <a href="pages/campaigns.html" class="btn btn-primary btn-sm">Browse Campaigns</a>
                 </td>
             </tr>
@@ -102,11 +105,9 @@ function updateRecentTransactions(donations) {
     }
 
     let html = '';
-    donations.forEach(d => {
+    completedDonations.forEach(d => {
         const date = new Date(d.created_at || d.donation_date).toLocaleDateString('en-CA'); // YYYY-MM-DD
         const amount = d.amount || 0;
-        const status = d.status || 'completed';
-        const statusBadge = status === 'completed' ? 'bg-success' : 'bg-warning';
         const campaignTitle = d.campaign_title || d.campaign || 'Unknown Campaign';
         const donorName = d.is_anonymous ? 'Anonymous' : (d.donor_name || 'You');
 
@@ -124,7 +125,7 @@ function updateRecentTransactions(donations) {
                 <td>${donorName}</td>
                 <td>${campaignTitle}</td>
                 <td>RM ${amount.toFixed(2)}</td>
-                <td><span class="badge ${statusBadge}">${status}</span></td>
+                <td><span class="badge bg-success">Completed</span></td>
                 <td>${receiptLink}</td>
             </tr>
         `;
