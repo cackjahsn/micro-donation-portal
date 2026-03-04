@@ -273,7 +273,7 @@ async function loadHomepageCampaigns() {
                                         </button>
                                     </div>
                                     <div class="col-6">
-                                        <a href="donation-page.html?campaign=${campaign.id}" 
+                                        <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}donation-page.html?campaign=${campaign.id}"
                                         class="btn btn-primary w-100 btn-donate"
                                         data-campaign-id="${campaign.id}">
                                             <i class="fas fa-heart me-2"></i>Donate
@@ -322,7 +322,8 @@ function addDonationButtonListeners() {
                 showLoginModal(campaignId, campaignTitle);
             } else {
                 // User is logged in, proceed to donation page
-                window.location.href = `donation-page.html?id=${campaignId}`;
+                const rootPath = typeof getRootPath === 'function' ? getRootPath() : '';
+                window.location.href = `${rootPath}donation-page.html?id=${campaignId}`;
             }
         });
     });
@@ -333,7 +334,8 @@ function showLoginModal(campaignId, campaignTitle) {
     
     // Store campaign ID for redirect after login
     if (campaignId) {
-        sessionStorage.setItem('redirectAfterLogin', `donation-page.html?id=${campaignId}`);
+        const rootPath = typeof getRootPath === 'function' ? getRootPath() : '';
+        sessionStorage.setItem('redirectAfterLogin', `${rootPath}donation-page.html?id=${campaignId}`);
         sessionStorage.setItem('campaignTitle', campaignTitle || '');
     }
     
@@ -696,7 +698,7 @@ function showNoCampaignsMessage(container) {
                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                 <h4>No Active Campaigns</h4>
                 <p class="text-muted">There are currently no active campaigns. Check back soon!</p>
-                <a href="pages/campaigns.html" class="btn btn-outline-primary mt-2">
+                <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/campaigns.html" class="btn btn-outline-primary mt-2">
                     Browse All Campaigns
                 </a>
             </div>

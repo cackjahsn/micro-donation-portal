@@ -328,7 +328,7 @@ const CampaignModal = {
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <a href="donation-page.html?campaign=${campaign.id}" 
+                            <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}donation-page.html?campaign=${campaign.id}"
                                class="btn btn-primary">
                                 <i class="fas fa-heart me-2"></i>Donate Now
                             </a>

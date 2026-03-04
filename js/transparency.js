@@ -97,7 +97,7 @@ function updateRecentTransactions(donations) {
                 <td colspan="6" class="text-center py-4">
                     <i class="fas fa-donate fa-2x text-muted mb-2"></i>
                     <p class="text-muted">You haven't made any completed donations yet.</p>
-                    <a href="pages/campaigns.html" class="btn btn-primary btn-sm">Browse Campaigns</a>
+                    <a href="../pages/campaigns.html" class="btn btn-primary btn-sm">Browse Campaigns</a>
                 </td>
             </tr>
         `;
@@ -111,12 +111,12 @@ function updateRecentTransactions(donations) {
         const campaignTitle = d.campaign_title || d.campaign || 'Unknown Campaign';
         const donorName = d.is_anonymous ? 'Anonymous' : (d.donor_name || 'You');
 
-        // Build receipt link with token
+        // Build receipt link with token - use absolute path from root
         let receiptLink = '<span class="text-muted">N/A</span>';
         if (d.id && token) {
-            receiptLink = `<a href="backend/api/payment/download-receipt.php?donation_id=${d.id}&token=${token}" class="text-primary" target="_blank">View</a>`;
+            receiptLink = `<a href="../backend/api/payment/download-receipt.php?donation_id=${d.id}&token=${token}" class="text-primary" target="_blank">View</a>`;
         } else if (d.id) {
-            receiptLink = `<a href="backend/api/payment/download-receipt.php?donation_id=${d.id}" class="text-primary" target="_blank">View</a>`;
+            receiptLink = `<a href="../backend/api/payment/download-receipt.php?donation_id=${d.id}" class="text-primary" target="_blank">View</a>`;
         }
 
         html += `

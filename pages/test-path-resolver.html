@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path Resolver Test - Pages Directory</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-result {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4f46e5;
+        }
+        .success { border-left-color: #10b981; }
+        .error { border-left-color: #ef4444; }
+        h1 { color: #4f46e5; }
+        h2 { color: #333; margin-top: 30px; }
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .path-link {
+            display: block;
+            padding: 10px;
+            margin: 5px 0;
+            background: #e0e7ff;
+            color: #4f46e5;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .path-link:hover {
+            background: #4f46e5;
+            color: white;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border-left: 4px solid #0ea5e9;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Path Resolver Test - Pages Directory</h1>
+    
+    <div class="info-box">
+        <strong>📍 Current Location:</strong> <code>/pages/test-path-resolver.html</code><br>
+        <strong>📁 Expected Base Path:</strong> <code>/micro-donation-portal/</code>
+    </div>
+    
+    <div id="test-results"></div>
+    
+    <h2>Test Links (from pages/ directory)</h2>
+    <div id="page-links"></div>
+    
+    <h2>Quick Navigation</h2>
+    <div style="display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <a href="../index.html" class="path-link">🏠 Home (index.html)</a>
+        <a href="../donation-page.html" class="path-link">💝 Donation Page</a>
+        <a href="campaigns.html" class="path-link">📋 Campaigns</a>
+        <a href="../register.html" class="path-link">📝 Register</a>
+        <a href="../admin-dashboard.html" class="path-link">👑 Admin Dashboard</a>
+    </div>
+
+    <script src="../js/path-resolver.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultsDiv = document.getElementById('test-results');
+            const pageLinksDiv = document.getElementById('page-links');
+            
+            let tests = [];
+            
+            // Test 1: Base path detection
+            tests.push({
+                name: 'Base Path Detection',
+                expected: '/micro-donation-portal/',
+                actual: window.APP_BASE_PATH,
+                pass: window.APP_BASE_PATH === '/micro-donation-portal/'
+            });
+            
+            // Test 2: API URL
+            tests.push({
+                name: 'API Base URL',
+                expected: '/micro-donation-portal/backend/api',
+                actual: window.API_BASE_URL,
+                pass: window.API_BASE_URL === '/micro-donation-portal/backend/api'
+            });
+            
+            // Test 3: resolvePath function exists
+            tests.push({
+                name: 'resolvePath Function',
+                expected: 'Function should exist',
+                actual: typeof window.resolvePath,
+                pass: typeof window.resolvePath === 'function'
+            });
+            
+            // Test 4: getRootPath function
+            tests.push({
+                name: 'getRootPath Function',
+                expected: 'Should return "../" from pages/',
+                actual: typeof window.getRootPath,
+                pass: typeof window.getRootPath === 'function'
+            });
+            
+            // Test 5: Resolve relative path
+            if (typeof window.resolvePath === 'function') {
+                const resolved = window.resolvePath('campaigns.html');
+                tests.push({
+                    name: 'Resolve Relative Path (campaigns.html)',
+                    expected: 'Should include micro-donation-portal',
+                    actual: resolved,
+                    pass: resolved.includes('micro-donation-portal') && resolved.includes('campaigns.html')
+                });
+            }
+            
+            // Test 6: Resolve parent path (../style.css)
+            if (typeof window.resolvePath === 'function') {
+                const resolved = window.resolvePath('../style.css');
+                tests.push({
+                    name: 'Resolve Parent Path (../style.css)',
+                    expected: '/micro-donation-portal/style.css',
+                    actual: resolved,
+                    pass: resolved === '/micro-donation-portal/style.css'
+                });
+            }
+            
+            // Test 7: Get root path
+            if (typeof window.getRootPath === 'function') {
+                const rootPath = window.getRootPath();
+                tests.push({
+                    name: 'Get Root Path',
+                    expected: '../',
+                    actual: rootPath,
+                    pass: rootPath === '../'
+                });
+            }
+            
+            // Test 8: CSS file accessible
+            tests.push({
+                name: 'CSS File Accessible',
+                expected: 'style.css should load',
+                actual: document.styleSheets.length > 0 ? 'Yes' : 'No',
+                pass: document.styleSheets.length > 0
+            });
+            
+            // Display test results
+            let html = '';
+            tests.forEach((test, index) => {
+                const className = test.pass ? 'success' : 'error';
+                const icon = test.pass ? '✅' : '❌';
+                html += `
+                    <div class="test-result ${className}">
+                        <strong>${icon} Test ${index + 1}: ${test.name}</strong><br>
+                        <small>Expected: ${test.expected}</small><br>
+                        <code>Actual: ${test.actual}</code>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+            
+            // Generate test links for pages directory
+            const pageTestPaths = [
+                { path: '../index.html', label: 'Go to index.html' },
+                { path: '../style.css', label: 'Load style.css' },
+                { path: '../js/auth.js', label: 'Load auth.js' },
+                { path: 'campaigns.html', label: 'Go to campaigns.html' }
+            ];
+            
+            pageLinksDiv.innerHTML = pageTestPaths.map(item => {
+                const resolved = window.resolvePath ? window.resolvePath(item.path) : item.path;
+                return `<a href="${resolved}" class="path-link">📄 ${item.label} → ${resolved}</a>`;
+            }).join('');
+            
+            // Log summary
+            const passed = tests.filter(t => t.pass).length;
+            const total = tests.length;
+            console.log(`Path Resolver Tests (pages/): ${passed}/${total} passed`);
+            
+            // Show summary
+            const summaryColor = passed === total ? '#10b981' : '#f59e0b';
+            const summaryMessage = passed === total 
+                ? '🎉 All tests passed! Path resolver is working correctly.'
+                : `⚠️ ${total - passed} test(s) failed. Check the results above.`;
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.cssText = `margin-top: 30px; padding: 20px; background: ${summaryColor}22; border-left: 4px solid ${summaryColor}; border-radius: 5px; font-weight: bold;`;
+            summaryDiv.innerHTML = `${summaryMessage} (${passed}/${total})`;
+            document.body.appendChild(summaryDiv);
+        });
+    </script>
+</body>
+</html>

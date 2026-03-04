@@ -137,12 +137,12 @@ function createUserMenu(user) {
             </a>
             <ul class="dropdown-menu">
                 ${user.role === 'admin' ? `
-                    <li><a class="dropdown-item" href="admin-dashboard.html">
+                    <li><a class="dropdown-item" href="${typeof getRootPath === 'function' ? getRootPath() : ''}admin-dashboard.html">
                         <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
                     </a></li>
                     <li><hr class="dropdown-divider"></li>
                 ` : ''}
-                <li><a class="dropdown-item" href="pages/profile.html">
+                <li><a class="dropdown-item" href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/profile.html">
                     <i class="fas fa-user me-2"></i>My Profile
                 </a></li>
                 <li><a class="dropdown-item" href="#">
@@ -189,10 +189,11 @@ function createUserMenu(user) {
         if (typeof utils !== 'undefined' && utils.showNotification) {
             utils.showNotification('Logged out successfully', 'success');
         }
-        
-        // Redirect to homepage
+
+        // Redirect to homepage (handle subdirectory paths)
         setTimeout(() => {
-            window.location.href = 'index.html';
+            const rootPath = typeof window.getRootPath === 'function' ? window.getRootPath() : '';
+            window.location.href = rootPath + 'index.html';
         }, 500);
     });
 }
@@ -213,7 +214,7 @@ function createAdminMenu(user) {
     
     const adminMenuHTML = `
         <li class="nav-item" id="adminMenu">
-            <a class="nav-link" href="admin-dashboard.html">
+            <a class="nav-link" href="${typeof getRootPath === 'function' ? getRootPath() : ''}admin-dashboard.html">
                 <i class="fas fa-tachometer-alt me-1"></i>Admin
             </a>
         </li>

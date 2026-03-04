@@ -1,7 +1,7 @@
 // auth.js - Updated with Backend API Integration (FIXED REGISTRATION)
 
-// Define API_BASE_URL at the TOP of the file so it's available globally
-const API_BASE_URL = '/micro-donation-portal/backend/api';
+// Use API_BASE_URL from path-resolver.js if available, otherwise use fallback
+const API_BASE_URL = window.API_BASE_URL || '/micro-donation-portal/backend/api';
 
 // Also set it globally so other scripts can access it
 window.API_BASE_URL = API_BASE_URL;
@@ -441,11 +441,12 @@ class AuthManager {
                 
                 // Redirect based on role
                 setTimeout(() => {
+                    const rootPath = typeof window.getRootPath === 'function' ? window.getRootPath() : '';
                     if (data.user.role === 'admin') {
-                        window.location.href = 'admin-dashboard.html';
+                        window.location.href = rootPath + 'admin-dashboard.html';
                     } else {
                         // Force page reload to update navigation
-                        window.location.href = 'index.html';
+                        window.location.href = rootPath + 'index.html';
                     }
                 }, 1000);
                 
@@ -530,8 +531,9 @@ class AuthManager {
                 } else {
                     console.warn('Auto-login failed, redirecting to login page');
                     this.showNotification('Registration successful! Please login.', 'success');
+                    const rootPath = typeof window.getRootPath === 'function' ? window.getRootPath() : '';
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = rootPath + 'index.html';
                     }, 2000);
                 }
             } else {
@@ -567,21 +569,34 @@ class AuthManager {
     
     async handleLogout(event) {
         if (event) event.preventDefault();
-        
+
         console.log('Logout initiated');
-        
+
         try {
             await fetch(`${API_BASE_URL}/auth/logout.php`);
         } catch (error) {
             console.log('Logout API call failed, continuing with client-side logout');
         }
-        
+
         this.clearSession();
         this.showNotification('Logged out successfully', 'success');
-        
-        // Redirect to home page
+
+        // Redirect to home page (use resolvePath if available, otherwise determine path)
         setTimeout(() => {
-            window.location.href = 'index.html';
+            // Check if we're in a subdirectory
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/pages/')) {
+                // We're in /pages/ directory, go up one level
+                window.location.href = '../index.html';
+            } else if (typeof window.resolvePath === 'function') {
+                // Use path-resolver if available
+                window.location.href = window.resolvePath('index.html');
+            } else {
+                // Default to root-relative path
+                const basePath = window.APP_BASE_PATH || '/micro-donation-portal/';
+                const base = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+                window.location.href = base + '/index.html';
+            }
         }, 1000);
     }
     
@@ -852,9 +867,9 @@ class AuthManager {
                         <span class="user-name">${userName}</span>
                         ${this.currentUser.role === 'admin' ? ' <small>(Admin)</small>' : ''}
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" 
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown"
                         style="position: absolute; top: 100%; right: 0; left: auto; min-width: 200px; z-index: 9999; margin-top: 0.5rem; background-color: white; border: 1px solid rgba(0,0,0,0.15); border-radius: 0.35rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.175);">
-                        <li><a class="dropdown-item" href="pages/profile.html" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #212529; text-decoration: none;">
+                        <li><a class="dropdown-item" href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/profile.html" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #212529; text-decoration: none;">
                             <i class="fas fa-user me-2"></i>My Profile
                         </a></li>
                         <li><hr class="dropdown-divider" style="margin: 0.5rem 0; border-top: 1px solid #e3e6f0;"></li>
@@ -889,7 +904,7 @@ class AuthManager {
         // MODIFIED: Added proper styling and positioning
         const adminMenuHTML = `
             <li class="nav-item" id="adminMenu" style="position: relative; margin-right: 0.5rem;">
-                <a class="nav-link" href="admin-dashboard.html" 
+                <a class="nav-link" href="${typeof getRootPath === 'function' ? getRootPath() : ''}admin-dashboard.html"
                 style="display: flex; align-items: center; gap: 0.5rem; background-color: #f6c23e; color: #fff; border-radius: 0.35rem; padding: 0.5rem 1rem; font-weight: 600;">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Admin</span>

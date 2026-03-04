@@ -305,13 +305,13 @@ class DonationPage {
                 <p class="text-muted mb-3">Campaign ID: ${id}</p>
                 <p class="text-muted mb-4">The campaign you're trying to donate to could not be loaded. It may have been removed or is currently unavailable.</p>
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                    <a href="pages/campaigns.html" class="btn btn-primary">
+                    <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/campaigns.html" class="btn btn-primary">
                         <i class="fas fa-arrow-left me-2"></i>Browse Campaigns
                     </a>
                     <button onclick="window.location.reload()" class="btn btn-outline-primary">
                         <i class="fas fa-redo me-2"></i>Try Again
                     </button>
-                    <a href="index.html" class="btn btn-outline-secondary">
+                    <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}index.html" class="btn btn-outline-secondary">
                         <i class="fas fa-home me-2"></i>Go to Homepage
                     </a>
                 </div>

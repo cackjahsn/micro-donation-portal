@@ -76,7 +76,8 @@ class CampaignManager {
         
         // Store campaign ID for redirect after login
         if (campaignId) {
-            sessionStorage.setItem('redirectAfterLogin', `donation-page.html?campaign=${campaignId}`);
+            const rootPath = typeof getRootPath === 'function' ? getRootPath() : '';
+            sessionStorage.setItem('redirectAfterLogin', `${rootPath}donation-page.html?campaign=${campaignId}`);
             sessionStorage.setItem('campaignTitle', campaignTitle || '');
         }
         
@@ -283,7 +284,8 @@ class CampaignManager {
                 if (!isAuthenticated) {
                     this.showLoginModal(campaignId, campaignTitle);
                 } else {
-                    window.location.href = `donation-page.html?campaign=${campaignId}`;
+                    const rootPath = typeof getRootPath === 'function' ? getRootPath() : '';
+                    window.location.href = `${rootPath}donation-page.html?campaign=${campaignId}`;
                 }
             });
         });
@@ -660,11 +662,11 @@ class CampaignManager {
                             </div>
                             <div class="col-5">
                                 <div class="d-grid gap-2">
-                                    <button onclick="campaignManager.viewCampaignDetails(${campaign.id})" 
+                                    <button onclick="campaignManager.viewCampaignDetails(${campaign.id})"
                                             class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-info-circle"></i> View
                                     </button>
-                                    <a href="donation-page.html?campaign=${campaign.id}" 
+                                    <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}donation-page.html?campaign=${campaign.id}"
                                     class="btn btn-success btn-sm btn-donate"
                                     data-campaign-id="${campaign.id}">
                                         <i class="fas fa-heart"></i> Donate

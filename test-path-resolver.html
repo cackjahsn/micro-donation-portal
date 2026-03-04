@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path Resolver Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-result {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4f46e5;
+        }
+        .success { border-left-color: #10b981; }
+        .error { border-left-color: #ef4444; }
+        h1 { color: #4f46e5; }
+        h2 { color: #333; margin-top: 30px; }
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .path-link {
+            display: block;
+            padding: 10px;
+            margin: 5px 0;
+            background: #e0e7ff;
+            color: #4f46e5;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .path-link:hover {
+            background: #4f46e5;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Path Resolver Test Page</h1>
+    
+    <div id="test-results"></div>
+    
+    <h2>Test Links (from root)</h2>
+    <div id="root-links"></div>
+    
+    <h2>Test Links (from pages/ subdirectory)</h2>
+    <div id="subdir-links"></div>
+    
+    <div style="margin-top: 30px; padding: 20px; background: #fff3cd; border-left: 4px solid #f59e0b; border-radius: 5px;">
+        <h3>📝 Note About Subdirectory Testing</h3>
+        <p>This test page is in the <strong>root</strong> directory, so it cannot fully simulate paths from <code>pages/</code>.</p>
+        <p>To test paths from the <code>pages/</code> directory, open:</p>
+        <a href="pages/campaigns.html" style="display: inline-block; padding: 10px 20px; background: #4f46e5; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
+            Open pages/campaigns.html
+        </a>
+    </div>
+
+    <script src="js/path-resolver.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultsDiv = document.getElementById('test-results');
+            const rootLinksDiv = document.getElementById('root-links');
+            const subdirLinksDiv = document.getElementById('subdir-links');
+            
+            let tests = [];
+            
+            // Test 1: Base path detection
+            tests.push({
+                name: 'Base Path Detection',
+                expected: 'Should detect /micro-donation-portal/ or /',
+                actual: window.APP_BASE_PATH,
+                pass: window.APP_BASE_PATH.includes('micro-donation-portal') || window.APP_BASE_PATH === '/'
+            });
+            
+            // Test 2: API URL
+            tests.push({
+                name: 'API Base URL',
+                expected: 'Should end with /backend/api',
+                actual: window.API_BASE_URL,
+                pass: window.API_BASE_URL.endsWith('/backend/api')
+            });
+            
+            // Test 3: resolvePath function exists
+            tests.push({
+                name: 'resolvePath Function',
+                expected: 'Function should exist',
+                actual: typeof window.resolvePath,
+                pass: typeof window.resolvePath === 'function'
+            });
+            
+            // Test 4: getRootPath function exists
+            tests.push({
+                name: 'getRootPath Function',
+                expected: 'Function should exist',
+                actual: typeof window.getRootPath,
+                pass: typeof window.getRootPath === 'function'
+            });
+            
+            // Test 5: Resolve relative path
+            if (typeof window.resolvePath === 'function') {
+                const resolved = window.resolvePath('style.css');
+                tests.push({
+                    name: 'Resolve Relative Path (style.css)',
+                    expected: 'Should prepend base path',
+                    actual: resolved,
+                    pass: resolved.includes('style.css')
+                });
+            }
+            
+            // Test 6: Resolve absolute path
+            if (typeof window.resolvePath === 'function') {
+                const resolved = window.resolvePath('/absolute/path.css');
+                tests.push({
+                    name: 'Resolve Absolute Path (/absolute/path.css)',
+                    expected: 'Should return as-is',
+                    actual: resolved,
+                    pass: resolved === '/absolute/path.css'
+                });
+            }
+            
+            // Test 7: Resolve parent directory path
+            if (typeof window.resolvePath === 'function') {
+                const resolved = window.resolvePath('../style.css');
+                tests.push({
+                    name: 'Resolve Parent Path (../style.css)',
+                    expected: 'Should handle parent directory',
+                    actual: resolved,
+                    pass: resolved.includes('style.css')
+                });
+            }
+            
+            // Display test results
+            let html = '';
+            tests.forEach((test, index) => {
+                const className = test.pass ? 'success' : 'error';
+                const icon = test.pass ? '✅' : '❌';
+                html += `
+                    <div class="test-result ${className}">
+                        <strong>${icon} Test ${index + 1}: ${test.name}</strong><br>
+                        <small>Expected: ${test.expected}</small><br>
+                        <code>Actual: ${test.actual}</code>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+            
+            // Generate test links for root
+            const rootTestPaths = [
+                'index.html',
+                'donation-page.html',
+                'pages/campaigns.html',
+                'style.css',
+                'js/auth.js'
+            ];
+            
+            rootLinksDiv.innerHTML = rootTestPaths.map(path => {
+                const resolved = window.resolvePath ? window.resolvePath(path) : path;
+                return `<a href="${resolved}" class="path-link">📄 ${path} → ${resolved}</a>`;
+            }).join('');
+            
+            // Generate test links for subdirectory (simulated)
+            const subdirTestPaths = [
+                '../index.html',
+                '../style.css',
+                '../js/auth.js',
+                'campaigns.html'
+            ];
+            
+            subdirLinksDiv.innerHTML = subdirTestPaths.map(path => {
+                const resolved = window.resolvePath ? window.resolvePath(path) : path;
+                return `<a href="${resolved}" class="path-link">📄 ${path} → ${resolved}</a>`;
+            }).join('');
+            
+            // Log summary
+            const passed = tests.filter(t => t.pass).length;
+            const total = tests.length;
+            console.log(`Path Resolver Tests: ${passed}/${total} passed`);
+        });
+    </script>
+</body>
+</html>

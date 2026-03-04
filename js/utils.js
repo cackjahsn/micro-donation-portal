@@ -3,10 +3,14 @@ class Utils {
     constructor() {
         this.initialized = false;
         this.storagePrefix = 'micro_donation_'; // Consistent storage prefix
-        
-        // Ensure API_BASE_URL is available globally
-        if (typeof window.API_BASE_URL === 'undefined') {
+
+        // Use API_BASE_URL from path-resolver.js if available
+        if (typeof window.API_BASE_URL !== 'undefined') {
+            console.log('[Utils] Using API_BASE_URL from path-resolver:', window.API_BASE_URL);
+        } else {
+            // Fallback for backward compatibility
             window.API_BASE_URL = '/micro-donation-portal/backend/api';
+            console.warn('[Utils] path-resolver.js not loaded. Using fallback API URL.');
         }
     }
     
@@ -295,7 +299,8 @@ class Utils {
             // Auto logout on 401 Unauthorized
             if (error.message.includes('401')) {
                 this.clearSession();
-                window.location.href = 'index.html';
+                const rootPath = typeof window.getRootPath === 'function' ? window.getRootPath() : '';
+                window.location.href = rootPath + 'index.html';
             }
             
             throw error;
@@ -376,7 +381,8 @@ class Utils {
                 console.warn('Authentication failed (401), clearing session');
                 this.clearSession();
                 this.showNotification('Your session has expired. Please login again.', 'error');
-                window.location.href = 'index.html';
+                const rootPath = typeof window.getRootPath === 'function' ? window.getRootPath() : '';
+                window.location.href = rootPath + 'index.html';
                 return null;
             }
             

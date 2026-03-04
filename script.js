@@ -269,8 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Redirect based on role
                 setTimeout(() => {
+                    const rootPath = typeof getRootPath === 'function' ? getRootPath() : '';
                     if (data.user.role === 'admin') {
-                        window.location.href = 'admin-dashboard.html';
+                        window.location.href = `${rootPath}admin-dashboard.html`;
                     } else {
                         // Force reload to update UI
                         window.location.reload();
