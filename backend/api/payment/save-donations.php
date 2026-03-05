@@ -66,6 +66,14 @@ try {
     }
     
     // --- GET AND VALIDATE REQUEST DATA ---
+    // Read raw JSON input (frontend sends application/json)
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+    
+    // Log for debugging (remove in production)
+    error_log("Raw input: " . $input);
+    error_log("Decoded data: " . print_r($data, true));
+    
     if (empty($input)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'No data received']);

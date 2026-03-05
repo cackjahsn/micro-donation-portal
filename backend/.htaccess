@@ -21,11 +21,11 @@
 # For production: comment out the first two lines, uncomment the production settings
 
 # Development settings (uncomment for development)
-# php_flag display_errors on
-# php_value error_reporting E_ALL
+php_flag display_errors on
+php_value error_reporting E_ALL
 
 # Production settings (uncomment for production)
-php_flag display_errors off
-php_value error_reporting 0
-php_flag log_errors on
-php_value error_log /var/log/php_errors.log
+# php_flag display_errors off
+# php_value error_reporting 0
+# php_flag log_errors on
+# php_value error_log /var/log/php_errors.log
