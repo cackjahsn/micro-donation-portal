@@ -6,13 +6,27 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 class Database {
-    private $host = "localhost";
-    private $db_name = "micro_donation_db";
-    private $username = "root"; // Change to your MySQL username
-    private $password = ""; // Change to your MySQL password
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
     private $conn;
 
+    public function __construct() {
+        // Load environment variables
+        require_once dirname(__FILE__) . '/env.php';
+        $this->host = EnvConfig::get('DB_HOST', 'localhost');
+        $this->db_name = EnvConfig::get('DB_NAME', 'micro_donation_db');
+        $this->username = EnvConfig::get('DB_USER', 'root');
+        $this->password = EnvConfig::get('DB_PASS', '');
+    }
+
     public function getConnection() {
+        // Initialize properties if not already done
+        if ($this->host === null) {
+            $this->__construct();
+        }
+        
         $this->conn = null;
 
         try {

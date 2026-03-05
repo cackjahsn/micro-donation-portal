@@ -41,29 +41,40 @@ try {
     $email = trim($data['email']);
     $password = trim($data['password']);
 
-    // Accept test credentials ONLY in development mode
+    // SECURITY: Only allow test credentials in development mode
     $is_development = getenv('APP_ENV') === 'development' || 
                       $_SERVER['HTTP_HOST'] === 'localhost' || 
                       $_SERVER['HTTP_HOST'] === '127.0.0.1';
 
-    if ($is_development && $email === 'admin@communitygive.com') {
-        $user = [
-            'id' => 1,
-            'email' => 'admin@communitygive.com',
-            'name' => 'System Admin',
-            'role' => 'admin',
-            'avatar' => 'assets/images/default-avatar.png'
-        ];
-    } elseif ($is_development && $email === 'testuser@example.com') {
-        $user = [
-            'id' => 2,
-            'email' => 'testuser@example.com',
-            'name' => 'Test User',
-            'role' => 'user',
-            'avatar' => 'assets/images/default-avatar.png'
-        ];
+    if ($email === 'admin@communitygive.com' || $email === 'testuser@example.com') {
+        if (!$is_development) {
+            // In production, completely block test credentials
+            error_log("SECURITY ALERT: Attempt to use test credentials in production: " . $email);
+            throw new Exception('Invalid credentials');
+        }
+        
+        // For development, allow hardcoded credentials but log this for security awareness
+        error_log("Development login with test account: " . $email);
+        
+        if ($email === 'admin@communitygive.com') {
+            $user = [
+                'id' => 1,
+                'email' => 'admin@communitygive.com',
+                'name' => 'System Admin',
+                'role' => 'admin',
+                'avatar' => 'assets/images/default-avatar.png'
+            ];
+        } else { // testuser@example.com
+            $user = [
+                'id' => 2,
+                'email' => 'testuser@example.com',
+                'name' => 'Test User',
+                'role' => 'user',
+                'avatar' => 'assets/images/default-avatar.png'
+            ];
+        }
     } else {
-        // Database lookup for other users (including password verification)
+        // Database lookup for all other users (including password verification)
         $query = "SELECT id, email, name, role, avatar, password FROM users WHERE email = :email AND status = 'active'";
         $stmt = $db->prepare($query);
         $stmt->bindParam(':email', $email);
