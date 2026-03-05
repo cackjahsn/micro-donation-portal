@@ -1,37 +1,162 @@
-# Micro-Donation Community Web Portal
+# 🌟 Micro-Donation Community Web Portal
 
-A web portal for facilitating micro-donations (RM1-RM5) within local communities using QR Pay API integration.
+A full-stack web application for facilitating micro-donations within local communities using QR payment integration.
 
----
+![Status](https://img.shields.io/badge/status-active-success)
+![PHP](https://img.shields.io/badge/PHP-8.0+-blue)
+![MySQL](https://img.shields.io/badge/MySQL-5.7+-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## 📌 Project Overview
-
-This is a full-stack web application that enables:
-
-- **Users** to browse donation campaigns and contribute small amounts (RM1-RM5)
-- **Admins** to create, manage, and monitor campaigns through a dashboard
-- **Donors** to make payments via QR codes and receive digital receipts
-- **Communities** to view transparent donation reports and statistics
-
-### Demo Credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@communitygive.com` | (any password) |
-| Test User | `testuser@example.com` | (any password) |
+> ⚠️ **Educational Project** - This is a student project for learning purposes. Not intended for production use.
 
 ---
 
-## 🛠️ Technologies Used
+## 📋 Table of Contents
+
+- [Overview](#-overview)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Author](#-author)
+
+---
+
+## 📖 Overview
+
+**CommunityGive** is a micro-donation platform that connects donors with local community campaigns. The system emphasizes transparency, ease of use, and small-scale contributions to make a big impact.
+
+### Purpose
+
+This project demonstrates:
+- Full-stack web development with PHP and MySQL
+- Secure authentication and authorization
+- Payment gateway integration (simulated)
+- Transparent donation tracking
+- Modern frontend development practices
+
+---
+
+## ✨ Features
+
+### For Donors
+- Browse active donation campaigns
+- Quick donation via QR code payment
+- Anonymous donation option
+- Digital receipt generation
+- Donation history tracking
+- User profile management
+
+### For Administrators
+- Campaign management (create, edit, delete)
+- User and donor management
+- Analytics dashboard with charts
+- Report generation
+- Receipt verification system
+
+### Transparency
+- Public donation statistics
+- Recent donations feed
+- Campaign progress tracking
+- Platform fee disclosure
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | HTML5, CSS3, JavaScript (ES6+), Bootstrap 5 |
+| **Frontend** | HTML5, CSS3, JavaScript (ES6+) |
+| **CSS Framework** | Bootstrap 5 |
 | **Backend** | PHP (Vanilla) |
 | **Database** | MySQL |
-| **Payment** | Simulated QR Code Generation |
-| **Libraries** | jQuery, Chart.js, DataTables, jsPDF |
-| **Tools** | VS Code, XAMPP, phpMyAdmin, Postman |
+| **Charts** | Chart.js |
+| **HTTP Client** | jQuery |
+| **Payment** | Simulated QR Code |
+| **Server** | Apache (XAMPP) |
+
+### Development Tools
+- VS Code
+- XAMPP
+- phpMyAdmin
+
+---
+
+## 🚀 Installation
+
+### Prerequisites
+
+- XAMPP (or equivalent PHP + MySQL stack)
+- PHP 8.0+
+- MySQL 5.7+
+
+### Setup Instructions
+
+#### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd micro-donation-portal
+```
+
+#### 2. Configure Environment
+
+Copy `.env.example` to `.env` and update with your credentials:
+
+```env
+DB_HOST=localhost
+DB_NAME=your_database_name
+DB_USER=your_username
+DB_PASS=your_password
+APP_ENV=development
+```
+
+> 🔒 **Security Note:** The `.env` file is excluded from version control. Never commit sensitive credentials.
+
+#### 3. Create Database
+
+```sql
+CREATE DATABASE your_database_name CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+#### 4. Import Schema
+
+Import the database schema from `documentation/schema.sql` (if available) or follow the setup guide.
+
+#### 5. Start the Application
+
+Place the project in your web server's root directory and access via:
+
+```
+http://localhost/micro-donation-portal/
+```
+
+---
+
+## 📱 Usage
+
+### For Visitors
+
+1. Browse campaigns on the homepage
+2. Register for a free account
+3. Login to access donation features
+
+### For Donors
+
+1. Select a campaign to support
+2. Choose donation amount
+3. Complete payment via QR code
+4. Download receipt for your records
+
+### For Administrators
+
+> Access to admin features requires administrator privileges. Contact the project maintainer for more information.
+
+1. Login with admin credentials
+2. Access the admin dashboard
+3. Manage campaigns, users, and view analytics
 
 ---
 
@@ -39,205 +164,146 @@ This is a full-stack web application that enables:
 
 ```
 micro-donation-portal/
-├── index.html                    # Homepage with featured campaigns
-├── register.html                 # User registration page
-├── donation-page.html            # Donation processing page
-├── admin-dashboard.html          # Admin control panel
-│
+├── index.html                    # Homepage
+├── register.html                 # Registration page
+├── donation-page.html            # Donation interface
+├── admin-dashboard.html          # Admin panel
 ├── pages/                        # Additional pages
-│   ├── campaigns.html            # Campaign listing
-│   ├── transparency.html         # Public transparency & reports
-│   ├── profile.html              # User profile
-│   ├── about.html                # About page
-│   └── contact.html              # Contact page
-│
-├── backend/                      # PHP Backend API
-│   ├── config/
-│   │   └── database.php          # MySQL database connection
-│   ├── models/
-│   │   └── User.php              # User model class
-│   └── api/
-│       ├── auth/                 # Authentication endpoints
-│       │   ├── login.php
-│       │   ├── register.php
-│       │   └── logout.php
-│       ├── campaigns/            # Campaign management
-│       │   ├── get-all.php
-│       │   ├── get-single.php
-│       │   ├── create.php
-│       │   ├── update.php
-│       │   └── delete.php
-│       ├── payment/              # Payment processing
-│       │   ├── generate-qr.php
-│       │   ├── save-donations.php
-│       │   ├── verify.php
-│       │   └── download-receipt.php
-│       ├── user/                 # User management
-│       │   ├── get-all.php
-│       │   ├── get-single.php
-│       │   ├── donations.php
-│       │   └── delete.php
-│       ├── donors/               # Donor information
-│       │   └── get-all.php
-│       └── transparency/         # Reports & stats
-│           ├── report.php
-│           └── stats.php
-│
+├── backend/                      # PHP backend API
+│   ├── config/                   # Configuration files
+│   ├── models/                   # Data models
+│   └── api/                      # API endpoints
 ├── js/                           # JavaScript modules
-│   ├── auth.js                   # Authentication logic
-│   ├── campaigns.js              # Campaign listing & interactions
-│   ├── payment.js                # Payment processing
-│   ├── donation.js               # Donation flow
-│   ├── transparency.js           # Transparency page logic
-│   ├── campaign-modal.js         # Modal interactions
-│   ├── homepage-campaigns.js     # Homepage campaigns
-│   └── utils.js                  # Utility functions
-│
 ├── css/                          # Stylesheets
-│   ├── style.css                 # Main styles
-│   ├── admin-style.css           # Admin dashboard styles
-│   ├── responsive.css             # Responsive adjustments
-│   ├── animations.css            # Animations
-│   └── components/                # Component styles
-│       ├── cards.css
-│       ├── navbar.css
-│       └── footer.css
-│
 ├── assets/                       # Static assets
-│   ├── images/                   # Images & logos
-│   │   └── campaigns/            # Uploaded campaign images
-│   └── qr-codes/                 # QR code assets
-│
-├── uploads/                      # User-uploaded files
-│   └── campaigns/                # Campaign image uploads
-│
-└── package.json                  # Node.js dependencies
+├── uploads/                      # User uploads
+└── documentation/                # Project documentation
 ```
 
 ---
 
-## 🗃️ Database Schema
+## 🔒 Security
 
-### Users Table
-```sql
-users (id, email, password, name, role, avatar, total_donated, date_joined, status)
-```
+This project implements several security measures:
 
-### Campaigns Table
-```sql
-campaigns (id, title, description, category, target_amount, current_amount, donors_count, 
-           days_left, image_url, organizer, organizer_logo, featured, status, 
-           start_date, end_date, created_by, created_at, updated_at)
-```
+- **Password Hashing**: BCRYPT algorithm for secure password storage
+- **Prepared Statements**: PDO to prevent SQL injection
+- **Input Sanitization**: All user inputs are sanitized
+- **Token-Based Auth**: Secure session management
+- **Role-Based Access**: Admin and user roles
+- **CORS Configuration**: Controlled cross-origin requests
 
-### Donations Table
-```sql
-donations (id, user_id, campaign_id, amount, transaction_id, payment_method, 
-           donor_name, donor_email, is_anonymous, status, qr_code_image, created_at)
-```
+### Security Best Practices
 
-### User Tokens Table
-```sql
-user_tokens (id, user_id, token, expires_at)
-```
+> ⚠️ **Important**: This is a learning project. Before deploying to production:
 
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- XAMPP (or similar PHP + MySQL stack)
-- Web browser
-- VS Code (recommended)
-
-### Installation
-
-1. **Start Apache and MySQL** in XAMPP Control Panel
-
-2. **Create the database**:
-   ```sql
-   CREATE DATABASE micro_donation_db;
-   ```
-
-3. **Import the database schema** (if available) or the system will create tables automatically
-
-4. **Configure database credentials** in `backend/config/database.php`:
-   ```php
-   private $username = "root";    // Your MySQL username
-   private $password = "";        // Your MySQL password
-   ```
-
-5. **Run the application**:
-   - Place the project in `htdocs/micro-donation-portal/`
-   - Open `http://localhost/micro-donation-portal/` in your browser
+1. Change all default credentials
+2. Enable HTTPS/SSL
+3. Update `.env` with strong database passwords
+4. Disable error display in production
+5. Implement rate limiting
+6. Add CSRF protection
+7. Conduct security audit
+8. Use environment-specific configurations
 
 ---
 
-## 📱 Key Features
+## 🐛 Troubleshooting
 
-### For Visitors
-- Browse active donation campaigns
-- View campaign details and progress
-- Access transparency reports
+### Common Issues
 
-### For Registered Users
-- User registration and login
-- Make donations via QR code
-- View donation history
-- Download receipts
+**Database Connection Error**
+- Verify MySQL is running
+- Check `.env` credentials
+- Ensure database exists
 
-### For Administrators
-- Create, edit, and delete campaigns
-- Upload campaign images
-- View all users and donors
-- Analytics dashboard with charts
-- Generate reports (PDF/Excel)
+**404 Errors**
+- Confirm Apache is running
+- Check `.htaccess` files are present
+- Verify correct URL path
+
+**Upload Failures**
+- Check folder permissions
+- Verify PHP upload settings in `php.ini`
+
+For more detailed troubleshooting, see [documentation/QUICK_START.md](documentation/QUICK_START.md)
 
 ---
 
-## 🔌 API Endpoints
+## 🤝 Contributing
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/login.php` | User login |
-| POST | `/api/auth/register.php` | User registration |
-| GET | `/api/campaigns/get-all.php` | List all campaigns |
-| POST | `/api/campaigns/create.php` | Create campaign |
-| POST | `/api/payment/generate-qr.php` | Generate donation QR |
-| POST | `/api/payment/save-donations.php` | Save donation |
-| GET | `/api/transparency/report.php` | Get transparency report |
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Code Style
+
+- Follow PSR-12 for PHP code
+- Use ES6+ for JavaScript
+- Add meaningful comments
+- Write clear commit messages
 
 ---
 
 ## 📄 License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+Copyright (c) 2024 Khairil Aiman Bin Mohd Azahari Shah
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
 
 ---
 
 ## 👤 Author
 
 **Khairil Aiman Bin Mohd Azahari Shah**
-- Project: Micro-Donation Community Portal
-- Institution: BPJ241210141
+
+- **Project Code:** BPJ241210141
+- **Institution:** [Educational Institution]
 
 ---
 
-## 📊 System Flow
+## 📈 Future Enhancements
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   Visitor   │────▶│  Campaigns   │────▶│   Donate    │
-└─────────────┘     └──────────────┘     └─────────────┘
-                                               │
-                                               ▼
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   Admin     │────▶│   Dashboard  │◀────│   Payment   │
-└─────────────┘     └──────────────┘     └─────────────┘
-       │                   │                    │
-       └───────────────────┴────────────────────┘
-                          │
-                    ┌─────┴─────┐
-                    │  MySQL DB │
-                    └───────────┘
-```
+- [ ] Real payment gateway integration
+- [ ] Email notifications
+- [ ] SMS verification
+- [ ] Multi-language support
+- [ ] Recurring donations
+- [ ] Advanced analytics
+
+---
+
+## 🙏 Acknowledgments
+
+- Bootstrap team for the CSS framework
+- Chart.js for data visualization
+- jQuery team for the HTTP client library
+
+---
+
+## 📞 Support
+
+For questions and support:
+- Open an issue on GitHub
+- Check the [documentation](documentation/) folder
+- Review existing issues for similar problems
+
+---
+
+**Last Updated:** March 2026
