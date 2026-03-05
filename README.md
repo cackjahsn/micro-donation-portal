@@ -2,10 +2,10 @@
 
 A full-stack web application for facilitating micro-donations within local communities using QR payment integration.
 
-![Status](https://img.shields.io/badge/status-active-success)
+![Status](https://img.shields.io/badge/status-development-yellow)
 ![PHP](https://img.shields.io/badge/PHP-8.0+-blue)
 ![MySQL](https://img.shields.io/badge/MySQL-5.7+-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)
 
 > ⚠️ **Educational Project** - This is a student project for learning purposes. Not intended for production use.
 
@@ -249,23 +249,13 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📄 License
+## 📄 License & Copyright
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-```
-Copyright (c) 2024 Khairil Aiman Bin Mohd Azahari Shah
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-```
+> ⚠️ **All Rights Reserved** - This project is under development and not yet published.
+>
+> The code, design, and documentation are the property of the author. Unauthorized use, copying, or distribution is prohibited.
+>
+> A license will be chosen upon official release.
 
 ---
 
@@ -275,6 +265,8 @@ copies or substantial portions of the Software.
 
 - **Project Code:** BPJ241210141
 - **Institution:** [Educational Institution]
+
+> 📧 For inquiries or collaboration opportunities, please contact through GitHub issues.
 
 ---
 
