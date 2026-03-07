@@ -659,43 +659,74 @@ class DonationPage {
     }
     
     initLiveDonationsFeed() {
-        // Simulate live donation updates
-        setInterval(() => {
-            this.addRandomDonation();
-        }, 10000); // Every 10 seconds
+        // Load real donations from database
+        this.loadRealDonations();
         
-        // Initial donations
-        this.addRandomDonation();
-        setTimeout(() => this.addRandomDonation(), 2000);
-        setTimeout(() => this.addRandomDonation(), 4000);
+        // Refresh donations every 10 seconds
+        setInterval(() => {
+            this.loadRealDonations();
+        }, 10000);
     }
-    
-    addRandomDonation() {
+
+    async loadRealDonations() {
         const feed = document.querySelector('.donation-feed');
         if (!feed) return;
-        
-        const names = ['Anonymous', 'Sarah M.', 'John D.', 'Maria L.', 'Kevin T.', 'Amina R.', 'David L.', 'Lisa S.'];
-        const amounts = [5, 10, 25, 50, 100];
-        const times = ['just now', '1 min ago', '2 mins ago', '5 mins ago'];
-        
-        const randomName = names[Math.floor(Math.random() * names.length)];
-        const randomAmount = amounts[Math.floor(Math.random() * amounts.length)];
-        const randomTime = times[Math.floor(Math.random() * times.length)];
-        const initial = randomName === 'Anonymous' ? 'A' : randomName.charAt(0);
-        
+
+        try {
+            // Build API URL with campaign filter if available
+            // Use window.API_BASE_URL if available, otherwise use fallback
+            const baseUrl = window.API_BASE_URL || '/micro-donation-portal/backend/api';
+            let apiUrl = `${baseUrl}/donations/get-recent.php?limit=8`;
+            
+            // Filter by current campaign if available
+            if (this.campaignInfo && this.campaignInfo.id) {
+                apiUrl += `&campaign_id=${this.campaignInfo.id}`;
+            }
+
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error('Failed to fetch donations');
+            
+            const result = await response.json();
+            
+            if (result.success && result.donations && result.donations.length > 0) {
+                // Clear existing dummy donations
+                feed.innerHTML = '';
+                
+                // Add real donations
+                result.donations.forEach(donation => {
+                    this.addDonationToFeed(donation);
+                });
+                
+                console.log(`Loaded ${result.count} real donations from database`);
+            } else {
+                // No real donations yet, show placeholder message
+                if (feed.children.length === 0) {
+                    feed.innerHTML = '<div class="text-center text-muted py-3"><small>No donations yet. Be the first!</small></div>';
+                }
+            }
+        } catch (error) {
+            console.warn('Could not load real donations:', error.message);
+            // Keep existing feed or show placeholder on error
+        }
+    }
+
+    addDonationToFeed(donation) {
+        const feed = document.querySelector('.donation-feed');
+        if (!feed) return;
+
         const donationItem = document.createElement('div');
         donationItem.className = 'donation-feed-item animate-fade-in';
         donationItem.innerHTML = `
-            <div class="donor-avatar">${initial}</div>
+            <div class="donor-avatar" style="background: linear-gradient(135deg, #4e73df, #6f42c1);">${donation.initial}</div>
             <div class="donor-info">
-                <div class="donor-name">${randomName}</div>
-                <div class="donation-amount">RM ${randomAmount}</div>
-                <div class="donation-time">${randomTime}</div>
+                <div class="donor-name">${donation.donor_name}</div>
+                <div class="donation-amount text-success">RM ${donation.amount.toFixed(2)}</div>
+                <div class="donation-time">${donation.time_ago}</div>
             </div>
         `;
-        
+
         feed.insertBefore(donationItem, feed.firstChild);
-        
+
         // Limit to 8 items
         if (feed.children.length > 8) {
             feed.removeChild(feed.lastChild);
