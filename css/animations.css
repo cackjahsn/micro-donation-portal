@@ -116,7 +116,7 @@
 }
 
 .animate-gradient {
-    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background: linear-gradient(-45deg, #fbbf24, #f87171, #38bdf8, #34d399);
     background-size: 400% 400%;
     animation: gradientShift 15s ease infinite;
 }
@@ -141,7 +141,7 @@
 
 .hover-lift:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
 .hover-grow {
@@ -284,8 +284,8 @@
     position: absolute;
     top: -25px;
     transform: translateX(-50%);
-    background: #2ecc71;
-    color: white;
+    background: #34d399;
+    color: #0f172a;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.8rem;
@@ -295,14 +295,23 @@
 .donation-goal-tracker {
     position: relative;
     height: 10px;
-    background: #e9ecef;
+    background: rgba(51, 65, 85, 0.6);
     border-radius: 5px;
     margin: 20px 0;
 }
 
 .donation-goal-tracker .progress {
     height: 100%;
-    background: linear-gradient(90deg, #4e73df, #2ecc71);
+    background: linear-gradient(90deg, #6366f1, #34d399);
     border-radius: 5px;
     transition: width 0.6s ease;
+}
+
+/* Text color utilities for dark theme */
+.text-bright {
+    color: #f1f5f9 !important;
+}
+
+.text-muted {
+    color: #cbd5e1 !important;
 }

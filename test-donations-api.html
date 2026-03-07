@@ -45,7 +45,7 @@
                     Campaign #7 Only
                 </button>
                 
-                <pre id="jsonResponse" class="bg-light p-3 rounded">Click "Load Donations" to test...</pre>
+                <pre id="jsonResponse" style="background: rgba(30, 41, 59, 0.95); color: #f1f5f9; border: 1px solid #334155;" class="p-3 rounded">Click "Load Donations" to test...</pre>
             </div>
         </div>
         
@@ -55,7 +55,7 @@
             </div>
             <div class="card-body">
                 <div id="donationFeed" class="donation-feed">
-                    <p class="text-muted">Load donations to see them here...</p>
+                    <p style="color: #f1f5f9;">Load donations to see them here...</p>
                 </div>
             </div>
         </div>
@@ -94,7 +94,7 @@
             const feed = document.getElementById('donationFeed');
             
             if (!donations || donations.length === 0) {
-                feed.innerHTML = '<p class="text-muted">No donations found.</p>';
+                feed.innerHTML = '<p style="color: #f1f5f9;">No donations found.</p>';
                 return;
             }
             
@@ -108,7 +108,7 @@
                     <div class="flex-grow-1">
                         <div class="fw-bold">${donation.donor_name}</div>
                         <div class="text-success">RM ${donation.amount.toFixed(2)}</div>
-                        <small class="text-muted">${donation.time_ago} • ${donation.campaign_title}</small>
+                        <small style="color: #f1f5f9;">${donation.time_ago} • ${donation.campaign_title}</small>
                     </div>
                 `;
                 feed.appendChild(item);

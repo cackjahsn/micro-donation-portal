@@ -223,7 +223,7 @@ async function loadHomepageCampaigns() {
                     </div>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">${campaign.title || 'Untitled Campaign'}</h5>
-                        <p class="card-text text-muted flex-grow-1">
+                        <p class="card-text" style="color: #f1f5f9;">
                             ${campaign.description ? 
                                 (campaign.description.length > 100 
                                     ? campaign.description.substring(0, 100) + '...' 
@@ -243,8 +243,8 @@ async function loadHomepageCampaigns() {
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between mt-2">
-                                <small class="text-muted">${displayProgress}% funded</small>
-                                <small class="text-muted">${donorCount} donors</small>
+                                <small style="color: #f1f5f9;">${displayProgress}% funded</small>
+                                <small style="color: #f1f5f9;">${donorCount} donors</small>
                             </div>
                         </div>
                         
@@ -285,7 +285,7 @@ async function loadHomepageCampaigns() {
                         
                         <!-- Footer -->
                         <div class="card-footer bg-transparent border-0 mt-3 pt-0 px-0">
-                            <small class="text-muted">
+                            <small style="color: #f1f5f9;">
                                 <i class="far fa-clock me-1"></i>${dateText || 'Recently'}
                                 ${campaign.organizer ? 
                                     `<span class="ms-2"><i class="fas fa-users me-1"></i>${campaign.organizer}</span>` 
@@ -490,39 +490,39 @@ function useCustomModal(campaignTitle) {
                 }
                 
                 .custom-modal-content {
-                    background: white;
+                    background: rgba(30, 41, 59, 0.95);
                     border-radius: 10px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
                     overflow: hidden;
                 }
                 
                 .custom-modal-header {
                     padding: 20px;
-                    border-bottom: 1px solid #dee2e6;
+                    border-bottom: 1px solid #334155;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    background-color: #f8f9fa;
+                    background-color: rgba(30, 41, 59, 0.5);
                 }
                 
                 .custom-modal-title {
                     margin: 0;
                     font-size: 1.25rem;
-                    color: #333;
+                    color: #f1f5f9;
                 }
                 
                 .custom-modal-close {
                     background: none;
                     border: none;
                     font-size: 1.25rem;
-                    color: #6c757d;
+                    color: #f1f5f9;
                     cursor: pointer;
                     padding: 5px;
                     line-height: 1;
                 }
                 
                 .custom-modal-close:hover {
-                    color: #000;
+                    color: #fff;
                 }
                 
                 .custom-modal-body {
@@ -531,15 +531,15 @@ function useCustomModal(campaignTitle) {
                 
                 .custom-modal-footer {
                     padding: 20px;
-                    border-top: 1px solid #dee2e6;
+                    border-top: 1px solid #334155;
                     display: flex;
                     justify-content: flex-end;
                     gap: 10px;
-                    background-color: #f8f9fa;
+                    background-color: rgba(30, 41, 59, 0.5);
                 }
                 
                 .btn-cancel:hover {
-                    background-color: #6c757d;
+                    background-color: #64748b;
                     color: white;
                 }
                 
@@ -695,9 +695,9 @@ function showNoCampaignsMessage(container) {
     container.innerHTML = `
         <div class="col-12 text-center py-5">
             <div class="empty-state">
-                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <i class="fas fa-inbox fa-3x mb-3" style="color: #cbd5e1;"></i>
                 <h4>No Active Campaigns</h4>
-                <p class="text-muted">There are currently no active campaigns. Check back soon!</p>
+                <p style="color: #f1f5f9;">There are currently no active campaigns. Check back soon!</p>
                 <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/campaigns.html" class="btn btn-outline-primary mt-2">
                     Browse All Campaigns
                 </a>

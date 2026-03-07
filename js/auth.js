@@ -871,12 +871,12 @@ class AuthManager {
                         ${this.currentUser.role === 'admin' ? ' <small>(Admin)</small>' : ''}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown"
-                        style="position: absolute; top: 100%; right: 0; left: auto; min-width: 200px; z-index: 9999; margin-top: 0.5rem; background-color: white; border: 1px solid rgba(0,0,0,0.15); border-radius: 0.35rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.175);">
-                        <li><a class="dropdown-item" href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/profile.html" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #212529; text-decoration: none;">
+                        style="position: absolute; top: 100%; right: 0; left: auto; min-width: 200px; z-index: 9999; margin-top: 0.5rem; background-color: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.35rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.3);">
+                        <li><a class="dropdown-item" href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/profile.html" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #f1f5f9; text-decoration: none;">
                             <i class="fas fa-user me-2"></i>My Profile
                         </a></li>
-                        <li><hr class="dropdown-divider" style="margin: 0.5rem 0; border-top: 1px solid #e3e6f0;"></li>
-                        <li><a class="dropdown-item text-danger logout-btn" href="#" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #dc3545 !important; text-decoration: none;">
+                        <li><hr class="dropdown-divider" style="margin: 0.5rem 0; border-top: 1px solid #334155;"></li>
+                        <li><a class="dropdown-item text-danger logout-btn" href="#" style="display: block; padding: 0.5rem 1.5rem; clear: both; color: #f87171 !important; text-decoration: none;">
                             <i class="fas fa-sign-out-alt me-2"></i>Logout
                         </a></li>
                     </ul>

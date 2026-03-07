@@ -12,13 +12,17 @@
             max-width: 500px;
             margin: 50px auto;
             padding: 30px;
-            background: white;
+            background: rgba(30, 41, 59, 0.95);
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(51, 65, 85, 0.8);
         }
         .register-header {
             text-align: center;
             margin-bottom: 30px;
+        }
+        .register-header h2 {
+            color: #f1f5f9;
         }
         .form-icon {
             text-align: center;
@@ -32,18 +36,27 @@
             border-radius: 3px;
             transition: all 0.3s;
         }
-        .strength-weak { background-color: #e74a3b; width: 25%; }
-        .strength-medium { background-color: #f6c23e; width: 50%; }
-        .strength-strong { background-color: #1cc88a; width: 100%; }
+        .strength-weak { background-color: #f87171; width: 25%; }
+        .strength-medium { background-color: #fbbf24; width: 50%; }
+        .strength-strong { background-color: #34d399; width: 100%; }
         .login-link {
             text-align: center;
             margin-top: 20px;
+        }
+        .login-link a {
+            color: var(--primary-color);
+        }
+        .form-label {
+            color: #f1f5f9;
+        }
+        .form-text {
+            color: #f1f5f9;
         }
     </style>
 </head>
 <body>
     <!-- Navigation (Same as index.html) -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg" style="background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);">
         <div class="container">
             <a class="navbar-brand" href="index.html">
                 <i class="fas fa-hand-holding-heart text-primary"></i>
@@ -72,7 +85,7 @@
             </div>
             <div class="register-header">
                 <h2>Create Your Account</h2>
-                <p class="text-muted">Join our community of givers</p>
+                <p style="color: #f1f5f9;">Join our community of givers</p>
             </div>
 
             <!-- Registration Status Alert -->

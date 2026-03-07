@@ -256,7 +256,7 @@ class DonationPage {
                     <span class="visually-hidden">Processing donation...</span>
                 </div>
                 <h5 class="mb-2">Processing Your Donation</h5>
-                <p class="text-muted mb-3">Please wait while we process your payment...</p>
+                <p class="mb-3" style="color: #f1f5f9;">Please wait while we process your payment...</p>
                 <div class="progress" style="height: 6px; width: 200px; margin: 0 auto;">
                     <div class="progress-bar progress-bar-striped progress-bar-animated" 
                         role="progressbar" 
@@ -302,8 +302,8 @@ class DonationPage {
             <div class="card-body text-center py-5">
                 <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                 <h4>Campaign Not Found</h4>
-                <p class="text-muted mb-3">Campaign ID: ${id}</p>
-                <p class="text-muted mb-4">The campaign you're trying to donate to could not be loaded. It may have been removed or is currently unavailable.</p>
+                <p class="mb-3" style="color: #f1f5f9;">Campaign ID: ${id}</p>
+                <p class="mb-4" style="color: #f1f5f9;">The campaign you're trying to donate to could not be loaded. It may have been removed or is currently unavailable.</p>
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                     <a href="${typeof getRootPath === 'function' ? getRootPath() : ''}pages/campaigns.html" class="btn btn-primary">
                         <i class="fas fa-arrow-left me-2"></i>Browse Campaigns
@@ -347,7 +347,7 @@ class DonationPage {
                     </div>
                     <div class="col-md-9">
                         <h3 class="card-title mb-2">${campaign.title}</h3>
-                        <p class="text-muted mb-3">${campaign.description || 'No description available'}</p>
+                        <p class="mb-3" style="color: #f1f5f9;">${campaign.description || 'No description available'}</p>
                         
                         <!-- Donation Impact Visualizer -->
                         <div class="donation-impact-visual">
@@ -369,15 +369,15 @@ class DonationPage {
                             <div class="impact-stats d-flex justify-content-around mt-3">
                                 <div class="stat text-center">
                                     <span class="stat-value d-block fw-bold">${donorsCount}</span>
-                                    <span class="stat-label text-muted small">Donors</span>
+                                    <span class="stat-label" style="color: #f1f5f9;">Donors</span>
                                 </div>
                                 <div class="stat text-center">
                                     <span class="stat-value d-block fw-bold">${daysLeft}</span>
-                                    <span class="stat-label text-muted small">Days left</span>
+                                    <span class="stat-label" style="color: #f1f5f9;">Days left</span>
                                 </div>
                                 <div class="stat text-center">
                                     <span class="stat-value d-block fw-bold">${progressPercent}%</span>
-                                    <span class="stat-label text-muted small">Funded</span>
+                                    <span class="stat-label" style="color: #f1f5f9;">Funded</span>
                                 </div>
                             </div>
                         </div>
@@ -701,7 +701,7 @@ class DonationPage {
             } else {
                 // No real donations yet, show placeholder message
                 if (feed.children.length === 0) {
-                    feed.innerHTML = '<div class="text-center text-muted py-3"><small>No donations yet. Be the first!</small></div>';
+                    feed.innerHTML = '<div class="text-center py-3" style="color: #f1f5f9;"><small>No donations yet. Be the first!</small></div>';
                 }
             }
         } catch (error) {
@@ -1243,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             .donor-name {
                 font-weight: 600;
-                color: #333;
+                color: #f1f5f9;
             }
             .donation-amount {
                 color: #28a745;

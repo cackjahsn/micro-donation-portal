@@ -38,7 +38,7 @@
         }
         
         .metric-label {
-            color: #6c757d;
+            color: #f1f5f9;
             font-size: 0.9rem;
         }
         
@@ -63,13 +63,13 @@
         }
         
         .action-card {
-            background: white;
+            background: rgba(30, 41, 59, 0.95);
             border-radius: 10px;
             padding: 25px;
             text-align: center;
             text-decoration: none;
             color: inherit;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
             border: 2px solid transparent;
         }
@@ -88,17 +88,17 @@
         
         .action-card h4 {
             margin-bottom: 10px;
-            color: #2c3e50;
+            color: #f1f5f9;
         }
-        
+
         .action-card p {
-            color: #7f8c8d;
+            color: #f1f5f9;
             font-size: 0.9rem;
         }
-        
+
         /* Campaign creation section */
         .campaign-creation-form {
-            background: #f8f9fa;
+            background: rgba(30, 41, 59, 0.5);
             border-radius: 10px;
             padding: 30px;
             margin-top: 30px;
@@ -113,30 +113,30 @@
         }
         
         .quick-stat-card {
-            background: white;
+            background: rgba(30, 41, 59, 0.95);
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border-left: 4px solid #4e73df;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            border-left: 4px solid #6366f1;
         }
-        
+
         .quick-stat-card h6 {
-            color: #6c757d;
+            color: #f1f5f9;
             font-size: 0.9rem;
             margin-bottom: 5px;
         }
-        
+
         .quick-stat-value {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #2c3e50;
+            color: #f1f5f9;
         }
     </style>
 </head>
 <body>
     <div class="d-flex" id="wrapper">
         <!-- Sidebar -->
-        <div class="bg-light border-right" id="sidebar-wrapper">
+        <div id="sidebar-wrapper">
             <div class="sidebar-heading">
                 <i class="fas fa-crown me-2"></i>
                 <span>Admin Panel</span>
@@ -175,7 +175,7 @@
         <!-- Page Content -->
         <div id="page-content-wrapper">
             <!-- Navbar -->
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom py-3">
+            <nav class="navbar navbar-expand-lg py-3">
                 <div class="container-fluid">
                     <button class="btn btn-primary me-3" id="menu-toggle">
                         <i class="fas fa-bars"></i>
@@ -376,7 +376,7 @@
                                 </label>
                                 <input type="text" class="form-control" name="title" required maxlength="100"
                                     placeholder="e.g., Flood Relief Fund 2026">
-                                <small class="text-muted">Choose a clear, descriptive title</small>
+                                <small style="color: #f1f5f9;">Choose a clear, descriptive title</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">
@@ -399,7 +399,7 @@
                             </label>
                             <textarea class="form-control" name="description" rows="4" required maxlength="1000"
                                 placeholder="Describe your campaign, its goals, and how the funds will be used..."></textarea>
-                            <small class="text-muted">Maximum 1000 characters</small>
+                            <small style="color: #f1f5f9;">Maximum 1000 characters</small>
                         </div>
                         
                         <div class="row">
@@ -409,12 +409,12 @@
                                 </label>
                                 <input type="number" class="form-control" name="goal_amount" min="100" step="100" required
                                     placeholder="10000">
-                                <small class="text-muted">Minimum RM 100</small>
+                                <small style="color: #f1f5f9;">Minimum RM 100</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">End Date *</label>
                                 <input type="date" class="form-control" name="end_date" required>
-                                <small class="text-muted">Campaign end date</small>
+                                <small style="color: #f1f5f9;">Campaign end date</small>
                             </div>
                         </div>
                         
@@ -425,7 +425,7 @@
                                 </label>
                                 <input type="text" class="form-control" name="organizer" maxlength="100"
                                     placeholder="Your organization name">
-                                <small class="text-muted">Default: Your name</small>
+                                <small style="color: #f1f5f9;">Default: Your name</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">
@@ -438,7 +438,7 @@
                                         Mark as featured campaign
                                     </label>
                                 </div>
-                                <small class="text-muted">Featured campaigns appear on homepage</small>
+                                <small style="color: #f1f5f9;">Featured campaigns appear on homepage</small>
                             </div>
                         </div>
                         
@@ -447,7 +447,7 @@
                                 Campaign Image
                             </label>
                             <input type="file" class="form-control" name="campaign_image" id="campaignImage" accept="image/*" onchange="previewImage(event)">
-                            <small class="text-muted">
+                            <small style="color: #f1f5f9;">
                                 <i class="fas fa-info-circle me-1"></i>
                                 Max 5MB. Recommended: 1200x600px. Formats: JPG, PNG, GIF, SVG
                             </small>
@@ -466,7 +466,7 @@
                                     </div>
                                     <div class="ms-3">
                                         <p class="mb-1 fw-bold">Preview</p>
-                                        <small class="text-muted">Image will be uploaded when you create the campaign</small>
+                                        <small style="color: #f1f5f9;">Image will be uploaded when you create the campaign</small>
                                     </div>
                                 </div>
                             </div>

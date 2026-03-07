@@ -483,7 +483,7 @@ class AdminDashboard {
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         Total Donations</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalDonations">Loading...</div>
-                                    <div class="mt-2 mb-0 text-muted text-xs">
+                                    <div class="mt-2 mb-0" style="color: #f1f5f9; font-size: 0.75rem;">
                                         <span class="text-success mr-2"><i class="fas fa-arrow-up"></i> From all time</span>
                                     </div>
                                 </div>
@@ -503,7 +503,7 @@ class AdminDashboard {
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                         Active Campaigns</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeCampaigns">Loading...</div>
-                                    <div class="mt-2 mb-0 text-muted text-xs">
+                                    <div class="mt-2 mb-0" style="color: #f1f5f9; font-size: 0.75rem;">
                                         <span class="text-success mr-2"><i class="fas fa-arrow-up"></i> Currently running</span>
                                     </div>
                                 </div>
@@ -523,7 +523,7 @@ class AdminDashboard {
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                         Total Donors</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalDonors">Loading...</div>
-                                    <div class="mt-2 mb-0 text-muted text-xs">
+                                    <div class="mt-2 mb-0" style="color: #f1f5f9; font-size: 0.75rem;">
                                         <span class="text-success mr-2"><i class="fas fa-arrow-up"></i> Unique donors</span>
                                     </div>
                                 </div>
@@ -543,7 +543,7 @@ class AdminDashboard {
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                         Success Rate</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800" id="successRate">Loading...</div>
-                                    <div class="mt-2 mb-0 text-muted text-xs">
+                                    <div class="mt-2 mb-0" style="color: #f1f5f9; font-size: 0.75rem;">
                                         <span class="text-success mr-2"><i class="fas fa-arrow-up"></i> Campaigns reaching goal</span>
                                     </div>
                                 </div>
@@ -585,7 +585,7 @@ class AdminDashboard {
                                     <i class="fas fa-circle text-success"></i> Active
                                 </span>
                                 <span class="mr-2">
-                                    <i class="fas fa-circle text-secondary"></i> Completed
+                                    <i class="fas fa-circle" style="color: #cbd5e1;"></i> Completed
                                 </span>
                                 <span class="mr-2">
                                     <i class="fas fa-circle text-warning"></i> Cancelled
@@ -900,7 +900,7 @@ class AdminDashboard {
                         </div>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="info-box bg-light p-4 rounded mb-4">
+                                    <div class="info-box p-4 rounded mb-4" style="background-color: rgba(30, 41, 59, 0.95);">
                                         <h5><i class="fas fa-info-circle text-primary me-2"></i>Instructions</h5>
                                         <ul class="mt-3">
                                             <li>Fill in all required fields (marked with *)</li>
@@ -912,7 +912,7 @@ class AdminDashboard {
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="info-box bg-light p-4 rounded mb-4">
+                                    <div class="info-box p-4 rounded mb-4" style="background-color: rgba(30, 41, 59, 0.95);">
                                         <h5><i class="fas fa-lightbulb text-success me-2"></i>Tips for Success</h5>
                                         <ul class="mt-3">
                                             <li>Write compelling descriptions</li>
@@ -928,7 +928,7 @@ class AdminDashboard {
                             <div class="text-center py-5 mt-4">
                                 <i class="fas fa-hand-holding-heart fa-4x text-primary mb-4"></i>
                                 <h4>Ready to Create a Campaign?</h4>
-                                <p class="text-muted mb-4">Click the "Create Campaign" button to start a new fundraising campaign with all enhanced fields</p>
+                                <p class="mb-4" style="color: #f1f5f9;">Click the "Create Campaign" button to start a new fundraising campaign with all enhanced fields</p>
                                 <button class="btn btn-primary btn-lg" onclick="adminDashboard.openCampaignCreationModal()">
                                     <i class="fas fa-plus me-2"></i> Create Campaign
                                 </button>
@@ -1021,9 +1021,8 @@ class AdminDashboard {
                                             ${campaign.image_url && campaign.image_url !== 'assets/images/default-campaign.jpg' ? 
                                                 `<img src="${campaign.image_url}" alt="${this.escapeHtml(campaign.title)}" 
                                                     style="width: 40px; height: 40px; object-fit: cover;" class="rounded me-2">` : 
-                                                `<div class="bg-light rounded d-flex align-items-center justify-content-center me-2" 
-                                                    style="width: 40px; height: 40px;">
-                                                    <i class="fas fa-hand-holding-heart text-muted"></i>
+                                                `<div class="rounded d-flex align-items-center justify-content-center me-2" style="background-color: rgba(51, 65, 85, 0.6); width: 40px; height: 40px;">
+                                                    <i class="fas fa-hand-holding-heart" style="color: #cbd5e1;"></i>
                                                 </div>`
                                             }
                                             <div>
@@ -1052,7 +1051,7 @@ class AdminDashboard {
                                     <td>
                                         ${campaign.featured ? 
                                             '<span class="badge bg-warning"><i class="fas fa-star me-1"></i>Featured</span>' : 
-                                            '<span class="badge bg-light text-muted">No</span>'
+                                            '<span class="badge" style="background-color: #475569; color: #f1f5f9;">No</span>'
                                         }
                                     </td>
                                     <td><small>${this.formatDate(campaign.created_at)}</small></td>
@@ -1082,7 +1081,7 @@ class AdminDashboard {
                 <div class="text-center py-5">
                     <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                     <h5>No campaigns created yet</h5>
-                    <p class="text-muted">Create your first campaign to get started</p>
+                    <p style="color: #f1f5f9;">Create your first campaign to get started</p>
                 </div>
             `;
         }
@@ -1423,7 +1422,7 @@ class AdminDashboard {
                     <div class="text-center py-5">
                         <i class="fas fa-filter fa-3x text-muted mb-3"></i>
                         <h5>No ${this.currentFilter} campaigns found</h5>
-                        <p class="text-muted">No campaigns match the current filter</p>
+                        <p style="color: #f1f5f9;">No campaigns match the current filter</p>
                         <button class="btn btn-primary mt-3" onclick="adminDashboard.filterCampaigns('all')">
                             <i class="fas fa-list me-2"></i> Show All Campaigns
                         </button>
@@ -1434,7 +1433,7 @@ class AdminDashboard {
                     <div class="text-center py-5">
                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                         <h5>No campaigns created yet</h5>
-                        <p class="text-muted">Create your first campaign to get started</p>
+                        <p style="color: #f1f5f9;">Create your first campaign to get started</p>
                         <button class="btn btn-primary mt-3" onclick="adminDashboard.loadPage('create-campaign')">
                             <i class="fas fa-plus me-2"></i> Create Campaign
                         </button>
@@ -1456,8 +1455,8 @@ class AdminDashboard {
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0">
-                            <i class="fas fa-search text-muted"></i>
+                        <span class="input-group-text" style="background-color: rgba(51, 65, 85, 0.8); border-color: rgba(71, 85, 99, 0.8);">
+                            <i class="fas fa-search" style="color: #cbd5e1;"></i>
                         </span>
                         <input type="text" 
                             class="form-control border-start-0" 
@@ -1506,7 +1505,7 @@ class AdminDashboard {
             <!-- Sort Controls -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                    <small class="text-muted">
+                    <small style="color: #f1f5f9;">
                         Showing ${displayCampaigns.length} of ${allCount} campaign${allCount !== 1 ? 's' : ''}
                         ${this.currentFilter !== 'all' ? ` (Filtered by ${this.currentFilter})` : ''}
                     </small>
@@ -1608,7 +1607,7 @@ class AdminDashboard {
             if (isValidImage) {
                 imageHtml = `<img src="${imgSrc}" alt="${this.escapeHtml(campaign.title)}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.onerror=null; this.src='assets/images/default-campaign.jpg';">`;
             } else {
-                imageHtml = `<div class="rounded me-2 d-flex align-items-center justify-content-center bg-light" style="width: 40px; height: 40px;"><i class="fas fa-hand-holding-heart text-muted"></i></div>`;
+                imageHtml = `<div class="rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: rgba(51, 65, 85, 0.6);"><i class="fas fa-hand-holding-heart" style="color: #cbd5e1;"></i></div>`;
             }
             // --- END OF IMAGE HELPER INTEGRATION ---
             
@@ -1630,20 +1629,19 @@ class AdminDashboard {
                                             class="rounded me-2" 
                                             style="width: 40px; height: 40px; object-fit: cover;"
                                             onerror="this.onerror=null; this.src='assets/images/default-campaign.jpg';">` :
-                                        `<div class="rounded me-2 d-flex align-items-center justify-content-center bg-light" 
-                                            style="width: 40px; height: 40px;">
-                                            <i class="fas fa-hand-holding-heart text-muted"></i>
+                                        `<div class="rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: rgba(51, 65, 85, 0.6);">
+                                            <i class="fas fa-hand-holding-heart" style="color: #cbd5e1;"></i>
                                         </div>`
                                     )
                                 ) : 
                                 `<div class="rounded me-2 d-flex align-items-center justify-content-center bg-light" 
                                     style="width: 40px; height: 40px;">
-                                    <i class="fas fa-hand-holding-heart text-muted"></i>
+                                    <i class="fas fa-hand-holding-heart" style="color: #cbd5e1;"></i>
                                 </div>`
                             }
                             <div>
                                 <strong class="d-block">${this.escapeHtml(campaign.title || 'Untitled Campaign')}</strong>
-                                <small class="text-muted">${this.escapeHtml(campaign.organizer || 'No organizer')}</small>
+                                <small style="color: #f1f5f9;">${this.escapeHtml(campaign.organizer || 'No organizer')}</small>
                             </div>
                         </div>
                     </td>
@@ -1905,7 +1903,7 @@ class AdminDashboard {
         if (isValidImage) {
             imageHtml = `<img src="${imgSrc}" alt="${this.escapeHtml(campaign.title)}" class="img-fluid rounded" style="max-height: 250px; object-fit: cover;" onerror="this.onerror=null; this.src='assets/images/default-campaign.jpg';">`;
         } else {
-            imageHtml = `<div class="bg-light rounded d-flex align-items-center justify-content-center p-5"><i class="fas fa-hand-holding-heart fa-5x text-primary opacity-50"></i></div>`;
+            imageHtml = `<div class="rounded d-flex align-items-center justify-content-center p-5" style="background-color: rgba(51, 65, 85, 0.6);"><i class="fas fa-hand-holding-heart fa-5x text-primary opacity-50"></i></div>`;
         }
         // --- END: IMAGE HELPER INTEGRATION ---
         
@@ -1933,7 +1931,7 @@ class AdminDashboard {
                         </div>
 
                         <!-- Progress Card (compact) -->
-                        <div class="card bg-light mb-3">
+                        <div class="card mb-3" style="background-color: rgba(51, 65, 85, 0.6); border-color: rgba(71, 85, 99, 0.8);">
                             <div class="card-body p-2">
                                 <div class="d-flex justify-content-between small">
                                     <span>Progress</span>
@@ -1945,7 +1943,7 @@ class AdminDashboard {
                                 </div>
                                 <div class="d-flex justify-content-between small">
                                     <span class="text-success fw-bold">${this.formatCurrency(currentAmount)}</span>
-                                    <span class="text-muted">of ${this.formatCurrency(targetAmount)}</span>
+                                    <span style="color: #f1f5f9;">of ${this.formatCurrency(targetAmount)}</span>
                                 </div>
                             </div>
                         </div>
@@ -1953,26 +1951,26 @@ class AdminDashboard {
                         <!-- Two‑column info grid (no tables) -->
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Category</small>
+                                <div class="border rounded p-2" style="background-color: rgba(30, 41, 59, 0.95);">
+                                    <small style="color: #f1f5f9; display: block;">Category</small>
                                     <span class="badge bg-info">${this.escapeHtml(campaign.category || 'Uncategorized')}</span>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Organizer</small>
+                                <div class="border rounded p-2" style="background-color: rgba(30, 41, 59, 0.95);">
+                                    <small style="color: #f1f5f9; display: block;">Organizer</small>
                                     <span>${this.escapeHtml(campaign.organizer || 'Not specified')}</span>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Created</small>
+                                <div class="border rounded p-2" style="background-color: rgba(30, 41, 59, 0.95);">
+                                    <small style="color: #f1f5f9; display: block;">Created</small>
                                     <span>${this.formatDate(campaign.created_at)}</span>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="border rounded p-2">
-                                    <small class="text-muted d-block">End Date</small>
+                                    <small style="color: #f1f5f9; d-block">End Date</small>
                                     <span>${campaign.end_date ? this.formatDate(campaign.end_date) : 'No end date'}</span>
                                 </div>
                             </div>
@@ -1980,7 +1978,7 @@ class AdminDashboard {
 
                         <!-- Description -->
                         <div class="border rounded p-2">
-                            <small class="text-muted d-block mb-1">Description</small>
+                            <small style="color: #f1f5f9; d-block mb-1">Description</small>
                             <p class="mb-0 small" style="white-space: pre-line;">${this.escapeHtml(campaign.description || 'No description provided.')}</p>
                         </div>
                     </div>
@@ -2080,7 +2078,7 @@ class AdminDashboard {
                                 <!-- Left Column - Basic Info -->
                                 <div class="col-md-8">
                                     <div class="card mb-3">
-                                        <div class="card-header bg-light">
+                                        <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5);">
                                             <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
                                         </div>
                                         <div class="card-body">
@@ -2124,7 +2122,7 @@ class AdminDashboard {
                                     
                                     <!-- Media Section -->
                                     <div class="card mb-3">
-                                        <div class="card-header bg-light">
+                                        <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5);">
                                             <h6 class="mb-0"><i class="fas fa-image me-2"></i>Campaign Image</h6>
                                         </div>
                                         <div class="card-body">
@@ -2132,12 +2130,12 @@ class AdminDashboard {
                                                 <div class="col-md-12">
                                                     <label class="form-label fw-bold">Campaign Image</label>
                                                     <div class="current-image mb-2">
-                                                        <small class="text-muted d-block mb-1">Current Image:</small>
+                                                        <small style="color: #f1f5f9; d-block mb-1">Current Image:</small>
                                                         ${campaign.image_url && campaign.image_url !== 'assets/images/default-campaign.jpg' ? 
                                                             `<img src="${campaign.image_url}" 
                                                                 alt="Current campaign image" 
                                                                 style="max-width: 200px; max-height: 150px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; padding: 3px;">` : 
-                                                            `<div class="text-muted">No image uploaded</div>`
+                                                            `<div style="color: #f1f5f9;">No image uploaded</div>`
                                                         }
                                                     </div>
                                                     <input type="file" 
@@ -2155,7 +2153,7 @@ class AdminDashboard {
                                 <div class="col-md-4">
                                     <!-- Campaign Status -->
                                     <div class="card mb-3">
-                                        <div class="card-header bg-light">
+                                        <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5);">
                                             <h6 class="mb-0"><i class="fas fa-toggle-on me-2"></i>Campaign Status</h6>
                                         </div>
                                         <div class="card-body">
@@ -2189,7 +2187,7 @@ class AdminDashboard {
                                     
                                     <!-- Campaign Goals -->
                                     <div class="card mb-3">
-                                        <div class="card-header bg-light">
+                                        <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5);">
                                             <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Goals & Dates</h6>
                                         </div>
                                         <div class="card-body">
@@ -2231,9 +2229,9 @@ class AdminDashboard {
                                                         min="0" 
                                                         step="0.01"
                                                         readonly
-                                                        style="background-color: #f8f9fa;">
+                                                        style="background-color: rgba(30, 41, 59, 0.5);">
                                                 </div>
-                                                <div class="form-text text-muted">
+                                                <div class="form-text" style="color: #f1f5f9;">
                                                     <i class="fas fa-info-circle"></i> Current amount cannot be edited directly. Update via donations.
                                                 </div>
                                             </div>
@@ -2252,7 +2250,7 @@ class AdminDashboard {
                                     
                                     <!-- Organization Info - Simplified to just Organizer Name -->
                                     <div class="card mb-3">
-                                        <div class="card-header bg-light">
+                                        <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5);">
                                             <h6 class="mb-0"><i class="fas fa-building me-2"></i>Organization</h6>
                                         </div>
                                         <div class="card-body">
@@ -2274,10 +2272,10 @@ class AdminDashboard {
                     <div class="modal-footer">
                         <div class="d-flex justify-content-between align-items-center w-100">
                             <div>
-                                <span class="text-muted me-3">
+                                <span style="color: #f1f5f9; me-3">
                                     <i class="fas fa-calendar me-1"></i> Created: ${this.formatDate(campaign.created_at)}
                                 </span>
-                                <span class="text-muted">
+                                <span style="color: #f1f5f9;">
                                     <i class="fas fa-hand-holding-heart me-1"></i> Raised: ${this.formatCurrency(campaign.current_amount || 0)}
                                 </span>
                             </div>
@@ -2559,7 +2557,7 @@ class AdminDashboard {
                                 <p class="mb-2">
                                     <strong>"${this.escapeHtml(campaignTitle || `Campaign #${campaignId}`)}"</strong>
                                 </p>
-                                <p class="text-muted">
+                                <p style="color: #f1f5f9;">
                                     This action cannot be undone. All donation data for this campaign will also be deleted.
                                 </p>
                                 <div class="alert alert-warning mt-3">
@@ -3001,12 +2999,12 @@ class AdminDashboard {
                                             <div class="mb-2">
                                                 <i class="fas fa-hand-holding-heart fa-2x text-primary"></i>
                                                 <div class="h4 mb-0">${donorData.donationCount}</div>
-                                                <small class="text-muted">Total Donations</small>
+                                                <small style="color: #f1f5f9;">Total Donations</small>
                                             </div>
                                             <div>
                                                 <i class="fas fa-dollar-sign fa-2x text-success"></i>
                                                 <div class="h4 mb-0">${formatCurrency(donorData.totalDonated)}</div>
-                                                <small class="text-muted">Total Amount</small>
+                                                <small style="color: #f1f5f9;">Total Amount</small>
                                             </div>
                                         </div>
                                     </div>
@@ -3020,8 +3018,8 @@ class AdminDashboard {
 
                         <!-- Donation History -->
                         <div class="card">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Donation History</h6>
+                            <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5);">
+                                <h6 class="mb-0" style="color: #f1f5f9;"><i class="fas fa-history me-2"></i>Donation History</h6>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -3039,7 +3037,7 @@ class AdminDashboard {
                                         </tbody>
                                     </table>
                                     ${donorData.donations.length > 10 ? 
-                                        `<p class="text-muted small mt-2">Showing 10 most recent donations</p>` : ''}
+                                        `<p style="color: #f1f5f9; small mt-2">Showing 10 most recent donations</p>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -3354,25 +3352,25 @@ class AdminDashboard {
                         <div class="row g-2 mb-3">
                             <div class="col-6">
                                 <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Email</small>
+                                    <small style="color: #f1f5f9; d-block">Email</small>
                                     <span>${this.escapeHtml(user.email || 'N/A')}</span>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Role</small>
+                                    <small style="color: #f1f5f9; d-block">Role</small>
                                     <span class="badge bg-${roleColor}">${user.role || 'user'}</span>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Status</small>
+                                    <small style="color: #f1f5f9; d-block">Status</small>
                                     <span class="badge bg-${statusColor}">${user.status || 'active'}</span>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Joined</small>
+                                    <small style="color: #f1f5f9; d-block">Joined</small>
                                     <span>${this.formatDate(user.created_at)}</span>
                                 </div>
                             </div>
@@ -3467,7 +3465,7 @@ class AdminDashboard {
                                 <p class="mb-2">
                                     <strong>"${this.escapeHtml(userName)}"</strong> (ID: ${userId})
                                 </p>
-                                <p class="text-muted">
+                                <p style="color: #f1f5f9;">
                                     This action cannot be undone. All data associated with this user (donations, etc.) will also be deleted.
                                 </p>
                             </div>
@@ -4108,7 +4106,7 @@ class AdminDashboard {
                         <div class="card-body text-center py-5">
                             <i class="fas fa-cog fa-4x text-muted mb-3"></i>
                             <h4>Settings Page Coming Soon</h4>
-                            <p class="text-muted">System settings and configuration will be available here.</p>
+                            <p style="color: #f1f5f9;">System settings and configuration will be available here.</p>
                         </div>
                     </div>
                 </div>
