@@ -60,7 +60,9 @@ micro-donation-portal/
 │   │   ├── donors/               # Donor management endpoints
 │   │   ├── payment/              # Payment processing endpoints
 │   │   ├── transparency/         # Public donation data endpoints
-│   │   └── user/                 # User profile endpoints
+│   │   ├── user/                 # User profile endpoints
+│   │   └── donations/            # Donation history & feed endpoints
+│   │       └── get-recent.php    # Recent donations for live feed
 │   ├── models/                   # Data models
 │   └── .htaccess                 # Apache rewrite rules
 │
@@ -247,6 +249,44 @@ Campaigns are loaded via API from `backend/api/campaigns/`. The frontend uses:
 - `homepage-campaigns.js` for homepage featured campaigns
 - `campaigns.js` for full campaign listing
 
+### Live Donations Feed
+The donation page displays real-time donations from the database:
+
+**API Endpoint:**
+```
+GET /backend/api/donations/get-recent.php?limit=8&campaign_id=5
+```
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "donations": [
+    {
+      "id": 84,
+      "amount": 3.00,
+      "donor_name": "Anonymous",
+      "is_anonymous": true,
+      "campaign_id": 5,
+      "campaign_title": "shaqel patah tangan sakit",
+      "payment_date": "2026-03-05 14:40:44",
+      "time_ago": "2 hours ago",
+      "initial": "A"
+    }
+  ],
+  "count": 1
+}
+```
+
+**Frontend Usage:**
+```javascript
+// In donation.js, the loadRealDonations() method:
+// 1. Fetches from API every 10 seconds
+// 2. Filters by current campaign if available
+// 3. Displays donor name, amount, and time ago
+// 4. Respects anonymous donor preferences
+```
+
 ### Styling Guidelines
 - Use CSS custom properties from `style.css` root `:root`
 - Primary gradient: `linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)`
@@ -311,6 +351,54 @@ php -l backend/config/database.php
 # View Apache error log (XAMPP)
 # Location: xampp/apache/logs/error.log
 ```
+
+---
+
+## Testing the Live Donations Feed
+
+### Test API Endpoint Directly
+
+**URL:**
+```
+http://localhost/micro-donation-portal/backend/api/donations/get-recent.php?limit=8
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "donations": [...],
+  "count": 8
+}
+```
+
+### Test with Test Page
+
+1. Open: `http://localhost/micro-donation-portal/test-donations-api.html`
+2. Click "Load Donations" button
+3. Verify JSON response shows real donation data
+4. Check "Live Feed Preview" section displays formatted donations
+
+### Test on Donation Page
+
+1. Navigate to: `http://localhost/micro-donation-portal/donation-page.html?id=5`
+2. Check the "Live Donations" sidebar on the right
+3. Verify:
+   - Real donor names and amounts are displayed
+   - Anonymous donors show as "Anonymous"
+   - Time ago is calculated correctly
+   - Feed refreshes every 10 seconds
+
+### Troubleshooting
+
+**No donations appearing:**
+- Check if donations table has records with `status = 'completed'`
+- Verify database connection in `.env` file
+- Check browser console (F12) for errors
+
+**404 Error:**
+- Ensure `path-resolver.js` loads before `donation.js`
+- Verify `window.API_BASE_URL` is set correctly
 
 ---
 
