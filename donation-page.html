@@ -14,7 +14,7 @@
             position: relative;
             margin-bottom: 30px;
         }
-        
+
         .progress-steps::before {
             content: '';
             position: absolute;
@@ -22,23 +22,23 @@
             left: 10%;
             right: 10%;
             height: 2px;
-            background-color: #dee2e6;
+            background-color: #334155;
             z-index: 0;
         }
-        
+
         .step {
             text-align: center;
             position: relative;
             z-index: 1;
             flex: 1;
         }
-        
+
         .step-circle {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: #dee2e6;
-            color: #6c757d;
+            background-color: #334155;
+            color: #f1f5f9;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -47,135 +47,140 @@
             transition: all 0.3s ease;
             border: 2px solid transparent;
         }
-        
+
         .step.active .step-circle {
-            background-color: #4e73df;
+            background-color: #6366f1;
             color: white;
-            border-color: #4e73df;
+            border-color: #6366f1;
         }
-        
+
         .step.completed .step-circle {
-            background-color: #28a745;
-            color: white;
-            border-color: #28a745;
+            background-color: #34d399;
+            color: #0f172a;
+            border-color: #34d399;
         }
-        
+
         .step-label {
             font-size: 0.9rem;
-            color: #6c757d;
+            color: #f1f5f9;
             font-weight: 500;
         }
-        
+
         .step.active .step-label {
-            color: #4e73df;
+            color: #6366f1;
             font-weight: bold;
         }
-        
+
         .step.completed .step-label {
-            color: #28a745;
+            color: #34d399;
         }
-        
+
         .amount-btn.active {
-            background-color: #4e73df;
+            background-color: #6366f1;
             color: white;
-            border-color: #4e73df;
+            border-color: #6366f1;
         }
-        
+
         .qr-container {
-            background-color: white;
+            background-color: #1e293b;
             border-radius: 10px;
         }
-        
+
         /* Payment Method Cards */
         .payment-method-card {
-            border: 2px solid #dee2e6;
+            border: 2px solid #334155;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
+            background: rgba(30, 41, 59, 0.5);
         }
-        
+
         .payment-method-card:hover {
-            border-color: #4e73df;
-            background-color: rgba(78, 115, 223, 0.05);
+            border-color: #6366f1;
+            background-color: rgba(99, 102, 241, 0.1);
         }
-        
+
         .payment-method-card.active {
-            border-color: #4e73df;
-            background-color: rgba(78, 115, 223, 0.1);
+            border-color: #6366f1;
+            background-color: rgba(99, 102, 241, 0.15);
         }
-        
+
         .payment-method-card.disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         /* Tier Cards */
         .tier-card {
-            border: 2px solid #dee2e6;
+            border: 2px solid #334155;
             border-radius: 10px;
             padding: 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
             height: 100%;
+            background: rgba(30, 41, 59, 0.5);
         }
-        
+
         .tier-card:hover {
-            border-color: #4e73df;
+            border-color: #6366f1;
             transform: translateY(-5px);
+            background: rgba(51, 65, 85, 0.8);
         }
-        
+
         .tier-card.active {
-            border-color: #4e73df;
-            background: linear-gradient(135deg, rgba(78, 115, 223, 0.1), rgba(108, 66, 193, 0.1));
+            border-color: #6366f1;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(167, 139, 250, 0.1));
         }
-        
+
         .tier-icon {
             font-size: 2rem;
             margin-bottom: 10px;
         }
-        
+
         .tier-name {
             font-weight: bold;
             font-size: 1.1rem;
             margin-bottom: 5px;
+            color: #f1f5f9;
         }
-        
+
         .tier-amount {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #4e73df;
+            color: #6366f1;
         }
-        
+
         .tier-desc {
             font-size: 0.9rem;
-            color: #6c757d;
+            color: #f1f5f9;
             margin-top: 10px;
         }
-        
+
         /* Donation Feed */
         .donation-feed {
             max-height: 400px;
             overflow-y: auto;
             padding-right: 10px;
         }
-        
+
         .donation-feed-item {
-            background: white;
+            background: #1e293b;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             animation: fadeIn 0.5s ease-out;
+            border: 1px solid #334155;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         /* Live donation feed side panel */
         @media (min-width: 992px) {
             .donation-feed-container {
@@ -183,40 +188,41 @@
                 top: 100px;
             }
         }
-        
+
         /* Loading animation */
         .spinner-border {
             vertical-align: middle;
         }
-        
+
         /* Simulated Payment Notice */
         .simulated-notice {
-            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-            border-left: 4px solid #f39c12;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.1));
+            border-left: 4px solid #fbbf24;
             padding: 10px 15px;
             border-radius: 5px;
             margin-bottom: 20px;
+            color: #fbbf24;
         }
-        
+
         /* Progress bar for campaign */
         .donation-goal-tracker .progress {
             height: 20px;
             border-radius: 10px;
             overflow: hidden;
         }
-        
+
         .donation-goal-tracker .progress-bar {
-            background: linear-gradient(90deg, #4e73df, #6f42c1);
+            background: linear-gradient(90deg, #6366f1, #a78bfa);
             transition: width 1s ease-in-out;
         }
-        
+
         /* Live donation animation */
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-        
+
         .new-donation {
             animation: pulse 1s ease-in-out;
         }
@@ -225,12 +231,12 @@
         .payment-method-card.disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            background-color: #f8f9fa;
+            background-color: rgba(30, 41, 59, 0.3);
         }
 
         .payment-method-card.disabled:hover {
-            border-color: #dee2e6;
-            background-color: #f8f9fa;
+            border-color: #334155;
+            background-color: rgba(30, 41, 59, 0.3);
             transform: none;
         }
 
@@ -249,12 +255,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(15, 23, 42, 0.95);
             z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(3px);
+            backdrop-filter: blur(5px);
             animation: fadeIn 0.3s ease;
         }
 
@@ -264,7 +270,7 @@
         }
 
         #donationProcessingOverlay h5 {
-            color: #4e73df;
+            color: #6366f1;
             font-weight: 600;
         }
 
@@ -275,18 +281,59 @@
         }
 
         #donationProcessingOverlay .progress-bar {
-            background-color: #4e73df;
+            background-color: #6366f1;
         }
 
         /* Also add this for body when overlay is active */
         body.overlay-active {
             overflow: hidden !important;
         }
+
+        /* Card styles for dark mode */
+        .card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            color: #f1f5f9;
+        }
+
+        .card .card-title {
+            color: #f1f5f9;
+        }
+
+        .card .card-body {
+            color: #f1f5f9;
+        }
+
+        .form-label {
+            color: #f1f5f9;
+        }
+
+        .form-text {
+            color: #f1f5f9;
+        }
+
+        .input-group-text {
+            background-color: #334155;
+            border-color: #475569;
+            color: #f1f5f9;
+        }
+
+        .alert-info {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: #38bdf8;
+            color: #7dd3fc;
+        }
+
+        .alert-light {
+            background: rgba(51, 65, 85, 0.5);
+            border-color: #475569;
+            color: #f1f5f9;
+        }
     </style>
 </head>
 <body>
 <!-- Fixed Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+    <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand" href="index.html">
                 <i class="fas fa-hand-holding-heart text-primary"></i>
@@ -489,7 +536,7 @@
                                                     <i class="fas fa-qrcode fa-2x text-success me-3"></i>
                                                     <div>
                                                         <strong class="d-block">QR Code Payment</strong>
-                                                        <p class="text-muted mb-0">Simulated QR scan for testing</p>
+                                                        <p class="mb-0" style="color: #f1f5f9;">Simulated QR scan for testing</p>
                                                     </div>
                                                     <div class="ms-auto">
                                                         <span class="badge bg-success">Default</span>
@@ -522,7 +569,7 @@
                                             <li>Receipt will be generated and sent to your email</li>
                                         </ol>
                                     </div>
-                                    <p class="text-muted mt-3">
+                                    <p class="mt-3" style="color: #f1f5f9;">
                                         <i class="fas fa-clock me-1"></i>
                                         Simulated payment takes 3-5 seconds to process
                                     </p>
@@ -686,7 +733,7 @@
                                 </div>
                             </div>
                             <div class="card-footer text-center">
-                                <small class="text-muted">
+                                <small style="color: #f1f5f9;">
                                     <i class="fas fa-sync-alt me-1"></i>
                                     Updates every 10 seconds
                                 </small>
@@ -732,7 +779,7 @@
                             <div class="card-body text-center">
                                 <i class="fas fa-question-circle fa-2x text-primary mb-3"></i>
                                 <h6>Need Help?</h6>
-                                <p class="small text-muted mb-2">Contact our support team</p>
+                                <p class="small mb-2" style="color: #f1f5f9;">Contact our support team</p>
                                 <a href="pages/contact.html" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-headset me-1"></i> Get Help
                                 </a>
@@ -811,7 +858,7 @@
                             <div class="card-body text-center text-danger py-5">
                                 <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
                                 <h4>JavaScript Error</h4>
-                                <p class="text-muted">Unable to load donation system. Please refresh the page.</p>
+                                <p class="mb-2" style="color: #f1f5f9;">Unable to load donation system. Please refresh the page.</p>
                                 <button data-action="reload" class="btn btn-outline-primary">
                                     <i class="fas fa-redo me-2"></i> Refresh Page
                                 </button>

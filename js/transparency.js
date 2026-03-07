@@ -94,9 +94,9 @@ function updateRecentTransactions(donations) {
     if (!completedDonations || completedDonations.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-4">
-                    <i class="fas fa-donate fa-2x text-muted mb-2"></i>
-                    <p class="text-muted">You haven't made any completed donations yet.</p>
+                <td colspan="6" class="text-center py-4" style="background-color: rgba(30, 41, 59, 0.95);">
+                    <i class="fas fa-donate fa-2x mb-2" style="color: #cbd5e1;"></i>
+                    <p style="color: #f1f5f9;">You haven't made any completed donations yet.</p>
                     <a href="../pages/campaigns.html" class="btn btn-primary btn-sm">Browse Campaigns</a>
                 </td>
             </tr>
@@ -112,19 +112,19 @@ function updateRecentTransactions(donations) {
         const donorName = d.is_anonymous ? 'Anonymous' : (d.donor_name || 'You');
 
         // Build receipt link with token - use absolute path from root
-        let receiptLink = '<span class="text-muted">N/A</span>';
+        let receiptLink = '<span style="color: #cbd5e1;">N/A</span>';
         if (d.id && token) {
-            receiptLink = `<a href="../backend/api/payment/download-receipt.php?donation_id=${d.id}&token=${token}" class="text-primary" target="_blank">View</a>`;
+            receiptLink = `<a href="../backend/api/payment/download-receipt.php?donation_id=${d.id}&token=${token}" class="text-primary" target="_blank" style="color: #6366f1;">View</a>`;
         } else if (d.id) {
-            receiptLink = `<a href="../backend/api/payment/download-receipt.php?donation_id=${d.id}" class="text-primary" target="_blank">View</a>`;
+            receiptLink = `<a href="../backend/api/payment/download-receipt.php?donation_id=${d.id}" class="text-primary" target="_blank" style="color: #6366f1;">View</a>`;
         }
 
         html += `
-            <tr>
-                <td>${date}</td>
-                <td>${donorName}</td>
-                <td>${campaignTitle}</td>
-                <td>RM ${amount.toFixed(2)}</td>
+            <tr style="background-color: rgba(30, 41, 59, 0.95);">
+                <td style="color: #f1f5f9;">${date}</td>
+                <td style="color: #f1f5f9;">${donorName}</td>
+                <td style="color: #f1f5f9;">${campaignTitle}</td>
+                <td style="color: #34d399; font-weight: bold;">RM ${amount.toFixed(2)}</td>
                 <td><span class="badge bg-success">Completed</span></td>
                 <td>${receiptLink}</td>
             </tr>
@@ -139,9 +139,9 @@ function showLoginPrompt() {
     if (!tbody) return;
     tbody.innerHTML = `
         <tr>
-            <td colspan="6" class="text-center py-4">
-                <i class="fas fa-sign-in-alt fa-2x text-muted mb-2"></i>
-                <p class="text-muted">Please login to see your donation history.</p>
+            <td colspan="6" class="text-center py-4" style="background-color: rgba(30, 41, 59, 0.95);">
+                <i class="fas fa-sign-in-alt fa-2x mb-2" style="color: #cbd5e1;"></i>
+                <p style="color: #f1f5f9;">Please login to see your donation history.</p>
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">Login</button>
             </td>
         </tr>
@@ -159,13 +159,13 @@ function showFallbackData() {
     document.getElementById('directToCause').textContent = '94.7%';
     document.getElementById('totalDonors').textContent = '2,347';
     document.getElementById('campaignsFunded').textContent = '56';
-    
+
     const tbody = document.getElementById('recentTransactionsBody');
     tbody.innerHTML = `
         <tr>
-            <td colspan="6" class="text-center py-4">
-                <i class="fas fa-exclamation-triangle text-warning"></i>
-                <p class="text-muted">Unable to load your donations.</p>
+            <td colspan="6" class="text-center py-4" style="background-color: rgba(30, 41, 59, 0.95);">
+                <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
+                <p style="color: #f1f5f9;">Unable to load your donations.</p>
             </td>
         </tr>
     `;

@@ -51,15 +51,18 @@ try {
 <head>
     <title>CommunityGive – <?php echo ucfirst($type); ?> Report</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { color: #4e73df; }
+        body { font-family: Arial, sans-serif; margin: 40px; background: #0f172a; color: #f1f5f9; }
+        h1 { color: #6366f1; }
         .stats { display: flex; justify-content: space-between; margin: 20px 0; }
-        .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; flex: 1; margin: 0 10px; }
-        .stat-number { font-size: 2em; font-weight: bold; color: #4e73df; }
+        .stat-card { background: #1e293b; padding: 20px; border-radius: 8px; text-align: center; flex: 1; margin: 0 10px; border: 1px solid #334155; }
+        .stat-number { font-size: 2em; font-weight: bold; color: #6366f1; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #4e73df; color: white; }
-        .footer { margin-top: 30px; font-size: 0.9em; color: #666; text-align: center; }
+        th, td { border: 1px solid #334155; padding: 8px; text-align: left; color: #f1f5f9; }
+        th { background-color: #6366f1; color: white; }
+        tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.02); }
+        .footer { margin-top: 30px; font-size: 0.9em; color: #f1f5f9; text-align: center; }
+        button { background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px; }
+        button:hover { background: #818cf8; }
         @media print { .no-print { display: none; } }
     </style>
 </head>

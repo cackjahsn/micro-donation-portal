@@ -301,8 +301,9 @@ function sendError($message, $code = 500, $json = false) {
         <head>
             <title>Error</title>
             <style>
-                body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
-                .error { color: #dc3545; margin: 20px 0; }
+                body { font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #0f172a; color: #f1f5f9; }
+                .error { color: #f87171; margin: 20px 0; }
+                a { color: #6366f1; }
             </style>
         </head>
         <body>
@@ -399,29 +400,29 @@ function generateReceiptHTML($donation, $isAdminView = false, $print = false, $a
                 .print-instructions { display: none; }
             }
             @media screen {
-                body { font-family: Arial, sans-serif; margin: 40px; background-color: #f8f9fa; }
-                .receipt { max-width: 800px; margin: 0 auto; border: 2px solid #4e73df; padding: 30px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                body { font-family: Arial, sans-serif; margin: 40px; background-color: #0f172a; }
+                .receipt { max-width: 800px; margin: 0 auto; border: 2px solid #6366f1; padding: 30px; background: #1e293b; box-shadow: 0 4px 6px rgba(0,0,0,0.3); color: #f1f5f9; }
             }
-            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
-            .logo { color: #4e73df; font-size: 24px; font-weight: bold; }
-            .title { color: #333; margin: 10px 0; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #334155; padding-bottom: 20px; }
+            .logo { color: #6366f1; font-size: 24px; font-weight: bold; }
+            .title { color: #f1f5f9; margin: 10px 0; }
             .details { margin: 20px 0; }
-            .row { display: flex; justify-content: space-between; margin: 10px 0; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-            .label { font-weight: bold; color: #666; width: 40%; }
-            .value { color: #333; width: 55%; }
-            .amount { font-size: 28px; color: #28a745; font-weight: bold; text-align: center; margin: 30px 0; padding: 20px; background: #f8fff8; border-radius: 10px; }
-            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; text-align: center; }
-            .thank-you { text-align: center; margin: 30px 0; color: #4e73df; font-style: italic; padding: 20px; background: #f8f9ff; border-radius: 10px; }
+            .row { display: flex; justify-content: space-between; margin: 10px 0; padding: 8px 0; border-bottom: 1px solid #334155; }
+            .label { font-weight: bold; color: #f1f5f9; width: 40%; }
+            .value { color: #f1f5f9; width: 55%; }
+            .amount { font-size: 28px; color: #34d399; font-weight: bold; text-align: center; margin: 30px 0; padding: 20px; background: rgba(52, 211, 153, 0.1); border-radius: 10px; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #334155; font-size: 12px; color: #f1f5f9; text-align: center; }
+            .thank-you { text-align: center; margin: 30px 0; color: #6366f1; font-style: italic; padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: 10px; }
             .print-btn { text-align: center; margin: 20px 0; }
             .button-group { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
             .btn { padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block; }
-            .btn-primary { background: #4e73df; color: white; }
-            .btn-secondary { background: #6c757d; color: white; }
-            .btn-success { background: #28a745; color: white; }
-            .print-instructions { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px; font-size: 14px; }
-            .verification-section { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 5px; text-align: center; }
-            .verification-qr { margin: 20px auto; padding: 10px; background: white; display: inline-block; }
-            .admin-actions { background: #e8f4f8; padding: 15px; margin: 15px 0; border-radius: 5px; }
+            .btn-primary { background: #6366f1; color: white; }
+            .btn-secondary { background: #64748b; color: white; }
+            .btn-success { background: #34d399; color: #0f172a; }
+            .print-instructions { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); padding: 15px; margin: 20px 0; border-radius: 5px; font-size: 14px; color: #fbbf24; }
+            .verification-section { background: #1e293b; padding: 20px; margin: 20px 0; border-radius: 5px; text-align: center; border: 1px solid #334155; }
+            .verification-qr { margin: 20px auto; padding: 10px; background: #0f172a; display: inline-block; }
+            .admin-actions { background: rgba(56, 189, 248, 0.1); padding: 15px; margin: 15px 0; border-radius: 5px; border: 1px solid #334155; }
         </style>
     </head>
     <body>';
@@ -429,7 +430,7 @@ function generateReceiptHTML($donation, $isAdminView = false, $print = false, $a
     // Add admin note if admin view
     if ($isAdminView) {
         $html .= '
-        <div style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #4e73df; font-size: 12px;" class="no-print">
+        <div style="background-color: rgba(99, 102, 241, 0.1); padding: 10px; margin: 10px 0; border-left: 4px solid #6366f1; font-size: 12px; color: #f1f5f9;" class="no-print">
             <strong>Admin View:</strong> This receipt is being viewed by an administrator.
         </div>';
     }
@@ -516,17 +517,17 @@ function generateReceiptHTML($donation, $isAdminView = false, $print = false, $a
             </div>
             
             <div class="verification-section">
-                <h3 style="color: #4e73df; margin-bottom: 15px;">Receipt Verification</h3>
-                <p style="margin-bottom: 15px; color: #666;">
+                <h3 style="color: #6366f1; margin-bottom: 15px;">Receipt Verification</h3>
+                <p style="margin-bottom: 15px; color: #f1f5f9;">
                     This receipt can be verified by contacting CommunityGive support.
                 </p>
                 <div class="verification-qr">
                     <!-- Placeholder for QR code -->
-                    <div style="width: 150px; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">
+                    <div style="width: 150px; height: 150px; background: #1e293b; display: flex; align-items: center; justify-content: center; color: #f1f5f9; font-size: 12px; border: 1px solid #334155; border-radius: 5px;">
                         QR Code<br>(Verification)
                     </div>
                 </div>
-                <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                <p style="font-size: 12px; color: #f1f5f9; margin-top: 10px;">
                     Scan to verify receipt authenticity
                 </p>
             </div>
@@ -541,7 +542,7 @@ function generateReceiptHTML($donation, $isAdminView = false, $print = false, $a
                 <p><strong>CommunityGive Micro-Donation Portal</strong></p>
                 <p>This is an official tax receipt. Please retain for your records.</p>
                 <p>For questions or verification: support@communitygive.org | +603-1234-5678</p>
-                <p style="font-size: 10px; color: #999; margin-top: 20px;">
+                <p style="font-size: 10px; color: #f1f5f9; margin-top: 20px;">
                     Receipt generated electronically. No physical copy required.
                     Valid for tax purposes in accordance with local regulations.
                 </p>
@@ -552,7 +553,7 @@ function generateReceiptHTML($donation, $isAdminView = false, $print = false, $a
     if ($isAdminView && !$print) {
         $html .= '
         <div class="admin-actions no-print">
-            <h4 style="margin: 0 0 10px 0; color: #4e73df;">Admin Actions</h4>
+            <h4 style="margin: 0 0 10px 0; color: #6366f1;">Admin Actions</h4>
             <div class="button-group">
                 <a href="../../admin-dashboard.html" class="btn btn-primary">
                     <i class="fas fa-tachometer-alt"></i> Back to Dashboard

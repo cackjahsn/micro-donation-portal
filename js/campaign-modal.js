@@ -209,13 +209,13 @@ const CampaignModal = {
                                     </div>
                                 </div>
                                 <div class="text-end">
-                                    <small class="text-muted d-block">Campaign ID</small>
+                                    <small style="color: #f1f5f9; display: block;">Campaign ID</small>
                                     <strong>#${campaign.id}</strong>
                                 </div>
                             </div>
                             
                             <!-- Progress Section -->
-                            <div class="card bg-light mb-4">
+                            <div class="card mb-4" style="background-color: rgba(51, 65, 85, 0.6); border-color: rgba(71, 85, 99, 0.8);">
                                 <div class="card-body">
                                     <div class="row align-items-center">
                                         <div class="col-md-8">
@@ -231,7 +231,7 @@ const CampaignModal = {
                                             </div>
                                             <div class="d-flex justify-content-between mt-2">
                                                 <span class="text-success fw-bold">${formatCurrency(campaign.raised)}</span>
-                                                <span class="text-muted">of ${formatCurrency(campaign.target)}</span>
+                                                <span style="color: #f1f5f9;">of ${formatCurrency(campaign.target)}</span>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -239,13 +239,13 @@ const CampaignModal = {
                                                 <div class="mb-2">
                                                     <i class="fas fa-users fa-2x text-primary"></i>
                                                     <div class="h3 mb-0">${campaign.donors}</div>
-                                                    <small class="text-muted">Total Donors</small>
+                                                    <small style="color: #f1f5f9;">Total Donors</small>
                                                 </div>
                                                 ${campaign.daysLeft > 0 ? `
                                                 <div>
                                                     <i class="fas fa-clock fa-2x text-warning"></i>
                                                     <div class="h4 mb-0">${campaign.daysLeft}</div>
-                                                    <small class="text-muted">Days Left</small>
+                                                    <small style="color: #f1f5f9;">Days Left</small>
                                                 </div>
                                                 ` : ''}
                                             </div>
@@ -257,27 +257,27 @@ const CampaignModal = {
                             <!-- Campaign Details Grid -->
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light">
-                                            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
+                                    <div class="card h-100" style="background-color: rgba(51, 65, 85, 0.6); border-color: rgba(71, 85, 99, 0.8);">
+                                        <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5); border-bottom-color: rgba(71, 85, 99, 0.8);">
+                                            <h6 class="mb-0" style="color: #f1f5f9;"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
                                         </div>
-                                        <div class="card-body">
+                                        <div class="card-body" style="background-color: rgba(30, 41, 59, 0.95);">
                                             <table class="table table-sm mb-0">
                                                 <tr>
-                                                    <th style="width: 40%;">Category:</th>
-                                                    <td><span class="badge bg-${categoryColor}">${campaign.category}</span></td>
+                                                    <th style="width: 40%; color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">Category:</th>
+                                                    <td style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);"><span class="badge bg-${categoryColor}">${campaign.category}</span></td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Organizer:</th>
-                                                    <td>${campaign.organizer}</td>
+                                                    <th style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">Organizer:</th>
+                                                    <td style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">${campaign.organizer}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Created By:</th>
-                                                    <td>${campaign.created_by_name}</td>
+                                                    <th style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">Created By:</th>
+                                                    <td style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">${campaign.created_by_name}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Created Date:</th>
-                                                    <td>${formatDate(campaign.dateCreated)}</td>
+                                                    <th style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">Created Date:</th>
+                                                    <td style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">${formatDate(campaign.dateCreated)}</td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -285,23 +285,23 @@ const CampaignModal = {
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light">
-                                            <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Timeline & Goals</h6>
+                                    <div class="card h-100" style="background-color: rgba(51, 65, 85, 0.6); border-color: rgba(71, 85, 99, 0.8);">
+                                        <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5); border-bottom-color: rgba(71, 85, 99, 0.8);">
+                                            <h6 class="mb-0" style="color: #f1f5f9;"><i class="fas fa-clock me-2"></i>Timeline & Goals</h6>
                                         </div>
-                                        <div class="card-body">
+                                        <div class="card-body" style="background-color: rgba(30, 41, 59, 0.95);">
                                             <table class="table table-sm mb-0">
                                                 <tr>
-                                                    <th style="width: 40%;">Target Amount:</th>
-                                                    <td class="fw-bold text-primary">${formatCurrency(campaign.target)}</td>
+                                                    <th style="width: 40%; color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">Target Amount:</th>
+                                                    <td style="color: #34d399; font-weight: bold; background-color: rgba(30, 41, 59, 0.95);">${formatCurrency(campaign.target)}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Current Raised:</th>
-                                                    <td class="fw-bold text-success">${formatCurrency(campaign.raised)}</td>
+                                                    <th style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">Current Raised:</th>
+                                                    <td style="color: #34d399; font-weight: bold; background-color: rgba(30, 41, 59, 0.95);">${formatCurrency(campaign.raised)}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th>End Date:</th>
-                                                    <td>
+                                                    <th style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">End Date:</th>
+                                                    <td style="color: #f1f5f9; background-color: rgba(30, 41, 59, 0.95);">
                                                         ${campaign.end_date ? formatDate(campaign.end_date) : 'No deadline'}
                                                         ${campaign.daysLeft > 0 ? `
                                                             <span class="badge ${campaign.daysLeft < 7 ? 'bg-danger' : 'bg-secondary'} ms-2">
@@ -315,14 +315,14 @@ const CampaignModal = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Description -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h6>
+                            <div class="card mb-3" style="background-color: rgba(51, 65, 85, 0.6); border-color: rgba(71, 85, 99, 0.8);">
+                                <div class="card-header" style="background-color: rgba(71, 85, 99, 0.5); border-bottom-color: rgba(71, 85, 99, 0.8);">
+                                    <h6 class="mb-0" style="color: #f1f5f9;"><i class="fas fa-align-left me-2"></i>Description</h6>
                                 </div>
                                 <div class="card-body">
-                                    <p class="mb-0" style="white-space: pre-line;">${campaign.description}</p>
+                                    <p class="mb-0" style="color: #f1f5f9; white-space: pre-line;">${campaign.description}</p>
                                 </div>
                             </div>
                         </div>

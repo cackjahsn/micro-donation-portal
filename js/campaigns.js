@@ -189,22 +189,22 @@ class CampaignManager {
                         from { transform: translateY(-50px); opacity: 0; }
                         to { transform: translateY(0); opacity: 1; }
                     }
-                    .custom-modal-content { background: white; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+                    .custom-modal-content { background: rgba(30, 41, 59, 0.95); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
                     .custom-modal-header {
-                        padding: 20px; border-bottom: 1px solid #dee2e6;
-                        display: flex; justify-content: space-between; align-items: center; background-color: #f8f9fa;
+                        padding: 20px; border-bottom: 1px solid #334155;
+                        display: flex; justify-content: space-between; align-items: center; background-color: rgba(30, 41, 59, 0.5);
                     }
-                    .custom-modal-title { margin: 0; font-size: 1.25rem; color: #333; }
+                    .custom-modal-title { margin: 0; font-size: 1.25rem; color: #f1f5f9; }
                     .custom-modal-close {
-                        background: none; border: none; font-size: 1.25rem; color: #6c757d; cursor: pointer;
+                        background: none; border: none; font-size: 1.25rem; color: #f1f5f9; cursor: pointer;
                     }
-                    .custom-modal-close:hover { color: #000; }
+                    .custom-modal-close:hover { color: #fff; }
                     .custom-modal-body { padding: 20px; }
                     .custom-modal-footer {
-                        padding: 20px; border-top: 1px solid #dee2e6;
-                        display: flex; justify-content: flex-end; gap: 10px; background-color: #f8f9fa;
+                        padding: 20px; border-top: 1px solid #334155;
+                        display: flex; justify-content: flex-end; gap: 10px; background-color: rgba(30, 41, 59, 0.5);
                     }
-                    .btn-cancel:hover { background-color: #6c757d; color: white; }
+                    .btn-cancel:hover { background-color: #64748b; color: white; }
                     body.modal-open { overflow: hidden; }
                 </style>
             `;
@@ -642,7 +642,7 @@ class CampaignManager {
                     </div>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">${campaign.title}</h5>
-                        <p class="card-text text-muted flex-grow-1">${campaign.description.substring(0, 80)}...</p>
+                        <p class="card-text" style="color: #f1f5f9; flex-grow: 1;">${campaign.description.substring(0, 80)}...</p>
                         
                         ${isActive ? `
                         <div class="mb-3">
@@ -658,7 +658,7 @@ class CampaignManager {
                         <div class="row align-items-center mt-auto">
                             <div class="col-7">
                                 <div class="fw-bold text-success">${raisedAmount}</div>
-                                <small class="text-muted">raised of ${targetAmount}</small>
+                                <small style="color: #f1f5f9;">raised of ${targetAmount}</small>
                             </div>
                             <div class="col-5">
                                 <div class="d-grid gap-2">
@@ -687,7 +687,7 @@ class CampaignManager {
                         `}
                         
                         <div class="mt-3 pt-3 border-top">
-                            <small class="text-muted">
+                            <small style="color: #f1f5f9;">
                                 <i class="fas fa-user-circle"></i> ${campaign.organizer}
                             </small>
                         </div>
@@ -796,7 +796,7 @@ class CampaignManager {
                 <div class="col-12 text-center py-5">
                     <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
                     <h4>Error loading campaigns</h4>
-                    <p class="text-muted">Please try again later</p>
+                    <p style="color: #f1f5f9;">Please try again later</p>
                     <button class="btn btn-outline-primary mt-2" onclick="window.location.reload()">
                         <i class="fas fa-redo"></i> Try Again
                     </button>

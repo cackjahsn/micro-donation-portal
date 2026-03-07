@@ -10,7 +10,7 @@
 </head>
 <body>
 <!-- Fixed Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+    <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand" href="../index.html">
                 <i class="fas fa-hand-holding-heart text-primary"></i>
@@ -60,7 +60,7 @@
     </nav>
 
     <!-- Campaigns Header -->
-    <section class="campaigns-header py-5 bg-light">
+    <section class="campaigns-header py-5" style="background: rgba(30, 41, 59, 0.5);">
         <div class="container">
             <div class="row">
                 <div class="col-lg-8 mx-auto text-center">
@@ -322,7 +322,7 @@
                         <div class="col-12 text-center py-5">
                             <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                             <h4>Unable to load campaigns</h4>
-                            <p class="text-muted">${error.message}</p>
+                            <p style="color: #f1f5f9;">${error.message}</p>
                             <button class="btn btn-primary mt-3" data-action="reload">
                                 <i class="fas fa-redo"></i> Try Again
                             </button>
@@ -462,9 +462,9 @@
             if (campaigns.length === 0) {
                 container.innerHTML = `
                     <div class="col-12 text-center py-5">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <i class="fas fa-search fa-3x mb-3" style="color: #cbd5e1;"></i>
                         <h4>No campaigns found</h4>
-                        <p class="text-muted">Try adjusting your search or filter criteria</p>
+                        <p style="color: #f1f5f9;">Try adjusting your search or filter criteria</p>
                     </div>
                 `;
             } else {
