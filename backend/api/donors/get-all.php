@@ -19,22 +19,23 @@ try {
     
     if ($is_admin_request) {
         // Admin request - get all donors with their donation statistics
-        $query = "SELECT 
+        // FIXED: Include anonymous donors (remove donor_name != 'Anonymous' filter)
+        // Admin should see ALL donors, even if they donated anonymously
+        $query = "SELECT
                     donor_email as email,
                     MAX(donor_name) as name,
                     SUM(amount) as total_donations,
                     COUNT(*) as donations_count,
                     MAX(created_at) as last_donation,
-                    CASE 
+                    CASE
                         WHEN COUNT(*) > 3 THEN 'recurring'
                         WHEN MAX(created_at) > DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 'new'
                         WHEN MAX(created_at) > DATE_SUB(NOW(), INTERVAL 90 DAY) THEN 'active'
                         ELSE 'inactive'
                     END as status
-                  FROM donations 
-                  WHERE donor_email IS NOT NULL 
-                    AND donor_email != '' 
-                    AND donor_name != 'Anonymous'
+                  FROM donations
+                  WHERE donor_email IS NOT NULL
+                    AND donor_email != ''
                     AND status = 'completed'
                   GROUP BY donor_email
                   ORDER BY total_donations DESC";
@@ -61,15 +62,15 @@ try {
         }, $donors);
         
         // Get statistics
-        $stats_query = "SELECT 
+        // FIXED: Include anonymous donors in statistics
+        $stats_query = "SELECT
                             COUNT(DISTINCT donor_email) as total_donors,
                             COUNT(DISTINCT CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND status = 'completed' THEN donor_email END) as active_donors,
                             COUNT(DISTINCT CASE WHEN DATE(created_at) = CURDATE() AND status = 'completed' THEN donor_email END) as new_donors,
                             COALESCE(AVG(amount), 0) as avg_donation
-                        FROM donations 
-                        WHERE donor_email IS NOT NULL 
-                            AND donor_email != '' 
-                            AND donor_name != 'Anonymous'
+                        FROM donations
+                        WHERE donor_email IS NOT NULL
+                            AND donor_email != ''
                             AND status = 'completed'";
         
         $stats_stmt = $db->prepare($stats_query);

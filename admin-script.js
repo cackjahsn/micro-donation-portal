@@ -2879,17 +2879,14 @@ class AdminDashboard {
                 throw new Error('Failed to load donation data');
             }
 
-            // Find all donations for this email
-            const donorDonations = donationsData.donations.filter(d => 
-                d.donor_email && d.donor_email.toLowerCase() === email.toLowerCase()
+            // Find all COMPLETED donations for this email (FIX: only count completed donations)
+            const donorDonations = donationsData.donations.filter(d =>
+                d.donor_email && 
+                d.donor_email.toLowerCase() === email.toLowerCase() &&
+                d.status === 'completed'  // FIXED: Only include completed donations
             );
 
-            // Get donor info from the donors list (we already have it in this.allDonors? 
-            // But we don't store allDonors globally. We can either store it or extract from first donation.)
-            // For simplicity, we'll fetch donors again or use the first donation's donor info.
-            // Alternatively, we can rely on the donations data: it contains donor_name, donor_email, etc.
-            // We'll extract donor name from the first donation if available.
-
+            // Get donor info from the donors list
             let donorName = 'Unknown';
             let donorStatus = 'Unknown';
 
@@ -2897,12 +2894,6 @@ class AdminDashboard {
             if (donorDonations.length > 0) {
                 donorName = donorDonations[0].donor_name || 'Unknown';
             }
-
-            // To get phone and status, we might need to fetch donors separately.
-            // Since we already loaded donors in loadDonors, we could store them globally.
-            // Let's add a property this.allDonors to the class and populate it in loadDonors.
-            // We'll modify loadDonors to store donors in this.allDonors.
-            // But to keep this answer self-contained, we'll fetch donors again if needed.
 
             // Fetch donors to get phone and status
             const donorsData = await this.apiRequest('backend/api/donors/get-all.php?admin=true');
@@ -2914,7 +2905,7 @@ class AdminDashboard {
                 }
             }
 
-            // Calculate stats
+            // Calculate stats (now only from completed donations)
             const totalDonated = donorDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
             const donationCount = donorDonations.length;
             const lastDonation = donorDonations.length > 0 ? donorDonations[0].created_at : null;
@@ -3920,32 +3911,35 @@ class AdminDashboard {
     async loadStatisticsData() {
         try {
             const campaignsData = await this.apiRequest('backend/api/campaigns/get-all.php');
-            const donationsData = await this.apiRequest('backend/api/user/donations.php?limit=1000');
-            
+            // Fetch all donations but filter only completed ones for accurate statistics
+            const donationsData = await this.apiRequest('backend/api/user/donations.php?limit=10000');
+
             if (campaignsData.success && Array.isArray(campaignsData.campaigns)) {
                 const campaigns = campaignsData.campaigns;
-                
+
                 const totalRaised = campaigns.reduce((sum, c) => sum + (parseFloat(c.current_amount) || 0), 0);
-                const successfulCampaigns = campaigns.filter(c => 
+                const successfulCampaigns = campaigns.filter(c =>
                     parseFloat(c.current_amount || 0) >= parseFloat(c.target_amount || 1)
                 ).length;
                 const successRate = campaigns.length > 0 ? ((successfulCampaigns / campaigns.length) * 100).toFixed(1) : 0;
-                
+
                 let totalDonations = 0;
                 let totalDonationAmount = 0;
-                
+
+                // FIXED: Only count completed donations for accurate statistics
                 if (donationsData.success && Array.isArray(donationsData.donations)) {
-                    totalDonations = donationsData.donations.length;
-                    totalDonationAmount = donationsData.donations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+                    const completedDonations = donationsData.donations.filter(d => d.status === 'completed');
+                    totalDonations = completedDonations.length;
+                    totalDonationAmount = completedDonations.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
                 }
-                
+
                 const avgDonation = totalDonations > 0 ? totalDonationAmount / totalDonations : 0;
-                
+
                 document.getElementById('statsTotalRaised').textContent = this.formatCurrency(totalRaised);
                 document.getElementById('statsTotalDonations').textContent = totalDonations;
                 document.getElementById('statsSuccessRate').textContent = successRate + '%';
                 document.getElementById('statsAvgDonation').textContent = this.formatCurrency(avgDonation);
-                
+
                 this.renderStatisticsTable(campaigns);
             }
         } catch (error) {
