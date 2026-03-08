@@ -4051,33 +4051,33 @@ class AdminDashboard {
                         <div class="card-body text-center">
                             <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
                             <h5 class="card-title">Campaigns Report</h5>
-                            <p class="card-text text-muted">Export all campaigns data to CSV</p>
+                            <p class="card-text" style="color: #f1f5f9;">Export all campaigns data to CSV</p>
                             <button class="btn btn-outline-primary" onclick="adminDashboard.exportCampaigns()">
                                 <i class="fas fa-download me-2"></i> Download CSV
                             </button>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-xl-4 col-md-6 mb-4">
                     <div class="card shadow h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-users fa-3x text-success mb-3"></i>
                             <h5 class="card-title">Donors Report</h5>
-                            <p class="card-text text-muted">Export all donors data to CSV</p>
+                            <p class="card-text" style="color: #f1f5f9;">Export all donors data to CSV</p>
                             <button class="btn btn-outline-success" onclick="adminDashboard.exportDonors()">
                                 <i class="fas fa-download me-2"></i> Download CSV
                             </button>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-xl-4 col-md-6 mb-4">
                     <div class="card shadow h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-credit-card fa-3x text-info mb-3"></i>
                             <h5 class="card-title">Donations Report</h5>
-                            <p class="card-text text-muted">Export all donations data to CSV</p>
+                            <p class="card-text" style="color: #f1f5f9;">Export all donations data to CSV</p>
                             <button class="btn btn-outline-info" onclick="adminDashboard.exportDonations()">
                                 <i class="fas fa-download me-2"></i> Download CSV
                             </button>
@@ -4174,23 +4174,35 @@ class AdminDashboard {
     showNotification(message, type = 'info') {
         const existing = document.querySelector('.admin-notification');
         if (existing) existing.remove();
-        
+
         const notification = document.createElement('div');
         notification.className = `admin-notification alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
-        
+
         const icons = {
             'success': 'fa-check-circle',
             'error': 'fa-exclamation-circle',
             'warning': 'fa-exclamation-triangle',
             'info': 'fa-info-circle'
         };
-        
+
         notification.innerHTML = `
             <i class="fas ${icons[type] || 'fa-info-circle'} me-2"></i>
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
-        
+
+        // Add specific styling based on type
+        let backgroundColor = '';
+        if (type === 'error') {
+            backgroundColor = 'rgba(248, 113, 113, 0.2)'; // Red background for errors
+        } else if (type === 'success') {
+            backgroundColor = 'rgba(52, 211, 153, 0.2)'; // Green background for success
+        } else if (type === 'warning') {
+            backgroundColor = 'rgba(251, 191, 36, 0.15)'; // Yellow background for warnings
+        } else {
+            backgroundColor = 'rgba(56, 189, 248, 0.15)'; // Blue background for info
+        }
+
         notification.style.cssText = `
             position: fixed;
             top: 90px;
@@ -4199,10 +4211,12 @@ class AdminDashboard {
             min-width: 300px;
             max-width: 400px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background-color: ${backgroundColor};
+            border-left: 4px solid ${type === 'error' ? '#f87171' : type === 'success' ? '#34d399' : type === 'warning' ? '#fbbf24' : '#38bdf8'};
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             if (notification.parentNode) notification.remove();
         }, 5000);
