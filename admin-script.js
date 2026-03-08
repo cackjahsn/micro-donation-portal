@@ -1652,10 +1652,10 @@ class AdminDashboard {
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="progress flex-grow-1 me-2" style="height: 8px;">
-                                <div class="progress-bar ${safeProgress >= 100 ? 'bg-success' : safeProgress >= 50 ? 'bg-warning' : 'bg-info'}" 
+                                <div class="progress-bar ${safeProgress >= 100 ? 'bg-success' : safeProgress >= 50 ? 'bg-warning' : 'bg-info'}"
                                     style="width: ${safeProgress}%"></div>
                             </div>
-                            <span class="fw-bold ${safeProgress >= 100 ? 'text-success' : 'text-dark'}">
+                            <span class="fw-bold ${safeProgress >= 100 ? 'text-success' : safeProgress >= 50 ? 'text-warning' : 'text-light'}">
                                 ${safeProgress.toFixed(1)}%
                             </span>
                         </div>

@@ -691,7 +691,7 @@ class Utils {
         if (existing) {
             existing.remove();
         }
-        
+
         // Create notification element
         const notification = document.createElement('div');
         notification.className = `custom-notification alert alert-${type} alert-dismissible fade show`;
@@ -702,7 +702,25 @@ class Utils {
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
             </div>
         `;
+
+        // Determine colors based on type
+        let backgroundColor = '';
+        let borderColor = '';
         
+        if (type === 'error') {
+            backgroundColor = 'rgba(248, 113, 113, 0.2)'; // Red background for errors
+            borderColor = '#f87171';
+        } else if (type === 'success') {
+            backgroundColor = 'rgba(52, 211, 153, 0.2)'; // Green background for success
+            borderColor = '#34d399';
+        } else if (type === 'warning') {
+            backgroundColor = 'rgba(251, 191, 36, 0.15)'; // Yellow background for warnings
+            borderColor = '#fbbf24';
+        } else {
+            backgroundColor = 'rgba(56, 189, 248, 0.15)'; // Blue background for info
+            borderColor = '#38bdf8';
+        }
+
         // Style notification
         notification.style.cssText = `
             position: fixed;
@@ -713,6 +731,8 @@ class Utils {
             max-width: 400px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             animation: slideInRight 0.3s ease-out;
+            background-color: ${backgroundColor};
+            border-left: 4px solid ${borderColor};
         `;
         
         // Add animation styles if not present
