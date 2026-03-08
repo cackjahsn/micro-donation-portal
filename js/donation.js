@@ -787,7 +787,7 @@ async processDonation() {
             const user = auth.getCurrentUser();
             userId = user?.id;
         }
-        
+
         if (!userId) {
             // Try localStorage as fallback
             try {
@@ -799,6 +799,16 @@ async processDonation() {
             } catch (e) {
                 console.error('Error getting user from localStorage:', e);
             }
+        }
+
+        // Check if user is logged in - show red alert if not
+        if (!userId) {
+            this.showNotification('Please login to make a donation', 'error');
+            // Redirect to login or show login modal
+            if (typeof auth !== 'undefined' && auth.showLoginModal) {
+                auth.showLoginModal();
+            }
+            return;
         }
         
         console.log('Current user ID:', userId);
