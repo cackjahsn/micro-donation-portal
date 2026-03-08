@@ -242,7 +242,7 @@ class DonationPage {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(15, 23, 42, 0.95);
             z-index: 9999;
             display: flex;
             align-items: center;
@@ -1222,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 align-items: center;
                 padding: 10px;
                 border-radius: 8px;
-                background: #f8f9fa;
+                background: #1e293b;
                 margin-bottom: 8px;
                 animation: fadeIn 0.5s ease-out;
             }
