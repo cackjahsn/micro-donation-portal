@@ -1132,11 +1132,19 @@ code, pre {
     background-color: rgba(51, 65, 85, 0.6) !important;
 }
 
+.bg-gray, .bg-grey {
+    background-color: rgba(51, 65, 85, 0.6) !important;
+}
+
 .text-muted {
     color: #f1f5f9 !important;
 }
 
 .text-dark {
+    color: #f1f5f9 !important;
+}
+
+.text-secondary {
     color: #f1f5f9 !important;
 }
 
@@ -1146,6 +1154,11 @@ code, pre {
 }
 
 .card-header.bg-light {
+    background-color: rgba(71, 85, 99, 0.5) !important;
+    color: #f1f5f9 !important;
+}
+
+.card-footer.bg-light {
     background-color: rgba(71, 85, 99, 0.5) !important;
     color: #f1f5f9 !important;
 }
@@ -1168,9 +1181,89 @@ code, pre {
     color: #f1f5f9 !important;
 }
 
+.thead-light {
+    background-color: rgba(71, 85, 99, 0.9) !important;
+    color: #f1f5f9 !important;
+}
+
 /* Border colors */
 .border-light {
     border-color: rgba(51, 65, 85, 0.8) !important;
+}
+
+/* Modal overrides */
+.modal-content.bg-white {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+/* Dropdown overrides */
+.dropdown-menu.bg-white {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+/* Alert overrides */
+.alert-light {
+    background-color: rgba(51, 65, 85, 0.6) !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(71, 85, 99, 0.8) !important;
+}
+
+/* List group overrides */
+.list-group-item.bg-white {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Badge overrides */
+.badge.bg-light {
+    background-color: rgba(51, 65, 85, 0.6) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Progress bar track */
+.progress.bg-light {
+    background-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+/* Pagination */
+.page-item.bg-light {
+    background-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+/* Form controls */
+.form-control.bg-white {
+    background-color: rgba(51, 65, 85, 0.8) !important;
+    color: #f1f5f9 !important;
+}
+
+.form-select.bg-white {
+    background-color: rgba(51, 65, 85, 0.8) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Any remaining white backgrounds */
+[style*="background-color: white"] {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+[style*="background-color: #fff"] {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+[style*="background-color: #ffffff"] {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+[style*="background: white"] {
+    background: rgba(30, 41, 59, 0.95) !important;
+}
+
+[style*="background: #fff"] {
+    background: rgba(30, 41, 59, 0.95) !important;
+}
+
+[style*="background: #ffffff"] {
+    background: rgba(30, 41, 59, 0.95) !important;
 }
 
 /* Transparency page specific styles */

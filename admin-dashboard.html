@@ -25,20 +25,25 @@
         }
         
         .analytics-card {
-            background: white;
+            background: rgba(30, 41, 59, 0.95);
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border: 1px solid rgba(51, 65, 85, 0.5);
         }
-        
+
+        .analytics-card h6 {
+            color: #f1f5f9;
+        }
+
         .metric-value {
             font-size: 2rem;
             font-weight: bold;
-            color: #4e73df;
+            color: #818cf8;
         }
-        
+
         .metric-label {
-            color: #f1f5f9;
+            color: #cbd5e1;
             font-size: 0.9rem;
         }
         
@@ -376,7 +381,7 @@
                                 </label>
                                 <input type="text" class="form-control" name="title" required maxlength="100"
                                     placeholder="e.g., Flood Relief Fund 2026">
-                                <small style="color: #f1f5f9;">Choose a clear, descriptive title</small>
+                                <small style="color: #cbd5e1;">Choose a clear, descriptive title</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">
@@ -399,9 +404,9 @@
                             </label>
                             <textarea class="form-control" name="description" rows="4" required maxlength="1000"
                                 placeholder="Describe your campaign, its goals, and how the funds will be used..."></textarea>
-                            <small style="color: #f1f5f9;">Maximum 1000 characters</small>
+                            <small style="color: #cbd5e1;">Maximum 1000 characters</small>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">
@@ -409,15 +414,15 @@
                                 </label>
                                 <input type="number" class="form-control" name="goal_amount" min="100" step="100" required
                                     placeholder="10000">
-                                <small style="color: #f1f5f9;">Minimum RM 100</small>
+                                <small style="color: #cbd5e1;">Minimum RM 100</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">End Date *</label>
                                 <input type="date" class="form-control" name="end_date" required>
-                                <small style="color: #f1f5f9;">Campaign end date</small>
+                                <small style="color: #cbd5e1;">Campaign end date</small>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">
@@ -425,7 +430,7 @@
                                 </label>
                                 <input type="text" class="form-control" name="organizer" maxlength="100"
                                     placeholder="Your organization name">
-                                <small style="color: #f1f5f9;">Default: Your name</small>
+                                <small style="color: #cbd5e1;">Default: Your name</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">
@@ -438,16 +443,16 @@
                                         Mark as featured campaign
                                     </label>
                                 </div>
-                                <small style="color: #f1f5f9;">Featured campaigns appear on homepage</small>
+                                <small style="color: #cbd5e1;">Featured campaigns appear on homepage</small>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label fw-bold">
                                 Campaign Image
                             </label>
                             <input type="file" class="form-control" name="campaign_image" id="campaignImage" accept="image/*" onchange="previewImage(event)">
-                            <small style="color: #f1f5f9;">
+                            <small style="color: #cbd5e1;">
                                 <i class="fas fa-info-circle me-1"></i>
                                 Max 5MB. Recommended: 1200x600px. Formats: JPG, PNG, GIF, SVG
                             </small>
@@ -466,7 +471,7 @@
                                     </div>
                                     <div class="ms-3">
                                         <p class="mb-1 fw-bold">Preview</p>
-                                        <small style="color: #f1f5f9;">Image will be uploaded when you create the campaign</small>
+                                        <small style="color: #cbd5e1;">Image will be uploaded when you create the campaign</small>
                                     </div>
                                 </div>
                             </div>

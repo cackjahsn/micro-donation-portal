@@ -611,7 +611,7 @@ class AdminDashboard {
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover" id="transactionsTable" width="100%" cellspacing="0">
-                                    <thead class="thead-light">
+                                    <thead style="background-color: rgba(71, 85, 99, 0.9);">
                                         <tr>
                                             <th>ID</th>
                                             <th>Donor</th>
@@ -994,7 +994,7 @@ class AdminDashboard {
         container.innerHTML = `
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <thead class="table-light">
+                    <thead style="background-color: rgba(71, 85, 99, 0.9);">
                         <tr>
                             <th>Campaign</th>
                             <th>Category</th>
@@ -1634,8 +1634,7 @@ class AdminDashboard {
                                         </div>`
                                     )
                                 ) : 
-                                `<div class="rounded me-2 d-flex align-items-center justify-content-center bg-light" 
-                                    style="width: 40px; height: 40px;">
+                                `<div class="rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: rgba(51, 65, 85, 0.6);">
                                     <i class="fas fa-hand-holding-heart" style="color: #cbd5e1;"></i>
                                 </div>`
                             }
@@ -2698,7 +2697,7 @@ class AdminDashboard {
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover" id="donorsTable" width="100%" cellspacing="0">
-                                    <thead class="thead-light">
+                                    <thead style="background-color: rgba(71, 85, 99, 0.9);">
                                         <tr>
                                             <th>ID</th>
                                             <th>Name</th>
@@ -2807,8 +2806,8 @@ class AdminDashboard {
                         <td><strong>#DON${Math.abs(d.id).toString().substring(0, 6)}</strong></td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="avatar-circle bg-primary text-white me-2" 
-                                    style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: #4e73df !important;">
+                                <div class="avatar-circle me-2" 
+                                    style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(99, 102, 241, 0.2); color: #6366f1;">
                                     ${(d.name || 'U').charAt(0).toUpperCase()}
                                 </div>
                                 ${this.escapeHtml(d.name || 'Anonymous')}
@@ -3160,7 +3159,7 @@ class AdminDashboard {
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover" id="usersTable" width="100%" cellspacing="0">
-                                    <thead class="thead-light">
+                                    <thead style="background-color: rgba(71, 85, 99, 0.9);">
                                         <tr>
                                             <th>ID</th>
                                             <th>Name</th>
@@ -3268,8 +3267,8 @@ class AdminDashboard {
                 <td><strong>#${user.id}</strong></td>
                 <td>
                     <div class="d-flex align-items-center">
-                        <div class="avatar-circle bg-primary text-white me-2" 
-                            style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <div class="avatar-circle me-2" 
+                            style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(99, 102, 241, 0.2); color: #6366f1;">
                             ${(user.name || 'U').charAt(0).toUpperCase()}
                         </div>
                         ${this.escapeHtml(user.name || 'Unknown')}
@@ -3340,8 +3339,8 @@ class AdminDashboard {
                     <div class="modal-body p-3">
                         <!-- Avatar placeholder -->
                         <div class="text-center mb-3">
-                            <div class="avatar-circle bg-primary text-white mx-auto" 
-                                style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+                            <div class="avatar-circle mx-auto"
+                                style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(99, 102, 241, 0.2); color: #6366f1; font-size: 2rem;">
                                 ${(user.name || 'U').charAt(0).toUpperCase()}
                             </div>
                         </div>
