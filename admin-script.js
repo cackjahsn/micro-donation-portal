@@ -4842,18 +4842,42 @@ class AdminDashboard {
             return;
         }
 
-        // For now, we'll just show a notification since we don't have an archive endpoint
-        // In a full implementation, you would create an archive endpoint
-        this.showNotification('Message archived', 'info');
-        
-        // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('messageDetailModal'));
-        if (modal) {
-            modal.hide();
+        try {
+            const token = localStorage.getItem('micro_donation_token') || localStorage.getItem('token');
+            const userString = localStorage.getItem('micro_donation_user') || localStorage.getItem('user');
+            const user = userString ? JSON.parse(userString) : null;
+
+            const response = await fetch('backend/api/contact/archive.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? 'Bearer ' + token : '',
+                    'X-User-ID': user?.id || '',
+                    'X-User-Role': user?.role || ''
+                },
+                body: JSON.stringify({ message_id: messageId })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showNotification('Message archived successfully', 'success');
+
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('messageDetailModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // Reload messages
+                this.loadContactMessagesData();
+            } else {
+                this.showNotification(result.message || 'Failed to archive message', 'error');
+            }
+        } catch (error) {
+            console.error('Error archiving message:', error);
+            this.showNotification('Error archiving message: ' + error.message, 'error');
         }
-        
-        // Reload messages
-        this.loadContactMessagesData();
     }
 
     escapeHtml(text) {
