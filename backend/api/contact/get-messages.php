@@ -69,11 +69,18 @@ try {
 
     // Search in name, email, subject, message
     if (!empty($search)) {
-        $query .= " AND (cm.name LIKE :search OR cm.email LIKE :search OR cm.subject LIKE :search OR cm.message LIKE :search)";
-        $params[':search'] = "%$search%";
+        $searchTerm = "%$search%";
+        $query .= " AND (cm.name LIKE :search_name OR cm.email LIKE :search_email OR cm.subject LIKE :search_subject OR cm.message LIKE :search_message)";
+        $params[':search_name'] = $searchTerm;
+        $params[':search_email'] = $searchTerm;
+        $params[':search_subject'] = $searchTerm;
+        $params[':search_message'] = $searchTerm;
     }
 
-    $query .= " ORDER BY cm.created_at DESC LIMIT :limit OFFSET :offset";
+    $query .= " ORDER BY cm.created_at DESC";
+
+    // Add LIMIT and OFFSET directly (cannot be bound as named parameters in PDO)
+    $query .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
     $stmt = $db->prepare($query);
 
@@ -81,8 +88,6 @@ try {
     foreach ($params as $key => $value) {
         $stmt->bindValue($key, $value);
     }
-    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 
     $stmt->execute();
     $messages = $stmt->fetchAll();
@@ -96,7 +101,8 @@ try {
         $countQuery .= " AND category = :category";
     }
     if (!empty($search)) {
-        $countQuery .= " AND (name LIKE :search OR email LIKE :search OR subject LIKE :search OR message LIKE :search)";
+        $searchTerm = "%$search%";
+        $countQuery .= " AND (name LIKE :search_name OR email LIKE :search_email OR subject LIKE :search_subject OR message LIKE :search_message)";
     }
 
     $countStmt = $db->prepare($countQuery);
@@ -107,7 +113,11 @@ try {
         $countStmt->bindValue(':category', $category);
     }
     if (!empty($search)) {
-        $countStmt->bindValue(':search', "%$search%");
+        $searchTerm = "%$search%";
+        $countStmt->bindValue(':search_name', $searchTerm);
+        $countStmt->bindValue(':search_email', $searchTerm);
+        $countStmt->bindValue(':search_subject', $searchTerm);
+        $countStmt->bindValue(':search_message', $searchTerm);
     }
     $countStmt->execute();
     $total = $countStmt->fetch()['total'];
@@ -123,7 +133,7 @@ try {
 
 } catch (Exception $e) {
     error_log("Get contact messages error: " . $e->getMessage());
-    
+
     http_response_code(500);
     echo json_encode([
         "success" => false,

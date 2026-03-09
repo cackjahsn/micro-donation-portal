@@ -29,6 +29,17 @@
             color: #f1f5f9;
         }
 
+        /* Fix autofill background color for search input */
+        #searchCampaigns:-webkit-autofill,
+        #searchCampaigns:-webkit-autofill:hover,
+        #searchCampaigns:-webkit-autofill:focus,
+        #searchCampaigns:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+            box-shadow: 0 0 0 30px #1e293b inset !important;
+            color: #f1f5f9 !important;
+            -webkit-text-fill-color: #f1f5f9 !important;
+        }
+
         /* Login modal input fields - dark theme */
         #loginModal .form-control {
             background-color: #1e293b !important;
