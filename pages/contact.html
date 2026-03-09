@@ -150,7 +150,7 @@
                                     </h2>
                                     <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
                                         <div class="accordion-body">
-                                            All donations are processed through secure payment gateways (ToyyibPay/FPX) with bank-level encryption. We never store your credit card information.
+                                            All donations are processed through QR code payments, which are secure and widely used in Malaysia. We do not handle any payment information directly, ensuring your financial data is protected.
                                         </div>
                                     </div>
                                 </div>
@@ -181,10 +181,46 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- My Messages Section (Only for logged in users) -->
+                    <div class="card shadow mt-4" id="myMessagesSection" style="display: none;">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">
+                                <i class="fas fa-inbox me-2"></i>My Messages
+                            </h3>
+                            <p class="text-white mb-3">View your submitted messages and admin replies</p>
+                            
+                            <!-- Messages List -->
+                            <div id="userMessagesContainer">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
+
+    <!-- Message Detail Modal -->
+    <div class="modal fade" id="userMessageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-envelope me-2"></i>Message Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="userMessageDetail"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="footer bg-dark text-white py-4">
@@ -271,13 +307,259 @@
     <script src="../js/auth.js"></script>
     <script src="../js/auth-global.js"></script>
     <script src="../script.js"></script>
-    
+
     <script>
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
+        // Contact form submission handler
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert('Thank you for your message! We will get back to you soon.');
-            this.reset();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            
+            // Get form values
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const message = document.getElementById('message').value.trim();
+            const category = document.getElementById('category').value;
+            
+            // Validate
+            if (!name || !email || !subject || !message || !category) {
+                showContactAlert('Please fill in all required fields.', 'danger');
+                return;
+            }
+            
+            if (message.length < 10) {
+                showContactAlert('Message must be at least 10 characters long.', 'danger');
+                return;
+            }
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            
+            try {
+                // Build API URL using path resolver
+                const apiUrl = window.API_BASE_URL 
+                    ? window.API_BASE_URL + '/contact/submit.php'
+                    : '/micro-donation-portal/backend/api/contact/submit.php';
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        subject: subject,
+                        message: message,
+                        category: category
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showContactAlert(result.message || 'Thank you! Your message has been sent successfully.', 'success');
+                    document.getElementById('contactForm').reset();
+                } else {
+                    showContactAlert(result.message || 'Failed to send message. Please try again.', 'danger');
+                }
+            } catch (error) {
+                console.error('Contact form error:', error);
+                showContactAlert('An error occurred. Please check your connection and try again.', 'danger');
+            } finally {
+                // Restore submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
         });
+        
+        // Show alert in the form
+        function showContactAlert(message, type) {
+            // Remove existing alerts
+            const existingAlert = document.querySelector('.contact-alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            // Create alert element
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} contact-alert`;
+            alertDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '80px';
+            alertDiv.style.left = '50%';
+            alertDiv.style.transform = 'translateX(-50%)';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.maxWidth = '90%';
+            
+            // Add to body
+            document.body.appendChild(alertDiv);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                alertDiv.style.transition = 'opacity 0.3s ease';
+                alertDiv.style.opacity = '0';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 5000);
+        }
+
+        // Load user's messages (only for logged in users)
+        document.addEventListener('DOMContentLoaded', function() {
+            const userString = localStorage.getItem('micro_donation_user');
+            if (userString) {
+                const user = JSON.parse(userString);
+                if (user && user.id) {
+                    document.getElementById('myMessagesSection').style.display = 'block';
+                    loadUserMessages(user.id);
+                }
+            }
+        });
+
+        async function loadUserMessages(userId) {
+            const container = document.getElementById('userMessagesContainer');
+            if (!container) return;
+
+            try {
+                const response = await fetch('../backend/api/contact/get-user-messages.php?user_id=' + userId);
+                const result = await response.json();
+
+                if (result.success && result.messages && result.messages.length > 0) {
+                    let html = '<div class="list-group">';
+                    result.messages.forEach(function(msg) {
+                        const statusClass = getStatusClass(msg.status);
+                        const hasReply = msg.status === 'replied' || (msg.replies && msg.replies.length > 0);
+                        
+                        html += `
+                            <button class="list-group-item list-group-item-action" onclick="viewUserMessage(${msg.id})">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-envelope me-2"></i>${escapeHtml(msg.subject)}
+                                    </h6>
+                                    <small><span class="badge ${statusClass}">${msg.status}</span></small>
+                                </div>
+                                <p class="mb-1 text-white small">
+                                    <i class="far fa-clock me-1"></i>${formatDate(msg.created_at)}
+                                </p>
+                                ${hasReply ? '<p class="mb-0 text-success small"><i class="fas fa-check-circle me-1"></i>Reply received</p>' : ''}
+                            </button>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-white mb-3"></i>
+                            <p class="text-white">You haven't sent any messages yet.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading user messages:', error);
+                container.innerHTML = '<div class="alert alert-danger">Failed to load messages</div>';
+            }
+        }
+
+        async function viewUserMessage(messageId) {
+            try {
+                const response = await fetch('../backend/api/contact/get-message.php?id=' + messageId);
+                const result = await response.json();
+
+                if (result.success) {
+                    const message = result.message;
+                    const replies = result.replies || [];
+                    const modal = new bootstrap.Modal(document.getElementById('userMessageModal'));
+                    
+                    let html = `
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <h5>${escapeHtml(message.subject)}</h5>
+                                <span class="badge ${getStatusClass(message.status)}">${message.status}</span>
+                            </div>
+                            <p class="text-white small">
+                                <i class="far fa-calendar me-1"></i>${formatDate(message.created_at)} |
+                                <i class="far fa-folder me-1"></i>${message.category}
+                            </p>
+                            <hr>
+                            <p class="mt-3">${escapeHtml(message.message).replace(/\n/g, '<br>')}</p>
+                        </div>
+                    `;
+
+                    if (replies.length > 0) {
+                        html += '<div class="mt-4"><h6><i class="fas fa-reply me-2"></i>Replies from Admin</h6>';
+                        replies.forEach(function(reply) {
+                            html += `
+                                <div class="card bg-light mt-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <strong>
+                                                <i class="fas fa-user-shield me-1"></i>${escapeHtml(reply.admin_name || 'Admin')}
+                                            </strong>
+                                            <small class="text-white">${formatDate(reply.created_at)}</small>
+                                        </div>
+                                        <p class="mb-0">${escapeHtml(reply.reply_text).replace(/\n/g, '<br>')}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                    } else if (message.status === 'replied') {
+                        html += `
+                            <div class="alert alert-info mt-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                A reply has been sent to your email: <strong>${escapeHtml(message.email)}</strong>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="alert alert-warning mt-4">
+                                <i class="fas fa-clock me-2"></i>
+                                Your message is pending review. We'll get back to you soon.
+                            </div>
+                        `;
+                    }
+
+                    document.getElementById('userMessageDetail').innerHTML = html;
+                    modal.show();
+                } else {
+                    alert('Failed to load message details');
+                }
+            } catch (error) {
+                console.error('Error loading message:', error);
+                alert('Error loading message details');
+            }
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'pending': return 'bg-warning text-dark';
+                case 'read': return 'bg-info text-dark';
+                case 'replied': return 'bg-success';
+                case 'archived': return 'bg-secondary';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-MY', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>
