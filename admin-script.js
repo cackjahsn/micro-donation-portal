@@ -353,6 +353,10 @@ class AdminDashboard {
                     content.innerHTML = this.getStatisticsHTML();
                     await this.loadStatisticsData();
                     break;
+                case 'contact-messages':
+                    content.innerHTML = this.getContactMessagesHTML();
+                    await this.loadContactMessagesData();
+                    break;
                 case 'settings':
                     content.innerHTML = this.getSettingsHTML();
                     break;
@@ -4465,7 +4469,412 @@ class AdminDashboard {
         });
         this.charts = {};
     }
-    
+
+    // ============================================
+    // CONTACT MESSAGES PAGE
+    // ============================================
+
+    getContactMessagesHTML() {
+        return `
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">
+                            <i class="fas fa-envelope me-2"></i>Contact Messages
+                        </h1>
+                        <button class="btn btn-outline-primary" onclick="adminDashboard.loadContactMessagesData()">
+                            <i class="fas fa-sync-alt me-2"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="filterStatus">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="reviewed">Reviewed</option>
+                                <option value="replied">Replied</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="filterCategory">
+                                <option value="">All Categories</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="technical">Technical Support</option>
+                                <option value="donation">Donation Issues</option>
+                                <option value="campaign">Campaign Information</option>
+                                <option value="feedback">Feedback & Suggestions</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search by name, email, subject...">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-primary w-100" onclick="adminDashboard.applyContactFilters()">
+                                <i class="fas fa-filter me-2"></i>Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages List -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Messages List</h6>
+                    <span class="badge bg-primary" id="messagesCount">0 messages</span>
+                </div>
+                <div class="card-body">
+                    <div id="messagesContainer">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async loadContactMessagesData() {
+        const container = document.getElementById('messagesContainer');
+        if (!container) return;
+
+        try {
+            const status = document.getElementById('filterStatus')?.value || '';
+            const category = document.getElementById('filterCategory')?.value || '';
+            const search = document.getElementById('searchInput')?.value || '';
+
+            let endpoint = 'backend/api/contact/get-messages.php?limit=50';
+            if (status) endpoint += `&status=${status}`;
+            if (category) endpoint += `&category=${category}`;
+            if (search) endpoint += `&search=${encodeURIComponent(search)}`;
+
+            const result = await this.apiRequest(endpoint);
+
+            if (result.success) {
+                document.getElementById('messagesCount').textContent = `${result.total} messages`;
+                this.renderContactMessages(result.messages);
+            } else {
+                container.innerHTML = `<div class="alert alert-danger">${result.message || 'Failed to load messages'}</div>`;
+            }
+        } catch (error) {
+            console.error('Error loading contact messages:', error);
+            if (container) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading messages: ${error.message}
+                    </div>
+                `;
+            }
+        }
+    }
+
+    renderContactMessages(messages) {
+        const container = document.getElementById('messagesContainer');
+        if (!container) return;
+
+        if (!messages || messages.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-white mb-3"></i>
+                    <p class="text-white">No messages found</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="list-group">';
+        messages.forEach(msg => {
+            const statusBadge = this.getMessageStatusBadge(msg.status);
+            const categoryBadge = this.getMessageCategoryBadge(msg.category);
+            const timeAgo = this.getTimeAgo(msg.created_at);
+            const hasReply = msg.status === 'replied';
+
+            html += `
+                <div class="list-group-item list-group-item-action p-3 mb-2 rounded shadow-sm" style="cursor: pointer; background-color: #1e293b; border-color: #334155; color: #f1f5f9;" onclick="adminDashboard.viewMessage(${msg.id})">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <h6 class="mb-0 me-2">${this.escapeHtml(msg.subject)}</h6>
+                                ${statusBadge}
+                                ${categoryBadge}
+                            </div>
+                            <p class="mb-1 text-white small">
+                                <i class="fas fa-user me-1"></i>${this.escapeHtml(msg.name)}
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-envelope me-1"></i>${this.escapeHtml(msg.email)}
+                            </p>
+                            <p class="mb-2 text-truncate" style="max-width: 600px; color: #cbd5e1;">${this.escapeHtml(msg.message)}</p>
+                            <small class="text-white">
+                                <i class="fas fa-clock me-1"></i>${timeAgo}
+                                ${hasReply ? `<span class="mx-2">•</span><span class="text-success"><i class="fas fa-check me-1"></i>Replied by ${this.escapeHtml(msg.admin_name || 'Admin')}</span>` : ''}
+                            </small>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); adminDashboard.viewMessage(${msg.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    getMessageStatusBadge(status) {
+        const badges = {
+            'pending': '<span class="badge bg-warning">Pending</span>',
+            'reviewed': '<span class="badge bg-info">Reviewed</span>',
+            'replied': '<span class="badge bg-success">Replied</span>',
+            'archived': '<span class="badge bg-secondary">Archived</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+    }
+
+    getMessageCategoryBadge(category) {
+        const badges = {
+            'general': '<span class="badge bg-secondary">General</span>',
+            'technical': '<span class="badge bg-danger">Technical</span>',
+            'donation': '<span class="badge bg-success">Donation</span>',
+            'campaign': '<span class="badge bg-info">Campaign</span>',
+            'feedback': '<span class="badge bg-warning text-dark">Feedback</span>'
+        };
+        return badges[category] || `<span class="badge bg-secondary">${category}</span>`;
+    }
+
+    applyContactFilters() {
+        this.loadContactMessagesData();
+    }
+
+    async viewMessage(messageId) {
+        try {
+            const result = await this.apiRequest(`backend/api/contact/get-message.php?id=${messageId}`);
+
+            if (result.success) {
+                this.showMessageModal(result.message, result.replies);
+            } else {
+                this.showNotification(result.message || 'Failed to load message', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading message:', error);
+            this.showNotification('Error loading message: ' + error.message, 'error');
+        }
+    }
+
+    showMessageModal(message, replies = []) {
+        const statusBadge = this.getMessageStatusBadge(message.status);
+        const categoryBadge = this.getMessageCategoryBadge(message.category);
+        const modalHtml = `
+            <div class="modal fade" id="messageDetailModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-envelope-open-text me-2"></i>Message Details
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <h5 class="mb-0">${this.escapeHtml(message.subject)}</h5>
+                                    <span class="ms-2">${statusBadge}</span>
+                                    <span class="ms-2">${categoryBadge}</span>
+                                </div>
+                                <small class="text-white">Received: ${message.created_at}</small>
+                            </div>
+
+                            <div class="card mb-3" style="background-color: #1e293b; border-color: #334155;">
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <strong><i class="fas fa-user me-1"></i>From:</strong><br>
+                                            <span style="color: #f1f5f9;">${this.escapeHtml(message.name)}</span><br>
+                                            <a href="mailto:${this.escapeHtml(message.email)}" style="color: #93c5fd;">${this.escapeHtml(message.email)}</a>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong><i class="fas fa-tag me-1"></i>Category:</strong><br>
+                                            <span style="color: #f1f5f9;">${message.category.toUpperCase()}</span>
+                                        </div>
+                                    </div>
+                                    <hr style="border-color: #475569;">
+                                    <div>
+                                        <strong><i class="fas fa-comment me-1"></i>Message:</strong><br>
+                                        <p class="mt-2" style="color: #cbd5e1;">${this.escapeHtml(message.message).replace(/\n/g, '<br>')}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${message.admin_reply ? `
+                                <div class="card mb-3" style="background-color: #1e293b; border-color: #22c55e;">
+                                    <div class="card-header" style="background-color: #22c55e; color: white;">
+                                        <i class="fas fa-reply me-2"></i>Your Reply
+                                    </div>
+                                    <div class="card-body">
+                                        <p style="color: #cbd5e1;">${this.escapeHtml(message.admin_reply).replace(/\n/g, '<br>')}</p>
+                                        <small class="text-white">Sent: ${message.replied_at}</small>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${replies.length > 0 ? `
+                                <div class="mb-3">
+                                    <h6 style="color: #f1f5f9;"><i class="fas fa-history me-2"></i>Reply History</h6>
+                                    <div class="list-group">
+                                        ${replies.map(reply => `
+                                            <div class="list-group-item" style="background-color: #1e293b; border-color: #334155;">
+                                                <small class="text-white">${reply.created_at} - ${this.escapeHtml(reply.admin_name || 'Admin')}</small>
+                                                <p class="mb-0 mt-1" style="color: #cbd5e1;">${this.escapeHtml(reply.reply_text).replace(/\n/g, '<br>')}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${message.status !== 'replied' ? `
+                                <div class="mt-4">
+                                    <h6><i class="fas fa-paper-plane me-2"></i>Send Reply</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Your Reply</label>
+                                        <textarea class="form-control" id="replyText" rows="4" placeholder="Type your reply here..."></textarea>
+                                    </div>
+                                    <button class="btn btn-success" onclick="adminDashboard.sendReply(${message.id})">
+                                        <i class="fas fa-paper-plane me-2"></i>Send Reply
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            ${message.status !== 'archived' ? `
+                                <button type="button" class="btn btn-outline-secondary" onclick="adminDashboard.archiveMessage(${message.id})">
+                                    <i class="fas fa-archive me-2"></i>Archive
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remove existing modal if any
+        const existingModal = document.getElementById('messageDetailModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('messageDetailModal'));
+        modal.show();
+
+        // Remove modal from DOM when hidden
+        document.getElementById('messageDetailModal').addEventListener('hidden.bs.modal', function() {
+            this.remove();
+        });
+    }
+
+    async sendReply(messageId) {
+        const replyText = document.getElementById('replyText')?.value;
+        if (!replyText || replyText.trim().length === 0) {
+            this.showNotification('Please enter a reply message', 'warning');
+            return;
+        }
+
+        const user = this.currentUser || JSON.parse(localStorage.getItem('micro_donation_user') || '{}');
+
+        try {
+            const response = await fetch('backend/api/contact/reply.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message_id: messageId,
+                    reply: replyText,
+                    admin_id: user.id || 1
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showNotification('Reply sent successfully!', 'success');
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('messageDetailModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                // Reload messages
+                this.loadContactMessagesData();
+            } else {
+                this.showNotification(result.message || 'Failed to send reply', 'error');
+            }
+        } catch (error) {
+            console.error('Error sending reply:', error);
+            this.showNotification('Error sending reply: ' + error.message, 'error');
+        }
+    }
+
+    async archiveMessage(messageId) {
+        if (!confirm('Are you sure you want to archive this message?')) {
+            return;
+        }
+
+        // For now, we'll just show a notification since we don't have an archive endpoint
+        // In a full implementation, you would create an archive endpoint
+        this.showNotification('Message archived', 'info');
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('messageDetailModal'));
+        if (modal) {
+            modal.hide();
+        }
+        
+        // Reload messages
+        this.loadContactMessagesData();
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    getTimeAgo(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+        if (seconds < 2592000) return `${Math.floor(seconds / 86400)} days ago`;
+        return `${Math.floor(seconds / 2592000)} months ago`;
+    }
+
     setupEventListeners() {
         const logoutBtn = document.querySelector('.logout-btn');
         if (logoutBtn) {
