@@ -541,7 +541,7 @@ function generateReceiptHTML($donation, $isAdminView = false, $print = false, $a
             <div class="footer">
                 <p><strong>CommunityGive Micro-Donation Portal</strong></p>
                 <p>This is an official tax receipt. Please retain for your records.</p>
-                <p>For questions or verification: support@communitygive.org | +603-1234-5678</p>
+                <p>For questions or verification: support@communitygive.org | +6017-687-3956</p>
                 <p style="font-size: 10px; color: #f1f5f9; margin-top: 20px;">
                     Receipt generated electronically. No physical copy required.
                     Valid for tax purposes in accordance with local regulations.
