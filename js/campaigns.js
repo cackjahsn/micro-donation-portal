@@ -609,8 +609,9 @@ class CampaignManager {
                     img = 'uploads/campaigns/' + img;
                 }
                 // If it's an uploads path but missing the base path, prepend it
-                if (img.includes('uploads/') && !img.startsWith('/micro-donation-portal/')) {
-                    imageUrl = '/micro-donation-portal/' + img;
+                if (img.includes('uploads/') && !img.startsWith('/')) {
+                    const basePath = window.APP_BASE_PATH || '/';
+                    imageUrl = basePath + img;
                 } else {
                     imageUrl = img;
                 }

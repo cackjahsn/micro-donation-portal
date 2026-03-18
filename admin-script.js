@@ -1601,7 +1601,7 @@ class AdminDashboard {
             let imgSrc = window.utils && window.utils.getCampaignImageUrl
                 ? window.utils.getCampaignImageUrl(campaign.image_url)
                 : (campaign.image_url && campaign.image_url.includes('uploads/')
-                    ? '/micro-donation-portal/' + campaign.image_url
+                    ? (window.APP_BASE_PATH || '/') + campaign.image_url
                     : campaign.image_url);
 
             // Check if the image is valid (not the default placeholder)
@@ -1620,9 +1620,9 @@ class AdminDashboard {
                     <td><strong>#${campaign.id}</strong></td>
                     <td>
                         <div class="d-flex align-items-center">
-                            ${campaign.image_url ? 
-                                (campaign.image_url.includes('uploads/') ? 
-                                    `<img src="/micro-donation-portal/${campaign.image_url}" 
+                            ${campaign.image_url ?
+                                (campaign.image_url.includes('uploads/') ?
+                                    `<img src="${(window.APP_BASE_PATH || '/') + campaign.image_url}"
                                         alt="${this.escapeHtml(campaign.title)}" 
                                         class="rounded me-2" 
                                         style="width: 40px; height: 40px; object-fit: cover;"
@@ -1896,7 +1896,7 @@ class AdminDashboard {
         let imgSrc = window.utils && window.utils.getCampaignImageUrl
             ? window.utils.getCampaignImageUrl(campaign.image_url)
             : (campaign.image_url && campaign.image_url.includes('uploads/')
-                ? '/micro-donation-portal/' + campaign.image_url
+                ? (window.APP_BASE_PATH || '/') + campaign.image_url
                 : campaign.image_url);
 
         // Determine if the image is valid (not the default placeholder)

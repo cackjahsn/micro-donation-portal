@@ -172,7 +172,8 @@ const CampaignModal = {
             if (!imageUrl || imageUrl === 'assets/images/default-campaign.jpg') {
                 imageUrl = 'assets/images/default-campaign.jpg';
             } else if (!imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
-                imageUrl = '/micro-donation-portal/' + imageUrl;
+                const basePath = window.APP_BASE_PATH || '/';
+                imageUrl = basePath + imageUrl;
             }
         }
         

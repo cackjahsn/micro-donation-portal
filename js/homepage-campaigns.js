@@ -150,29 +150,31 @@ async function loadHomepageCampaigns() {
             id: campaign.id,
             title: campaign.title,
             raised: campaign.raised,
-            target: campaign.target
+            target: campaign.target,
+            image: campaign.image,
+            image_url: campaign.image_url
         });
-        
+
         // Get the correct values
         const raisedAmount = campaign.raised !== undefined ? campaign.raised : (campaign.current_amount || 0);
         const targetAmount = campaign.target !== undefined ? campaign.target : (campaign.target_amount || 1000);
         const donorCount = campaign.donors !== undefined ? campaign.donors : (campaign.donors_count || 0);
-        
+
         // Format currency
-        const raised = typeof utils !== 'undefined' && utils.formatCurrency 
+        const raised = typeof utils !== 'undefined' && utils.formatCurrency
             ? utils.formatCurrency(raisedAmount)
             : `RM ${raisedAmount.toFixed(2)}`;
-        
-        const target = typeof utils !== 'undefined' && utils.formatCurrency 
+
+        const target = typeof utils !== 'undefined' && utils.formatCurrency
             ? utils.formatCurrency(targetAmount)
             : `RM ${targetAmount.toFixed(2)}`;
-        
+
         // Calculate progress
-        const progress = targetAmount > 0 
+        const progress = targetAmount > 0
             ? Math.min(100, (raisedAmount / targetAmount) * 100)
             : 0;
         const displayProgress = Math.round(progress * 10) / 10;
-        
+
         // Format date
         let dateText = '';
         if (campaign.dateCreated || campaign.created_at) {
@@ -183,23 +185,39 @@ async function loadHomepageCampaigns() {
                 dateText = new Date(date).toLocaleDateString();
             }
         }
-        
-        // Fix image path
+
+        // Fix image path - IMPROVED
         let imageUrl = campaign.image || campaign.image_url || '';
-        if (window.utils && window.utils.getCampaignImageUrl) {
-            imageUrl = window.utils.getCampaignImageUrl(imageUrl);
+        console.log('[createCampaignCard] Original image URL:', imageUrl);
+        
+        // Always use utils if available, otherwise use fallback
+        if (typeof utils !== 'undefined' && utils.getCampaignImageUrl) {
+            imageUrl = utils.getCampaignImageUrl(imageUrl);
+            console.log('[createCampaignCard] After utils.getCampaignImageUrl:', imageUrl);
         } else {
-            // Fallback
-            if (!imageUrl) {
+            console.warn('[createCampaignCard] utils.getCampaignImageUrl not available, using fallback');
+            // Fallback - more robust
+            if (!imageUrl || imageUrl === 'assets/images/default-campaign.jpg') {
                 imageUrl = 'assets/images/default-campaign.jpg';
             } else {
-                imageUrl = imageUrl.replace(/\\/g, '');
-                if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.includes('/')) {
-                    imageUrl = 'uploads/campaigns/' + imageUrl;
+                // Normalize backslashes
+                imageUrl = imageUrl.replace(/\\/g, '/');
+                
+                // If already absolute, keep as is
+                if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                    // If starts with uploads/, add leading slash
+                    if (imageUrl.startsWith('uploads/')) {
+                        imageUrl = '/' + imageUrl;
+                    } else if (!imageUrl.includes('/')) {
+                        // Bare filename
+                        imageUrl = '/uploads/campaigns/' + imageUrl;
+                    }
+                    // Otherwise keep as is (relative path like assets/...)
                 }
             }
+            console.log('[createCampaignCard] After fallback:', imageUrl);
         }
-        
+
         return `
             <div class="col-md-6 col-lg-4">
                 <div class="card campaign-card h-100">

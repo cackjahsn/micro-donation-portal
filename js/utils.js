@@ -907,44 +907,70 @@ class Utils {
      * @returns {string} The full image URL
      */
     getCampaignImageUrl(imageUrl, addTimestamp = false) {
+        console.log('[getCampaignImageUrl] Input:', imageUrl);
+        
         // Default image if none provided
         if (!imageUrl || imageUrl === 'assets/images/default-campaign.jpg') {
+            console.log('[getCampaignImageUrl] Using default image');
             return 'assets/images/default-campaign.jpg';
         }
-        
+
         // Already a full URL (http://, https://, //)
         if (imageUrl.startsWith('http') || imageUrl.startsWith('//')) {
+            console.log('[getCampaignImageUrl] Already full URL:', imageUrl);
             return addTimestamp ? imageUrl + '?t=' + Date.now() : imageUrl;
         }
-        
-        // If it's from the uploads directory (new path)
-        if (imageUrl.includes('uploads/')) {
-            // Ensure we prepend the base path
-            const basePath = this.getBasePath();
-            return basePath + imageUrl;
+
+        // Normalize backslashes to forward slashes
+        imageUrl = imageUrl.replace(/\\/g, '/');
+        console.log('[getCampaignImageUrl] Normalized:', imageUrl);
+
+        // If it's already an absolute path starting with /
+        if (imageUrl.startsWith('/')) {
+            console.log('[getCampaignImageUrl] Absolute path:', imageUrl);
+            return addTimestamp ? imageUrl + '?t=' + Date.now() : imageUrl;
         }
-        
+
+        // Get base path once
+        const basePath = this.getBasePath();
+        const cleanBase = basePath.endsWith('/') ? basePath : basePath + '/';
+        console.log('[getCampaignImageUrl] Base path:', basePath);
+
+        // If it starts with 'uploads/' - add base path
+        if (imageUrl.startsWith('uploads/')) {
+            console.log('[getCampaignImageUrl] Uploads path, returning:', cleanBase + imageUrl);
+            return cleanBase + imageUrl;
+        }
+
         // If it's from the old assets path (legacy)
         if (imageUrl.includes('assets/images/campaigns/')) {
-            return imageUrl; // Keep as is (may 404 for old images)
+            console.log('[getCampaignImageUrl] Assets path, returning:', cleanBase + imageUrl);
+            return cleanBase + imageUrl;
         }
-        
+
         // If it's a bare filename (e.g., campaign_5_1772092564.jpg) – treat as uploads
         if (!imageUrl.includes('/')) {
-            const basePath = this.getBasePath();
-            return basePath + 'uploads/campaigns/' + imageUrl;
+            console.log('[getCampaignImageUrl] Bare filename, returning:', cleanBase + 'uploads/campaigns/' + imageUrl);
+            return cleanBase + 'uploads/campaigns/' + imageUrl;
         }
-        
-        // Default: return as is
-        return addTimestamp ? imageUrl + '?t=' + Date.now() : imageUrl;
+
+        // Default: return as is with base path if relative
+        console.log('[getCampaignImageUrl] Default, returning:', cleanBase + imageUrl);
+        return addTimestamp 
+            ? cleanBase + imageUrl + '?t=' + Date.now() 
+            : cleanBase + imageUrl;
     }
 
     /**
      * Get the base path for the application
-     * @returns {string} Base path (e.g., '/micro-donation-portal/')
+     * @returns {string} Base path (e.g., '/micro-donation-portal/' or '/')
      */
     getBasePath() {
-        // You can adjust this based on your deployment
+        // Use dynamically detected base path from path-resolver.js
+        if (window.APP_BASE_PATH) {
+            return window.APP_BASE_PATH;
+        }
+        // Fallback for backward compatibility
         return '/micro-donation-portal/';
     }
     

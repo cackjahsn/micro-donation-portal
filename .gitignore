@@ -3,6 +3,7 @@
 .env.local
 .env.production
 .env.test
+.env.docker
 
 # Logs
 logs/
@@ -77,3 +78,6 @@ temp/
 # Testing
 coverage/
 .phpunit.result.cache
+
+# Misc
+QWEN.md
